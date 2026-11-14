@@ -6,7 +6,7 @@
 
 **An AI-powered learning platform that measures what a learner can really do, finds the missing skills for a target career, and builds a personalised path that adapts when the goal changes or an assessment goes badly.**
 
-Live demo: `<CLOUD_RUN_URL>` (not deployed from this README's state; placeholder).
+Live frontend: https://unbluff-skillforge.vercel.app (static site on Vercel). The backend API is **not deployed yet**, so sign-in and every feature that calls the API are unavailable there until the Render service is up; the landing page and public pages load.
 
 ## Quick start (mock mode, no API key)
 
