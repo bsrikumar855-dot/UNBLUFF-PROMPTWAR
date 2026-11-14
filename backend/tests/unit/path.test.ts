@@ -137,6 +137,14 @@ describe("orderTopologically and normalizeSteps", () => {
     const out = orderTopologically([step("a", 0.1), step("b", 0.2)], g({ a: ["zzz", "a"] }));
     expect(out.map((s) => s.skill_id)).toEqual(["b", "a"]);
   });
+  it("breaks a full tie (same topic, same gap) by step id", () => {
+    const out = orderTopologically([step("t", 0.1, { id: "b" }), step("t", 0.1, { id: "a" })], g({}));
+    expect(out.map((s) => s.id)).toEqual(["a", "b"]);
+  });
+  it("normalizeSteps keeps a stable order for steps with the same order number (by id)", () => {
+    const out = normalizeSteps([step("x", 0.1, { id: "z", order: 1 }), step("y", 0.1, { id: "m", order: 1 })]);
+    expect(out.map((s) => [s.id, s.order])).toEqual([["m", 1], ["z", 2]]);
+  });
   it("does not loop forever on a cycle", () => {
     const out = orderTopologically([step("a", 0.2), step("b", 0.1)], g({ a: ["b"], b: ["a"] }));
     expect(out.map((s) => s.skill_id)).toEqual(["a", "b"]);

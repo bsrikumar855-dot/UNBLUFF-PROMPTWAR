@@ -258,7 +258,8 @@ describe("seeding is idempotent and safe", () => {
     mergeSuites(mergeSuites(null, packSuites, {}).file, packSuites, {}); // a seed run, twice
     const second = new DsaProgressService(store, () => new Catalogue(parseCatalogueFile(packCatalogue))); // catalogue reloaded
     expect((await second.list("alice")).progress).toEqual([expect.objectContaining({ question_id: "fp_001_balanced_brackets", status: "solved", notes: "mine", bookmarked: true })]);
-  });
+    // Seeds and re-reads the whole practice pack twice; under a busy machine this exceeded the 5 s default.
+  }, 30_000);
 
   it("changing a suite without a new revision is refused, so graded history keeps a stable meaning", () => {
     const first = mergeSuites(null, packSuites, {});

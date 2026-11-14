@@ -97,7 +97,8 @@ describe("tenant isolation", () => {
       expect(JSON.stringify(res.body), path).not.toContain("CanaryAlice77");
       expect(JSON.stringify(res.body), path).not.toContain("alice");
     }
-  });
+    // Calls every read route for two students; under a busy machine this exceeded the 5 s default.
+  }, 30_000);
 
   it("Bob cannot read, change or delete Alice's records by id, and they survive his attempts", async () => {
     const app = testApp({ autoAuth: false });

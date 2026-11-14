@@ -1,12 +1,12 @@
 import { ApiError } from "../errors.js";
-import { computeGaps, progressSummary, roleMatch, topicName, type CertMapping, type AssessmentSource, type GapAnalysis, type LearnerSkillState, type LearningPath, type PathChange, type ProgressSummary } from "../core/path.js";
+import { computeGaps, progressSummary, roleMatch, topicName, type CertMapping, type AssessmentSource, type LearnerSkillState, type LearningPath, type PathChange } from "../core/path.js";
 import type { Role } from "../types.js";
-import { careerMatcherAgent, type RoleRank } from "./careerMatcher.js";
-import { curriculumPlannerAgent, type UpcomingStep } from "./curriculumPlanner.js";
+import { careerMatcherAgent } from "./careerMatcher.js";
+import { curriculumPlannerAgent } from "./curriculumPlanner.js";
 import { mentorAgent } from "./mentorAgent.js";
 import { profilerAgent } from "./profiler.js";
 import { progressEvaluatorAgent } from "./progressEvaluator.js";
-import { skillAnalystAgent } from "./skillAnalyst.js";
+import { creditVerifiedEvidence, ingestAssessment } from "./skillAnalyst.js";
 import type { AgentContext, AgentLogEntry, AgentName, AgentResult, EventType, LearnerProfile, MentorFacts, MentorNote } from "./types.js";
 
 export type LearningEvent =
@@ -38,7 +38,9 @@ export const AGENT_LABEL: Readonly<Record<AgentName, string>> = {
   mentor: "Mentor",
 };
 
+/** The fixed route for an event type. An unknown type is refused rather than silently doing nothing. */
 export function route(type: EventType): readonly RouteStep[] {
+  if (!Object.prototype.hasOwnProperty.call(ROUTES, type)) throw new ApiError("BAD_REQUEST", `Unknown learning event: ${String(type)}`);
   return ROUTES[type];
 }
 
@@ -56,11 +58,6 @@ export interface EventOutcome {
   path: LearningPath;
   change: PathChange | null;
   mentor: MentorNote;
-  match_percent: number;
-  ranking: RoleRank[];
-  analysis: GapAnalysis;
-  progress: ProgressSummary;
-  upcoming: UpcomingStep[];
   unrecognized: string[];
   /** Only set by a new profile; a goal change or assessment keeps what was stored. */
   certification_skills: CertMapping[];
@@ -107,9 +104,6 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
   let change: PathChange | null = null;
   let unrecognized: string[] = [];
   let certificationSkills: CertMapping[] = [];
-  let ranking: RoleRank[] = [];
-  let analysis: GapAnalysis | null = null;
-  let upcoming: UpcomingStep[] = [];
   let remedialAdded = false;
   let note: MentorNote | null = null;
   let result: { skill_id: string; score: number; source: AssessmentSource; missing_concepts?: string[] } | null = null;
@@ -137,23 +131,19 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
       }
       case "skill_analyst": {
         if (event.type === "ASSESSMENT_SUBMITTED") {
-          const r = await skillAnalystAgent.run({ kind: "ingest", skill: event.skill, score: event.score, source: event.source, missing_concepts: event.missing_concepts }, ctx);
-          if (r.output.kind === "ingest") {
-            if (!r.output.result) throw new ApiError("BAD_REQUEST", r.output.error ?? "Unknown skill");
-            result = r.output.result;
-          }
+          const r = await ingestAssessment({ skill: event.skill, score: event.score, source: event.source, missing_concepts: event.missing_concepts }, ctx);
+          if (!r.output.result) throw new ApiError("BAD_REQUEST", r.output.error ?? "Unknown skill");
+          result = r.output.result;
           executed.push({ agent: "skill_analyst", result: r });
         } else {
-          const r = await skillAnalystAgent.run({ kind: "verify_existing", declared: states }, ctx);
-          if (r.output.kind === "verify_existing") states = r.output.states;
+          const r = await creditVerifiedEvidence(states, ctx);
+          states = r.output.states;
           executed.push({ agent: "skill_analyst", result: r });
         }
         break;
       }
       case "career_matcher": {
         const r = await careerMatcherAgent.run({ role, states }, ctx);
-        ranking = r.output.ranking;
-        analysis = r.output.analysis;
         executed.push({ agent: "career_matcher", result: r });
         break;
       }
@@ -161,19 +151,16 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
         if (event.type === "PROFILE_SUBMITTED") {
           const r = await curriculumPlannerAgent.run({ kind: "build", role, states }, ctx);
           path = r.output.path;
-          upcoming = r.output.upcoming;
           executed.push({ agent: "curriculum_planner", result: r });
         } else if (event.type === "GOAL_CHANGED") {
           if (!path) throw new ApiError("BAD_REQUEST", "There is no roadmap to change yet.");
           const r = await curriculumPlannerAgent.run({ kind: "goal_change", path: { ...path, states }, role }, ctx);
           path = r.output.path;
           change = r.output.change;
-          upcoming = r.output.upcoming;
           states = path.states;
           executed.push({ agent: "curriculum_planner", result: r });
         } else {
           const r = await curriculumPlannerAgent.run({ kind: "review", path: path! }, ctx);
-          upcoming = r.output.upcoming;
           executed.push({ agent: "curriculum_planner", result: r });
         }
         break;
@@ -204,7 +191,6 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
   }
 
   const finalPath = path!;
-  const finalAnalysis = analysis ?? computeGaps(role, finalPath.states, ctx.graph);
   const log: AgentLogEntry[] = [];
   let n = logSeed;
   const at = ctx.now.toISOString();
@@ -222,20 +208,9 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
     path: finalPath,
     change,
     mentor: note!,
-    match_percent: roleMatch(role, finalPath.states, ctx.graph),
-    ranking: ranking.length > 0 ? ranking : rankRoles(finalPath.states, ctx),
-    analysis: finalAnalysis,
-    progress: progressSummary(finalPath, finalPath.states, role, ctx.graph),
-    upcoming: upcoming.length > 0 ? upcoming : finalPath.steps.filter((s) => s.status !== "done").slice(0, 4).map((s) => ({ step_id: s.id, label: s.kind === "remedial" ? `Revisit: ${s.concept}` : topicName(s.skill_id, ctx.graph), status: s.status, resources: [] })),
     unrecognized,
     certification_skills: certificationSkills,
     log,
   };
 }
 
-function rankRoles(states: readonly LearnerSkillState[], ctx: AgentContext): RoleRank[] {
-  return ctx.roles
-    .list()
-    .map((s) => ({ role_id: s.id, name: s.name, match_percent: roleMatch(ctx.roles.get(s.id)!, states, ctx.graph) }))
-    .sort((a, b) => b.match_percent - a.match_percent || a.role_id.localeCompare(b.role_id));
-}

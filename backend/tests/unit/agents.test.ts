@@ -33,6 +33,16 @@ describe("routing table", () => {
       expect(steps.filter((s) => s.agent === "mentor")).toHaveLength(1);
     }
   });
+  it("covers exactly the three learning events, and every agent appears somewhere", () => {
+    expect(Object.keys(ROUTES).sort()).toEqual(["ASSESSMENT_SUBMITTED", "GOAL_CHANGED", "PROFILE_SUBMITTED"]);
+    const used = new Set(Object.values(ROUTES).flat().map((s) => s.agent));
+    expect([...used].sort()).toEqual(Object.keys(AGENT_LABEL).sort());
+  });
+  it("refuses an unknown event type, including prototype keys, instead of running nothing", () => {
+    for (const bad of ["NOPE", "constructor", "__proto__", "toString"]) {
+      expect(() => route(bad as never)).toThrow(/Unknown learning event/);
+    }
+  });
   it("names every agent", () => {
     expect(Object.keys(AGENT_LABEL).sort()).toEqual(["career_matcher", "curriculum_planner", "mentor", "profiler", "progress_evaluator", "skill_analyst"]);
   });
