@@ -1,3 +1,6 @@
+/**
+ * Curriculum Planner agent. Builds the roadmap (prerequisite order, curated free resources) and, on a goal change, rebuilds it and reports the kept / added / removed / reordered diff via core/adapt.ts. Deterministic: ordering and diff are rules, never the model.
+ */
 import { adaptOnGoalChange } from "../core/adapt.js";
 import { buildPath, topicName, type LearnerSkillState, type LearningGraph, type LearningPath, type PathChange, type Resource } from "../core/path.js";
 import type { Role } from "../types.js";

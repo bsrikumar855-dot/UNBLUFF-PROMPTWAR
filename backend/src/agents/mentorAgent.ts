@@ -1,3 +1,6 @@
+/**
+ * Mentor agent. The only SkillForge agent that may call the LLM, and only to word a coaching note from a facts object the other agents produced. It cannot change gaps, steps or scores; if the model is unavailable or its output is rejected, a template note is used instead.
+ */
 import type { Agent, MentorFacts, MentorNote } from "./types.js";
 
 const MAX_MESSAGE = 1200;

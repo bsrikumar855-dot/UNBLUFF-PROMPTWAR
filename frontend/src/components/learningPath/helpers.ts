@@ -1,3 +1,6 @@
+/**
+ * Small pure helpers for the Learning Path page (agent labels, whether the last assessment was a simulation). Kept out of the components so they are trivial to test.
+ */
 import type { AgentName, LearningPathView } from "@/types/learningPath";
 
 export const AGENT_LABEL: Record<AgentName, string> = {

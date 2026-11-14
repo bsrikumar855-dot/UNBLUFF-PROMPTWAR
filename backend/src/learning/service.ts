@@ -1,3 +1,6 @@
+/**
+ * Learning-path service: the glue between the HTTP routes, the agent orchestrator and the store. It validates request bodies (strict zod schemas), enforces per-student limits and persists results; all decisions are delegated to the agents and the deterministic core.
+ */
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { runEvent, type LearnerState } from "../agents/orchestrator.js";

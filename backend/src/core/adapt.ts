@@ -1,3 +1,6 @@
+/**
+ * Deterministic adaptation rules: how the roadmap changes after an assessment (remedial / review / done bands) and after a goal change (diff of kept, added, removed, reordered steps, each with a reason). Pure functions; the LLM never decides an adaptation.
+ */
 import type { Role } from "../types.js";
 import {
   DECLARED_MASTERY,

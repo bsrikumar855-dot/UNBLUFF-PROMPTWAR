@@ -1,3 +1,6 @@
+/**
+ * HTTP routes for /api/learning-path. Scopes every request to the signed-in user and hands the body to the learning-path service, which validates it. No planning logic lives here.
+ */
 import { Router, type RequestHandler } from "express";
 import { ApiError } from "../errors.js";
 import type { LearningPathService } from "../learning/service.js";

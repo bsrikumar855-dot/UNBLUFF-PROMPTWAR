@@ -1,3 +1,6 @@
+/**
+ * Career Matcher agent. Scores the learner against the target role and every other role (match %, ranked gaps) by calling computeGaps and roleMatch in core/path.ts. Deterministic: it never calls the model, so the same skills always give the same match.
+ */
 import { computeGaps, roleMatch, type GapAnalysis, type LearnerSkillState } from "../core/path.js";
 import type { Role } from "../types.js";
 import type { Agent } from "./types.js";

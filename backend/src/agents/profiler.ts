@@ -1,3 +1,6 @@
+/**
+ * Profiler agent. Resolves free-text skills, project skills and certifications to graph topics. Everything it produces is declared, not verified, so mastery is capped (0.4) until an assessment or interrogation proves more. Deterministic rules only.
+ */
 import { skillsFromCertifications } from "../core/certs.js";
 import { resolveTopic, topicName, type CertMapping, type LearnerSkillState } from "../core/path.js";
 import type { Agent, LearnerProfile } from "./types.js";

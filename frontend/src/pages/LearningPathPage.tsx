@@ -1,3 +1,6 @@
+/**
+ * SkillForge Learning Path page. Collects the profile and goal, shows gaps, roadmap, progress and the agent log, and lets the learner submit (or simulate) an assessment and change goal. Every decision is made by the backend agents and deterministic core; this page displays results and labels simulated scores.
+ */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Sparkles, X } from "lucide-react";

@@ -1,3 +1,6 @@
+/**
+ * Maps certifications to skills using a small curated rule list. Unmapped certifications give nothing, by design, so a certificate never claims skills it does not evidence. Pure and deterministic.
+ */
 import type { CertMapping, CertRule } from "./pathTypes.js";
 
 /** Lower case, punctuation (except "+" and ".") becomes a space, runs of spaces collapse: "CompTIA Network+" -> "comptia network+". */

@@ -1,3 +1,6 @@
+/**
+ * Presentational pieces of the Learning Path page: step status, resource links, mastery bars, the change panel and the agent timeline. They only render what the API returned; no planning happens in the browser.
+ */
 import React from "react";
 import { ArrowRight, BookOpen, CheckCircle2, Circle, ExternalLink, GraduationCap, Lock, PencilLine, PlayCircle, RotateCcw, type LucideIcon } from "lucide-react";
 import { Pill } from "@/components/learn/LearnBits";

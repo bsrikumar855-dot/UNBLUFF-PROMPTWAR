@@ -1,3 +1,6 @@
+/**
+ * Loads and validates the SkillForge data files (topic graph, resources, certification rules) once at start-up, against the role registry. Invalid data fails fast at boot instead of producing a wrong plan at request time.
+ */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";

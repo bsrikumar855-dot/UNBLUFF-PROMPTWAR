@@ -1,3 +1,6 @@
+/**
+ * Orchestrator. Runs each event (profile submitted, assessment submitted, goal changed) through a fixed routing table of agents and records every step and handoff in the visible agent log. Routing is a table, not a model decision, so the agent sequence is predictable and testable.
+ */
 import { ApiError } from "../errors.js";
 import { computeGaps, progressSummary, roleMatch, topicName, type CertMapping, type AssessmentSource, type LearnerSkillState, type LearningPath, type PathChange } from "../core/path.js";
 import type { Role } from "../types.js";

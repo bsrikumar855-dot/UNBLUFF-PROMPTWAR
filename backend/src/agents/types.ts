@@ -1,3 +1,6 @@
+/**
+ * Shared types for the SkillForge agents: the Agent interface, the context each agent reads and writes, and the facts handed to the Mentor. Kept separate so agents depend on types, not on each other.
+ */
 import type { AssessmentSource, LearnerSkillState, LearningGraph, Resource } from "../core/pathTypes.js";
 import type { InterviewEvidence } from "../placement/evidence.js";
 import type { RoleRegistry } from "../services/roles.js";

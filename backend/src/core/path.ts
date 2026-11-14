@@ -1,3 +1,6 @@
+/**
+ * Deterministic learning-path core: gap = weight x (1 - mastery) per role skill, role match, prerequisite-ordered roadmap with resources, and progress summary. Pure functions with no I/O and no model calls; every SkillForge decision about what to learn comes from here.
+ */
 import type { Role, RoleSkill } from "../types.js";
 import type {
   GapAnalysis,

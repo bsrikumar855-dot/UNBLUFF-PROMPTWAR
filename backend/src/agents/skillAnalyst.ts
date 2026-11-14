@@ -1,3 +1,6 @@
+/**
+ * Skill Analyst agent. Credits skills verified by UNBLUFF interrogation and records assessment results as evidence. It decides what counts as verified by rules, so a learner's mastery never depends on model wording.
+ */
 import { resolveTopic, topicName, topicsOf, type AssessmentResult, type AssessmentSource, type LearnerSkillState, type LearningGraph } from "../core/path.js";
 import type { InterviewEvidence } from "../placement/evidence.js";
 import type { RoleRegistry } from "../services/roles.js";

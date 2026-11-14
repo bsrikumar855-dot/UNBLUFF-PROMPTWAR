@@ -1,3 +1,6 @@
+/**
+ * Learning-path persistence: an in-memory store (development, resets on restart) and a Firestore store (durable). Both implement the same interface so the service does not know which one it uses.
+ */
 import { Firestore } from "@google-cloud/firestore";
 import type { AgentLogEntry, LearnerProfile, MentorNote } from "../agents/types.js";
 import type { CertMapping, LearningPath } from "../core/pathTypes.js";
