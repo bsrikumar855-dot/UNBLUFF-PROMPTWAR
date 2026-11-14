@@ -106,6 +106,17 @@ describe("responses, errors and limits", () => {
       ),
     );
     expect(e?.kind).toBe("invalid_response");
+    // The operator's log names the failing field and why, but never carries the value GitHub sent.
+    expect(e?.detail).toBe("viewer.login (invalid_type)");
+    const leaky = await kind(
+      client((async () => ok({ viewer: { login: 123456789 } })) as typeof fetch).query(
+        "t",
+        "q",
+        {},
+        Schema,
+      ),
+    );
+    expect(leaky?.detail).not.toContain("123456789");
     expect(
       (
         await kind(

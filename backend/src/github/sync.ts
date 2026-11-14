@@ -46,6 +46,8 @@ export interface SyncResult {
   /** Sections stored from a response that also carried GraphQL errors (some items missing). */
   partial: GithubSection[];
   failure: GithubSyncFailure | null;
+  /** Which fields of GitHub's answer failed validation, for the operator's log (paths only, never values). */
+  invalidDetail?: string;
   /** When the rate limit resets, if it was the reason a section failed. */
   resetAt: string | null;
   remaining: number | null;
@@ -109,6 +111,7 @@ export async function runSync(
       if (err.kind === "unauthorized") throw err; // the whole credential is dead
       result.unavailable.push(name);
       result.failure ??= failureOf(err.kind);
+      if (err.detail) result.invalidDetail ??= `${name}: ${err.detail}`;
       if (err.kind === "rate_limited") {
         result.resetAt = err.resetAt;
         stop = true; // no point asking again until it resets

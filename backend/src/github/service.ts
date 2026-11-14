@@ -419,6 +419,7 @@ export class GithubService {
           sections: fetched.length,
           unavailable: result.unavailable.length,
           remaining: result.remaining,
+          ...(result.invalidDetail ? { invalid: result.invalidDetail } : {}),
         },
         "github sync complete",
       );

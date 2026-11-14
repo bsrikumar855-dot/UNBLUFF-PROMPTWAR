@@ -11,6 +11,8 @@ export class GithubApiError extends Error {
     readonly kind: GithubErrorKind,
     /** ISO time when the rate limit resets (rate_limited only). */
     readonly resetAt: string | null = null,
+    /** invalid_response only: which fields failed validation (paths and issue codes, never the values). For the operator's log. */
+    readonly detail: string | null = null,
   ) {
     super(kind);
     this.name = "GithubApiError";
@@ -145,7 +147,16 @@ export class GithubGraphQL {
     }
 
     const parsed = schema.safeParse(data);
-    if (!parsed.success) throw new GithubApiError("invalid_response");
+    if (!parsed.success)
+      throw new GithubApiError(
+        "invalid_response",
+        null,
+        parsed.error.issues
+          .slice(0, 5)
+          .map((i) => `${i.path.map(String).join(".")} (${i.code})`)
+          .join("; ")
+          .slice(0, 400),
+      );
     const partial: PartialError[] = errs.map((e) => ({
       type: typeof e.type === "string" ? e.type.slice(0, 40) : "UNKNOWN",
       path: Array.isArray(e.path) ? e.path.map(String).join(".").slice(0, 120) : "",
