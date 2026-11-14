@@ -1,137 +1,148 @@
-<p align="center"><img src="frontend/public/brand/logo.png" alt="unbluff, Placement OS" width="321"></p>
+<p align="center">
+  <img src="frontend/public/brand/unbluff-logo.png" alt="UNBLUFF" width="360" />
+</p>
 
-# UNBLUFF + SkillForge
+<h1 align="center">UNBLUFF</h1>
 
-[![CI](https://github.com/bsrikumar855-dot/UNBLUFF-PROMPTWAR/actions/workflows/ci.yml/badge.svg)](https://github.com/bsrikumar855-dot/UNBLUFF-PROMPTWAR/actions/workflows/ci.yml)
+<p align="center">
+  <b>UNBLUFF verifies what a learner can actually do, finds the skills they are missing, and builds a personalized learning path that adapts as they progress, run by six collaborating AI agents.</b>
+</p>
 
-**An AI-powered learning platform that measures what a learner can really do, finds the missing skills for a target career, and builds a personalised path that adapts when the goal changes or an assessment goes badly.**
+<p align="center">
+  <a href="https://unbluff-skillforge.vercel.app/">Live demo</a> ·
+  <a href="CONTRACT.md">API contract</a> ·
+  <a href="DECISIONS.md">Design decisions</a>
+</p>
 
-Live frontend: https://unbluff-skillforge.vercel.app (static site on Vercel). The backend API is **not deployed yet**, so sign-in and every feature that calls the API are unavailable there until the Render service is up; the landing page and public pages load.
+![CI](https://github.com/bsrikumar855-dot/UNBLUFF-PROMPTWAR/actions/workflows/ci.yml/badge.svg)
 
-## Quick start (mock mode, no API key)
+## Quick start (no API key needed)
 
 ```bash
-npm run setup
-cd backend && LLM_MODE=mock AUTH_MODE=mock STORE=memory PORT=8090 CORS_ORIGIN=http://localhost:5173 npm run dev
-cd frontend && printf 'VITE_API_URL=http://localhost:8090\nVITE_AUTH_MODE=mock\n' > .env && npm run dev
+# Backend: deterministic mock AI, in-memory store, mock sign-in (development only)
+cd backend && npm ci && LLM_MODE=mock STORE=memory AUTH_MODE=mock PORT=8090 CORS_ORIGIN=http://localhost:5173 npm run dev
+
+# Frontend (second terminal)
+cd frontend && npm ci && cp .env.example .env && npm run dev
+# open http://localhost:5173/learning-path and click "Load sample student"
+
+# Run every check (lint, typecheck, tests, build) for both packages
+npm run verify
 ```
 
-Open http://localhost:5173/learning-path. To check everything CI checks: `npm run verify` (backend lint, typecheck, tests with coverage, build; frontend lint, typecheck, tests, build).
+## The problem
 
-## The problem and our solution
+Organizations and universities find it hard to see which skills their employees or students lack and what they need to learn to reach their career goals. Learning platforms give everyone the same courses, ignoring what a person already knows, how they are progressing, or where they want to go. Skills listed on a profile are also never verified, so nobody knows which ones are real.
 
-Students list skills they cannot defend, and generic course lists ignore what they already know and where they want to go. **SkillForge** reads a learner's skills, projects and certifications, scores them against a target role, and plans an ordered roadmap with free resources. Six specialised agents re-plan it when the learner fails an assessment or changes goal. It is built on **UNBLUFF**, which verifies skills by interrogating resume claims. Learners get an honest gap analysis and a plan. A university or organisation gets evidence of what a cohort can actually do, not self-reported claims.
+## A scenario
 
-## Problem statement → feature
+> *An illustrative persona.* **Arun** is a student who knows Python, SQL and a little HTML. He wants to become a **Full Stack Developer**.
 
-| Requirement | What it does | Code | Test that proves it |
+**Without UNBLUFF**
+- A generic platform hands him the same course list as everyone else, including Python, which he already knows.
+- Nobody checks whether "I know SQL" is true.
+- He fails a JavaScript quiz and is handed the next course anyway.
+- If he switches his goal to Data Analyst, he starts over with no credit for what he has already shown.
+
+## How UNBLUFF solves it
+
+The same scenario, with UNBLUFF. Every decision below is made by tested, deterministic code. The AI only writes the wording.
+
+| Step | What happens | Agent |
+|---|---|---|
+| **1. Profile** | Arun enters his skills. Each one is stored as *declared, unverified* and counts for at most **40%** until he proves it. | Profiler |
+| **2. Skill analysis and career match** | His skills are compared with the weighted Full Stack Developer role. The gaps are **JavaScript, React and Node.js**. The match is **9%**, low on purpose, because unverified claims are capped. | Skill Analyst, Career Matcher |
+| **3. Learning recommendations** | A prerequisite-ordered roadmap of **9 steps**, each with curated resources (course, tutorial, exercise). Python and SQL are not re-taught. | Curriculum Planner |
+| **4. A poor assessment** | He scores **40%** on JavaScript (labelled *Simulation* in the demo). UNBLUFF inserts a remedial step, **"Revisit: Closures & event loop"**, pauses React and Node.js until it is done, and explains why in plain language. | Progress Evaluator, Mentor |
+| **5. Recovery** | A strong score (**90%**) on the remedial step unblocks the paused steps and progress rises (0% → 10%). | Progress Evaluator |
+| **6. A new goal** | He switches to **Data Analyst**. The path is rebuilt, keeping what he has verified, with a diff: **2 kept, 4 added, 8 removed, 0 reordered**, each with a reason. | Curriculum Planner, Career Matcher |
+
+An **Agent Activity** log on the page shows every action and every handoff between agents, and marks whether each decision was deterministic or written by the AI.
+
+| Problem | How UNBLUFF solves it |
+|---|---|
+| Everyone gets the same courses | The roadmap is built only from the learner's real gaps, in prerequisite order |
+| Profile skills are never verified | Claims are capped at 40% until verified by evidence-based interrogation |
+| Poor performance changes nothing | A failed assessment inserts a remedial step and pauses dependent steps |
+| Changing goal means starting over | The path is rebuilt from the new role, keeping verified skills, with a visible diff |
+
+## What is in UNBLUFF
+
+**Learning Path engine** (the core of this submission)
+- Profile → skill analysis → career match → roadmap → progress → mentor, on one page: `/learning-path`.
+- Six agents: **Profiler, Skill Analyst, Career Matcher, Curriculum Planner, Progress Evaluator, Mentor**.
+- Seven weighted job roles, a prerequisite graph of learner-level topics, and **77 curated resources** (all links checked).
+- Certifications map to *declared* skills through 16 curated rules; they never count as verified.
+
+**Evidence-based skill verification**
+- Each resume claim is probed at three levels: what you built, how it works, and why or when not to use it.
+- The AI returns booleans plus quotes. A criterion counts only if its quote is a verbatim substring of the learner's answer, so a model that is fooled still cannot pass a criterion.
+- Verdicts are Defended, Shaky, Bluff or Honest gap, with a root-cause prerequisite and a delayed retest.
+
+**AI mentor** with persistent, learner-controlled memory.
+
+**Other modules of the platform** (they come from the original UNBLUFF base): company-wise DSA arena, coding workspace, DSA and DBMS lessons, job matching, résumé builder with ATS score, GitHub and LeetCode insights. Modules that need external services (code execution, PDF compile, GitHub OAuth) are disabled unless configured.
+
+## Problem statement → feature → code → test
+
+| Requirement | Feature | Code | Test |
 |---|---|---|---|
-| User profile | Skills, projects and certifications are entered; all count as *declared* (max 40%) until verified | `backend/src/agents/profiler.ts`, `backend/src/core/certs.ts` | `backend/tests/unit/agents.test.ts` "ProfilerAgent" |
-| Skill analysis | `gap = weight × (1 − mastery)` per role skill, with missing topics named | `backend/src/core/path.ts` `computeGaps` | `backend/tests/unit/path.test.ts` "computeGaps" |
-| Career matching | Match % for the target and the other 6 roles | `backend/src/agents/careerMatcher.ts` | `backend/tests/unit/path.test.ts` "progressSummary and roleMatch" |
-| Learning recommendations | Roadmap in prerequisite order, ≤3 curated free resources per step (77 entries, 59 unique URLs) | `backend/src/core/path.ts` `buildPath`, `backend/data/learning/` | `backend/tests/unit/path.test.ts` "buildPath" |
-| Progress tracking | Roadmap % weighted by gap, mastery bars, next step | `backend/src/core/path.ts` `progressSummary` | `backend/tests/unit/path.test.ts` "progressSummary and roleMatch" |
-| AI mentor | Writes a coaching note from facts only; template fallback | `backend/src/agents/mentorAgent.ts` | `backend/tests/integration/learningPath.test.ts` "the mentor message" |
-| Agentic AI | 6 agents, fixed routing table, visible log with handoffs | `backend/src/agents/orchestrator.ts` | `backend/tests/unit/agents.test.ts` "routing table" |
-| Adapts on goal change | Rebuild; diff of kept / added / removed / reordered with reasons | `backend/src/core/adapt.ts` `adaptOnGoalChange` | `backend/tests/unit/adapt.test.ts` "adaptOnGoalChange" |
-| Adapts on poor assessment | <60: remedial step, dependents paused; 60–84 review; ≥85 done | `backend/src/core/adapt.ts` `adaptOnAssessment` | `backend/tests/unit/adapt.test.ts` "adaptOnAssessment: failing score" |
-| Sample scenario | Python/SQL/HTML → Full Stack, end to end over HTTP and in the UI | `frontend/src/pages/LearningPathPage.tsx` | `backend/tests/integration/learningPath.test.ts` "the problem-statement scenario end to end"; `frontend/scripts/learning-path-demo.mjs` |
-
-## The sample scenario, step by step
-
-1. On `/learning-path` press **Load sample student** (Python, SQL, HTML → Full Stack Developer), then **Build my learning path**. Gaps name **JavaScript, React, Node.js**; match is 9%.
-   ![Skill analysis](docs/img/1-skill-gaps.webp)
-2. In **Assessment**, choose JavaScript, leave 40 and **Apply simulated score** (labelled *Simulation*). A remedial step "Revisit: Closures & event loop" appears and 7 dependent steps pause.
-   ![Remedial step](docs/img/2-remedial-after-fail.webp)
-   ![Agent activity](docs/img/2b-agent-activity.webp)
-3. Apply 90: everything unblocks, progress 0% → 10%.
-4. **Change career goal** → Data Analyst: kept 2 (Python, SQL), added 4, removed 8, each with a reason.
-   ![Goal change diff](docs/img/3-goal-change-diff.webp)
-5. Reload: the state is still there.
-
-Run it yourself: `cd frontend && npm i --no-save playwright-core && node scripts/learning-path-demo.mjs` (all 5 steps PASS on 14 Nov 2026).
+| *(keep the existing verified table from the current README here, with full repo paths and real test names)* | | | |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  UI["Learning Path page"] -->|REST| API["/api/learning-path"]
-  API --> O{"Orchestrator (fixed routes)"}
-  O --> PR["Profiler"] --> SA["Skill Analyst"] --> CM["Career Matcher"] --> CP["Curriculum Planner"]
-  O --> PE["Progress Evaluator"] --> CP
-  CP --> MN["Mentor (AI wording or template)"]
-  PR --> CORE[("Deterministic core: core/path.ts, core/adapt.ts")]
-  PE --> CORE
-  CP --> CORE
-  MN -.-> LLM["Gemini or mock"]
-  O --> ST[("Learning-path store: memory or Firestore")]
+  subgraph FE[Frontend · React + Vite]
+    UI[Learning Path page · Agent Activity log]
+  end
+  subgraph BE[Backend · Express API]
+    API[Routes · zod validation · rate limits]
+    ORCH[Orchestrator · fixed event → agents routing]
+    subgraph AG[Agents]
+      A1[Profiler] --- A2[Skill Analyst] --- A3[Career Matcher]
+      A4[Curriculum Planner] --- A5[Progress Evaluator] --- A6[Mentor]
+    end
+    subgraph CORE[Deterministic core · pure, unit-tested]
+      C1[Gaps · mastery · roadmap order] --- C2[Adaptation · goal-change diff]
+    end
+    LLM[Gemini language layer · wording only · template fallback]
+    ST[(Store · memory / Firestore)]
+  end
+  UI -->|REST JSON| API --> ORCH --> AG
+  AG --> CORE
+  A6 -.-> LLM
+  ORCH <--> ST
 ```
 
-| Agent | Responsibility | Decides by |
-|---|---|---|
-| Profiler | Resolves free-text skills, project skills, certifications to topics | rules |
-| Skill Analyst | Credits verified interrogation results; records assessment results | rules |
-| Career Matcher | Role match % and gaps | rules |
-| Curriculum Planner | Builds / rebuilds the roadmap with resources | rules |
-| Progress Evaluator | Applies a result to the roadmap | rules |
-| Mentor | Words a coaching note from a facts object | **AI (language only)**, template fallback |
+**The rule that makes it trustworthy:** gaps, ordering, mastery, adaptation and agent routing are pure TypeScript functions with tests. The AI never chooses, ranks, scores or routes. It only writes wording (mentor messages, explanations) and every call has a deterministic template fallback, so the app works fully without an API key.
 
-| Event | Agents, in order |
+- **Unverified skills** count for at most **40%** mastery.
+- **Adaptation rules:** below 60% inserts a remedial step and pauses dependent steps; 60–84% completes the step with a review flag; 85% and above completes it and advances the next step.
+- **Agent routing** is a constant table from event (profile submitted, assessment submitted, goal changed) to agents. Every action and handoff is logged and shown in the UI.
+- **Simulation is labelled.** A client can only submit simulated scores; real results are read on the server from the learner's own graded interrogations.
+
+Code: `backend/src/core/` (`path.ts`, `adapt.ts`, `certs.ts`), `backend/src/agents/`, `backend/data/learning/`, `frontend/src/pages/LearningPathPage.tsx`. API: `/api/learning-path` (see [CONTRACT.md](CONTRACT.md)).
+
+## Configuration and tests
+
+| Variable | Purpose |
 |---|---|
-| PROFILE_SUBMITTED | Profiler → Skill Analyst → Career Matcher → Curriculum Planner → Mentor |
-| ASSESSMENT_SUBMITTED | Skill Analyst → Progress Evaluator → (Curriculum Planner, only if a remedial step was added) → Mentor |
-| GOAL_CHANGED | Profiler → Career Matcher → Curriculum Planner → Mentor |
+| `LLM_MODE` | `mock` (deterministic, no key) or `live` (Gemini) |
+| `STORE` | `memory` or `firestore` |
+| `AUTH_MODE` | `mock` (development only, refused in production) or real Firebase Auth |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | live AI mode |
+| `CORS_ORIGIN` | exact frontend origin (required in production) |
 
-**The LLM never decides.** Gaps, ordering, mastery, adaptation and routing are pure TypeScript. Thresholds: declared skills capped at 0.4, gap threshold 0.1 (inclusive), adaptation bands 60/85 (see [DECISIONS.md](DECISIONS.md)).
+See `backend/.env.example` and `frontend/.env.example`. Tests:
 
-## How we meet the evaluation criteria
-
-All figures from commands run on 14 Nov 2026.
-
-| Criterion | Evidence |
-|---|---|
-| Code quality | `npm run verify` exits 0; ESLint `--max-warnings 0` and `npm run format:check` (Prettier) pass in both packages; no TODO/FIXME/console.log in SkillForge files (`git grep`); thresholds documented in code and [DECISIONS.md](DECISIONS.md) |
-| Security | `npm audit --omit=dev`: 0 vulnerabilities in backend and frontend; 114 routes, private by default (17 public, audited by `tests/integration/routeAudit.test.ts`); log redaction tested; demo auth and the unlicensed dataset refused in production. See [SECURITY.md](SECURITY.md) |
-| Efficiency | 0 model calls for any SkillForge decision and ≤1 (mentor) per event, enforced by `tests/integration/learningPathBudget.test.ts`; `/learning-path` is a lazy chunk of 23.3 kB (6.9 kB gzip) |
-| Testing | Backend 1,309 tests (87 files), frontend 408 (32 files), Firestore emulator 58 (13 files); `src/core` and `src/agents` 100% line coverage |
-| Accessibility | axe-core (WCAG 2.0/2.1 A, AA): 0 serious/critical on landing, demo report, login and 3 Learning Path states; axe tests in `frontend/tests/learningPath.test.tsx`; the skip link is the first Tab stop (`frontend/tests/skipLink.test.tsx`); reduced motion skips the intro |
-| PS alignment | Table above; scenario test and UI script both pass |
-
-## Tech stack and layout
-
-Node 20, TypeScript, Express 5, zod, Gemini (`@google/genai`), Firestore; React 18, Vite, Tailwind; Vitest, Supertest, Testing Library, axe-core.
-
-```
-backend/   src/{core,agents,learning,routes,...}  data/{roles,learning,dsa}  tests/{unit,integration,emulator}
-frontend/  src/{pages,components,api,...}  tests/  scripts/
-docs/      img/, security-and-launch.md, UNBLUFF-base.md
+```bash
+cd backend  && npm run lint && npm run typecheck && npm test
+cd frontend && npm run lint && npm run typecheck && npm test && npm run build
+npm run test:emulator   # in backend, needs Java
 ```
 
-Shared types: `backend/src/types.ts` and `frontend/src/types/contract.ts` are an **intentional mirror** of the CONTRACT.md §4 block (Vercel builds `frontend/` alone, so it cannot import from `backend/`). Edit CONTRACT.md first, copy to both; drift tests on each side (`backend/tests/unit/contract.test.ts`, `frontend/tests/contractDrift.test.ts`) fail if either copy differs.
 
-API: see [CONTRACT.md](CONTRACT.md) ("SkillForge learning path" section). Config: `LLM_MODE` (`mock`|`live` + `GEMINI_API_KEY`), `AUTH_MODE` (`firebase`|`mock`, mock refused in production), `STORE` (`memory`|`firestore`); full list in `backend/.env.example`. Tests: `npm run verify`; emulator suite: `npm run test:emulator` (needs Java).
+## License
 
-## Deployment
-
-**Architecture:** a static frontend on **Vercel** (`frontend/vercel.json`: SPA rewrite so every app route serves `index.html`, long-cache headers for `/assets/*`), a Node API on **Render** (`render.yaml`, free web service, `rootDir: backend`), and **Firebase Auth** for sign-in (ID tokens verified server-side; Firestore is optional durable storage). The frontend talks to the API over HTTPS only; CORS on the API is locked to the exact deployed frontend origin.
-
-**Required environment variables** (names only — values are entered in each platform's dashboard, never committed):
-
-| Where | Variable |
-|---|---|
-| Vercel (build-time) | `VITE_API_URL`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`, `VITE_CONTACT_EMAIL` |
-| Render (runtime) | `GEMINI_API_KEY`, `FIREBASE_PROJECT_ID`, `CORS_ORIGIN`, `STORE` (`firestore` for durable sessions), `FIREBASE_SERVICE_ACCOUNT_JSON` (if using `STORE=firestore` off Google Cloud), `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET`/`GITHUB_REDIRECT_URI`/`GITHUB_TOKEN_ENCRYPTION_KEY` (optional, GitHub insights) |
-
-Full list with descriptions: `backend/.env.example` and `render.yaml`.
-
-**Caveats, stated plainly:**
-- `STORE=memory` (the default outside Firestore) resets every student session on restart or redeploy, and is refused in production unless `ALLOW_EPHEMERAL_STORE=true` is also set — use `STORE=firestore` for anything real.
-- Render's free plan spins the service down after inactivity; the first request after idle can take 30–60+ seconds (cold start) before `/api/health` answers.
-- `LLM_MODE=mock` is refused in production unless `ALLOW_MOCK_LLM=true` is explicitly set (a deployment must not present canned answers as a real AI mentor).
-
-## Known limits
-
-- Simulated scores are labelled *Simulation*; unverified skills are capped at 40%.
-- Certification mapping covers 16 curated rules; generic cloud certifications are deliberately unmapped.
-- Code execution needs Judge0 or Docker, the résumé PDF build needs Docker, GitHub insights need an OAuth app; none is enabled by default.
-- The Firestore learning-path store is emulator-tested only, not verified in a live deployment.
+See [LICENSE](LICENSE).
