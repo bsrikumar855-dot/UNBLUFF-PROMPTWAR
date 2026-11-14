@@ -7,7 +7,9 @@ describe("App architectural smoke test", () => {
     render(<App />);
     expect(screen.getAllByRole("link", { name: /UNBLUFF/i }).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole("heading", { name: /Your resume says you.re ready\. Let.s prove it\./i })
+      screen.getByRole("heading", {
+        name: /Your resume says you.re ready\. Let.s prove it\./i,
+      })
     ).toBeInTheDocument();
   });
 

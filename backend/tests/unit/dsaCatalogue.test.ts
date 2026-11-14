@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { Catalogue, assertCatalogueServable, parseCatalogueFile, type CatalogueFile } from "../../src/dsa/catalogue.js";
+import {
+  Catalogue,
+  assertCatalogueServable,
+  parseCatalogueFile,
+  type CatalogueFile,
+} from "../../src/dsa/catalogue.js";
 
 const base = (): CatalogueFile => ({
   schema_version: 1,
@@ -19,10 +24,34 @@ const base = (): CatalogueFile => ({
     { id: "initech", name: "Initech" },
   ],
   questions: [
-    { id: "q_a", title: "Alpha Pair Sum", url: "https://example.com/a", difficulty: "easy", topics: ["Arrays", "Hash Table"] },
-    { id: "q_b", title: "Beta Window", url: "https://example.com/b", difficulty: "medium", topics: ["Arrays"] },
-    { id: "q_c", title: "Gamma Paths", url: "https://example.com/c", difficulty: "hard", topics: ["Graphs"] },
-    { id: "q_d", title: "Delta Pair Count", url: "https://example.com/d", difficulty: "medium", topics: ["Hash Table"] },
+    {
+      id: "q_a",
+      title: "Alpha Pair Sum",
+      url: "https://example.com/a",
+      difficulty: "easy",
+      topics: ["Arrays", "Hash Table"],
+    },
+    {
+      id: "q_b",
+      title: "Beta Window",
+      url: "https://example.com/b",
+      difficulty: "medium",
+      topics: ["Arrays"],
+    },
+    {
+      id: "q_c",
+      title: "Gamma Paths",
+      url: "https://example.com/c",
+      difficulty: "hard",
+      topics: ["Graphs"],
+    },
+    {
+      id: "q_d",
+      title: "Delta Pair Count",
+      url: "https://example.com/d",
+      difficulty: "medium",
+      topics: ["Hash Table"],
+    },
   ],
   associations: [
     { company_id: "acme", question_id: "q_a" },
@@ -36,17 +65,43 @@ const base = (): CatalogueFile => ({
 describe("catalogue file validation", () => {
   it("accepts a consistent file and the bundled dev fixture", () => {
     expect(() => parseCatalogueFile(base())).not.toThrow();
-    const fixture = JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "data", "dsa", "fixture.json"), "utf8"));
+    const fixture = JSON.parse(
+      readFileSync(join(import.meta.dirname, "..", "..", "data", "dsa", "fixture.json"), "utf8"),
+    );
     expect(parseCatalogueFile(fixture).source.license_status).toBe("development_fixture");
   });
 
   it.each([
-    ["duplicate company id", (f: CatalogueFile) => f.companies.push({ id: "acme", name: "Acme 2" }), /duplicate company id/],
-    ["duplicate question id", (f: CatalogueFile) => f.questions.push({ ...f.questions[0]!, url: "https://example.com/zz" }), /duplicate question id/],
-    ["duplicate question url", (f: CatalogueFile) => f.questions.push({ ...f.questions[0]!, id: "q_z" }), /duplicate question url/],
-    ["duplicate association", (f: CatalogueFile) => f.associations.push({ ...f.associations[0]! }), /duplicate association/],
-    ["dangling company", (f: CatalogueFile) => f.associations.push({ company_id: "ghost", question_id: "q_a" }), /unknown company/],
-    ["dangling question", (f: CatalogueFile) => f.associations.push({ company_id: "acme", question_id: "q_ghost" }), /unknown question/],
+    [
+      "duplicate company id",
+      (f: CatalogueFile) => f.companies.push({ id: "acme", name: "Acme 2" }),
+      /duplicate company id/,
+    ],
+    [
+      "duplicate question id",
+      (f: CatalogueFile) => f.questions.push({ ...f.questions[0]!, url: "https://example.com/zz" }),
+      /duplicate question id/,
+    ],
+    [
+      "duplicate question url",
+      (f: CatalogueFile) => f.questions.push({ ...f.questions[0]!, id: "q_z" }),
+      /duplicate question url/,
+    ],
+    [
+      "duplicate association",
+      (f: CatalogueFile) => f.associations.push({ ...f.associations[0]! }),
+      /duplicate association/,
+    ],
+    [
+      "dangling company",
+      (f: CatalogueFile) => f.associations.push({ company_id: "ghost", question_id: "q_a" }),
+      /unknown company/,
+    ],
+    [
+      "dangling question",
+      (f: CatalogueFile) => f.associations.push({ company_id: "acme", question_id: "q_ghost" }),
+      /unknown question/,
+    ],
   ])("rejects %s", (_name, mutate, message) => {
     const f = base();
     mutate(f);
@@ -88,12 +143,23 @@ describe("Catalogue queries", () => {
 
   it("links one question to several companies (many-to-many)", () => {
     expect(c.questionDetail("q_b")?.companies.map((x) => x.id)).toEqual(["acme", "globex"]);
-    expect(c.queryQuestions({ company: "acme" }).questions.map((q) => q.id).sort()).toEqual(["q_a", "q_b", "q_c"]);
-    expect(c.queryQuestions({ company: "globex" }).questions.map((q) => q.id).sort()).toEqual(["q_b", "q_d"]);
+    expect(
+      c
+        .queryQuestions({ company: "acme" })
+        .questions.map((q) => q.id)
+        .sort(),
+    ).toEqual(["q_a", "q_b", "q_c"]);
+    expect(
+      c
+        .queryQuestions({ company: "globex" })
+        .questions.map((q) => q.id)
+        .sort(),
+    ).toEqual(["q_b", "q_d"]);
   });
 
   it("filters by title search, difficulty and topic, and combines them with AND", () => {
-    const ids = (q: Parameters<Catalogue["queryQuestions"]>[0]) => c.queryQuestions(q).questions.map((x) => x.id);
+    const ids = (q: Parameters<Catalogue["queryQuestions"]>[0]) =>
+      c.queryQuestions(q).questions.map((x) => x.id);
     expect(ids({ search: "pair" })).toEqual(["q_a", "q_d"]);
     expect(ids({ difficulty: "medium" })).toEqual(["q_b", "q_d"]);
     expect(ids({ topic: "hash table" })).toEqual(["q_a", "q_d"]);
@@ -103,7 +169,8 @@ describe("Catalogue queries", () => {
   });
 
   it("sorts by title or difficulty in either order", () => {
-    const ids = (q: Parameters<Catalogue["queryQuestions"]>[0]) => c.queryQuestions(q).questions.map((x) => x.id);
+    const ids = (q: Parameters<Catalogue["queryQuestions"]>[0]) =>
+      c.queryQuestions(q).questions.map((x) => x.id);
     expect(ids({ sort: "title" })).toEqual(["q_a", "q_b", "q_d", "q_c"]);
     expect(ids({ sort: "title", order: "desc" })).toEqual(["q_c", "q_d", "q_b", "q_a"]);
     expect(ids({ sort: "difficulty" })).toEqual(["q_a", "q_b", "q_d", "q_c"]);
@@ -124,7 +191,11 @@ describe("Catalogue queries", () => {
     const f = c.queryQuestions({ company: "globex" }).facets;
     expect(f.topics).toEqual(["Arrays", "Hash Table"]);
     expect(f.difficulties).toEqual(["medium"]);
-    expect(c.queryQuestions({}).source).toMatchObject({ name: "Test source", license_status: "own_work", is_sample_data: false });
+    expect(c.queryQuestions({}).source).toMatchObject({
+      name: "Test source",
+      license_status: "own_work",
+      is_sample_data: false,
+    });
   });
 
   it("company detail summarizes difficulty and topics from loaded data", () => {
@@ -146,7 +217,12 @@ describe("Catalogue queries", () => {
     const e = Catalogue.empty();
     expect(e.source).toBeNull();
     expect(e.listCompanies({})).toMatchObject({ companies: [], total: 0, source: null });
-    expect(e.queryQuestions({})).toMatchObject({ questions: [], total: 0, total_pages: 1, source: null });
+    expect(e.queryQuestions({})).toMatchObject({
+      questions: [],
+      total: 0,
+      total_pages: 1,
+      source: null,
+    });
     expect(e.companyDetail("acme")).toBeNull();
   });
 });
@@ -155,7 +231,10 @@ describe("a larger catalogue is paged on the server, not capped at ten", () => {
   // Synthetic, generated here for the test only. It is not catalogue data and is never written anywhere.
   const big = (): Catalogue => {
     const f = base();
-    f.companies = [{ id: "acme", name: "Acme" }, { id: "globex", name: "Globex" }];
+    f.companies = [
+      { id: "acme", name: "Acme" },
+      { id: "globex", name: "Globex" },
+    ];
     f.questions = Array.from({ length: 250 }, (_, i) => ({
       id: `syn_${String(i).padStart(3, "0")}`,
       title: `Synthetic ${String(i).padStart(3, "0")}`,
@@ -163,7 +242,9 @@ describe("a larger catalogue is paged on the server, not capped at ten", () => {
       difficulty: (["easy", "medium", "hard"] as const)[i % 3]!,
       topics: [i % 2 === 0 ? "Arrays" : "Graphs"],
     }));
-    f.associations = f.questions.filter((_, i) => i % 5 === 0).map((q) => ({ company_id: "acme", question_id: q.id }));
+    f.associations = f.questions
+      .filter((_, i) => i % 5 === 0)
+      .map((q) => ({ company_id: "acme", question_id: q.id }));
     return new Catalogue(parseCatalogueFile(f));
   };
 
@@ -187,16 +268,28 @@ describe("a larger catalogue is paged on the server, not capped at ten", () => {
   it("honours the largest allowed page size and keeps company counts exact", () => {
     const c = big();
     expect(c.queryQuestions({ page_size: 100 }).questions).toHaveLength(100);
-    expect(c.queryQuestions({ company: "acme", page_size: 100 })).toMatchObject({ total: 50, total_pages: 1 });
+    expect(c.queryQuestions({ company: "acme", page_size: 100 })).toMatchObject({
+      total: 50,
+      total_pages: 1,
+    });
     expect(c.queryQuestions({ company: "globex" })).toMatchObject({ total: 0, questions: [] });
-    expect(c.queryQuestions({ difficulty: "hard", topic: "Graphs", page_size: 100 })).toMatchObject({ total: 41 }); // i = 5, 11, ... 245
+    expect(c.queryQuestions({ difficulty: "hard", topic: "Graphs", page_size: 100 })).toMatchObject(
+      { total: 41 },
+    ); // i = 5, 11, ... 245
     expect(c.listCompanies({}).companies.find((x) => x.id === "acme")?.question_count).toBe(50);
   });
 });
 
 describe("the production default catalogue is labelled honestly", () => {
   it("is the first-party practice pack: real count, own_work, no company links, not sample data", () => {
-    const file = parseCatalogueFile(JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "data", "dsa", "practice-pack.json"), "utf8")));
+    const file = parseCatalogueFile(
+      JSON.parse(
+        readFileSync(
+          join(import.meta.dirname, "..", "..", "data", "dsa", "practice-pack.json"),
+          "utf8",
+        ),
+      ),
+    );
     const c = new Catalogue(file);
     const r = c.queryQuestions({ page_size: 100 });
     expect(r.total).toBe(file.questions.length);
@@ -207,7 +300,11 @@ describe("the production default catalogue is labelled honestly", () => {
   });
 
   it("the development fixture is flagged as sample data and says its company links are invented", () => {
-    const file = parseCatalogueFile(JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "data", "dsa", "fixture.json"), "utf8")));
+    const file = parseCatalogueFile(
+      JSON.parse(
+        readFileSync(join(import.meta.dirname, "..", "..", "data", "dsa", "fixture.json"), "utf8"),
+      ),
+    );
     const c = new Catalogue(file);
     expect(c.source).toMatchObject({ license_status: "development_fixture", is_sample_data: true });
     expect(c.source?.license_note).toMatch(/invented/i);
@@ -224,8 +321,12 @@ describe("a catalogue from a source with no licence stays local", () => {
   it("is accepted outside production and refused in production", () => {
     expect(() => assertCatalogueServable("development", local().source)).not.toThrow();
     expect(() => assertCatalogueServable("test", local().source)).not.toThrow();
-    expect(() => assertCatalogueServable("production", local().source)).toThrow(/unlicensed_local_use/);
-    expect(() => assertCatalogueServable("production", new Catalogue(parseCatalogueFile(base())).source)).not.toThrow();
+    expect(() => assertCatalogueServable("production", local().source)).toThrow(
+      /unlicensed_local_use/,
+    );
+    expect(() =>
+      assertCatalogueServable("production", new Catalogue(parseCatalogueFile(base())).source),
+    ).not.toThrow();
     expect(() => assertCatalogueServable("production", null)).not.toThrow();
   });
 });

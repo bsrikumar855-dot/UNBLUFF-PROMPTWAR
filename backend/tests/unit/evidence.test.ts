@@ -24,7 +24,11 @@ describe("evidence guard", () => {
     const { criteria, flips } = applyEvidenceGuard(raw.criteria, "React re-renders the list");
     expect(criteria.accuracy.passed).toBe(true);
     expect(flips).toEqual(["specificity", "mechanism", "ownership", "tradeoff"]);
-    expect(criteria.mechanism).toEqual({ passed: false, evidence_quote: null, missing_concept: null });
+    expect(criteria.mechanism).toEqual({
+      passed: false,
+      evidence_quote: null,
+      missing_concept: null,
+    });
   });
 
   it("does not count already-failed criteria as flips", () => {

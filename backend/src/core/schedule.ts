@@ -31,12 +31,19 @@ export function scheduleRetest(
 }
 
 /** Another claim reached `done`: count down every scheduled retest; at 0 it becomes due. */
-export function onClaimCompleted(claims: readonly Claim[], completedId: string): Map<string, SchedulePatch> {
+export function onClaimCompleted(
+  claims: readonly Claim[],
+  completedId: string,
+): Map<string, SchedulePatch> {
   const patches = new Map<string, SchedulePatch>();
   for (const c of claims) {
-    if (c.id === completedId || c.retest_status !== "scheduled" || c.retest_unlocks_after === null) continue;
+    if (c.id === completedId || c.retest_status !== "scheduled" || c.retest_unlocks_after === null)
+      continue;
     const left = Math.max(0, c.retest_unlocks_after - 1);
-    patches.set(c.id, { retest_status: left === 0 ? "due" : "scheduled", retest_unlocks_after: left });
+    patches.set(c.id, {
+      retest_status: left === 0 ? "due" : "scheduled",
+      retest_unlocks_after: left,
+    });
   }
   return patches;
 }
@@ -49,12 +56,17 @@ export function forcedDueClaimId(claims: readonly Claim[], state: ScheduleState)
   if (claims.some((c) => c.verdict === "pending" || c.retest_status === "due")) return null;
   const scheduled = claims.filter((c) => c.retest_status === "scheduled");
   if (scheduled.length === 0) return null;
-  const oldest = scheduled.reduce((a, b) => ((state[a.id]?.order ?? Infinity) <= (state[b.id]?.order ?? Infinity) ? a : b));
+  const oldest = scheduled.reduce((a, b) =>
+    (state[a.id]?.order ?? Infinity) <= (state[b.id]?.order ?? Infinity) ? a : b,
+  );
   return oldest.id;
 }
 
 /** What the student should do next: due retest → pending claim → nothing. */
-export function nextStep(claims: readonly Claim[]): { next_claim_id: string | null; next_mode: Mode | null } {
+export function nextStep(claims: readonly Claim[]): {
+  next_claim_id: string | null;
+  next_mode: Mode | null;
+} {
   const due = claims.find((c) => c.retest_status === "due");
   if (due) return { next_claim_id: due.id, next_mode: "retest" };
   const pending = claims.find((c) => c.verdict === "pending");
@@ -73,11 +85,17 @@ export function retestBlockReason(claim: Claim): string | null {
 }
 
 /** Real number of other claims completed between the fix task and the retest start. */
-export function interleavedClaims(entry: ScheduleEntry | undefined, completionsAtRetestStart: number): number {
+export function interleavedClaims(
+  entry: ScheduleEntry | undefined,
+  completionsAtRetestStart: number,
+): number {
   return entry ? Math.max(0, completionsAtRetestStart - entry.teach_completed_at_claims_done) : 0;
 }
 
 /** root_cause must be exactly one of the skill's prerequisites; anything else becomes null. */
-export function validateRootCause(rootCause: string | null | undefined, prerequisites: readonly string[]): string | null {
+export function validateRootCause(
+  rootCause: string | null | undefined,
+  prerequisites: readonly string[],
+): string | null {
   return rootCause && prerequisites.includes(rootCause) ? rootCause : null;
 }

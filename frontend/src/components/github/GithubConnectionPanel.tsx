@@ -140,7 +140,10 @@ export const GithubConnectionPanel: React.FC<GithubConnectionPanelProps> = ({
     <section aria-labelledby="github-conn-heading" className={cn(GLASS, "p-5 sm:p-7")}>
       {conn.status === "not_configured" && (
         <>
-          <h2 id="github-conn-heading" className="serif text-heading font-medium text-ink-primary">
+          <h2
+            id="github-conn-heading"
+            className="serif text-heading font-medium text-ink-primary"
+          >
             GitHub
           </h2>
           <p className="mt-2 text-sm text-ink-secondary">
@@ -169,8 +172,8 @@ export const GithubConnectionPanel: React.FC<GithubConnectionPanelProps> = ({
               Connect your GitHub account
             </h2>
             <p className="mt-1.5 text-sm text-ink-secondary">
-              Connect GitHub to see your contribution history and get project feedback from
-              the AI mentor.
+              Connect GitHub to see your contribution history and get project feedback
+              from the AI mentor.
             </p>
             <ul className="mt-4 flex flex-col gap-2.5 text-sm text-ink-secondary">
               {[

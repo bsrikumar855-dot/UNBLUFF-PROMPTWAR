@@ -44,19 +44,25 @@ describe("textToLatex", () => {
   it("makes a name heading and keeps contact details, with links and email as \\href", () => {
     expect(r.latex).toContain("{\\LARGE \\textbf{Priya Nair}}");
     expect(r.latex).toContain("\\href{mailto:priya.nair@example.edu}{priya.nair@example.edu}");
-    expect(r.latex).toContain("\\href{https://linkedin.com/in/priya-sample}{linkedin.com/in/priya-sample}");
+    expect(r.latex).toContain(
+      "\\href{https://linkedin.com/in/priya-sample}{linkedin.com/in/priya-sample}",
+    );
     expect(r.latex).toContain("portfolio\\_site"); // the visible label is escaped
   });
 
   it("groups bullets, merges wrapped lines, and escapes TeX's special characters", () => {
-    expect(r.latex).toContain("\\item Built a tool used by 120+ students, cutting roll-call time by 85\\% and saving \\textasciitilde{}6 hrs/week");
+    expect(r.latex).toContain(
+      "\\item Built a tool used by 120+ students, cutting roll-call time by 85\\% and saving \\textasciitilde{}6 hrs/week",
+    );
     expect(r.latex).toContain("fixed bug \\#214 in the auth\\_service module");
     expect(r.latex.match(/\\begin\{itemize\}/g)).toHaveLength(2);
     expect(r.latex).toContain("\\item Implemented 3 REST endpoints serving 10,000 users"); // a "-" bullet
   });
 
   it("splits a trailing date range to the right and takes the whole range", () => {
-    expect(r.latex).toContain("\\textbf{Sample Institute of Technology, B.Tech Computer Science \\& Engineering} \\hfill 2022 – 2026");
+    expect(r.latex).toContain(
+      "\\textbf{Sample Institute of Technology, B.Tech Computer Science \\& Engineering} \\hfill 2022 – 2026",
+    );
     expect(r.latex).toContain("\\hfill Jan 2025 – Mar 2025");
     expect(r.latex).toContain("\\hfill Jun 2025 – Aug 2025");
     expect(r.latex).toContain("Winner, Sample Hackathon 2025\n"); // a bare year is not a date range
@@ -75,7 +81,13 @@ describe("textToLatex", () => {
     expect(p.bullets).toHaveLength(4);
     expect(p.emails).toEqual(["priya.nair@example.edu"]);
     expect(p.text).toContain("Sample Institute of Technology");
-    expect(p.layout).toEqual({ tables: false, columns: false, graphics: false, icons: false, positioned: false });
+    expect(p.layout).toEqual({
+      tables: false,
+      columns: false,
+      graphics: false,
+      icons: false,
+      positioned: false,
+    });
   });
 
   it("always reminds the student to check the conversion", () => {
@@ -85,14 +97,24 @@ describe("textToLatex", () => {
 
 describe("textToLatex PDF artifacts", () => {
   it("repairs a name set in small capitals, and one set in all capitals", () => {
-    expect(textToLatex("S AMPLE P ERSON\nEducation\nCollege 2021 - 2025").latex).toContain("\\textbf{Sample Person}");
-    expect(textToLatex("PRIYA NAIR\nEducation\nCollege 2021 - 2025").latex).toContain("\\textbf{Priya Nair}");
-    expect(textToLatex("Mary-Jane O'Neil\nEducation\nCollege 2021 - 2025").latex).toContain("\\textbf{Mary-Jane O'Neil}"); // already fine: left alone
-    expect(textToLatex("A. P. J. Kumar\nEducation\nCollege 2021 - 2025").latex).toContain("\\textbf{A. P. J. Kumar}");
+    expect(textToLatex("S AMPLE P ERSON\nEducation\nCollege 2021 - 2025").latex).toContain(
+      "\\textbf{Sample Person}",
+    );
+    expect(textToLatex("PRIYA NAIR\nEducation\nCollege 2021 - 2025").latex).toContain(
+      "\\textbf{Priya Nair}",
+    );
+    expect(textToLatex("Mary-Jane O'Neil\nEducation\nCollege 2021 - 2025").latex).toContain(
+      "\\textbf{Mary-Jane O'Neil}",
+    ); // already fine: left alone
+    expect(textToLatex("A. P. J. Kumar\nEducation\nCollege 2021 - 2025").latex).toContain(
+      "\\textbf{A. P. J. Kumar}",
+    );
   });
 
   it("closes up stray spaces before punctuation without touching numbers", () => {
-    const r = textToLatex("Name\nExperience\nSoftware Intern , Sample Systems Pvt. Ltd . 2024 - 2025\nSkills\nLanguages : Java , Python\nCGPA 8.4 / 10 and 3 . 5 gpa");
+    const r = textToLatex(
+      "Name\nExperience\nSoftware Intern , Sample Systems Pvt. Ltd . 2024 - 2025\nSkills\nLanguages : Java , Python\nCGPA 8.4 / 10 and 3 . 5 gpa",
+    );
     expect(r.latex).toContain("Software Intern, Sample Systems Pvt. Ltd.");
     expect(r.latex).toContain("\\textbf{Languages:} Java, Python");
     expect(r.latex).toContain("CGPA 8.4 / 10");
@@ -101,7 +123,9 @@ describe("textToLatex PDF artifacts", () => {
 
 describe("textToLatex edge cases", () => {
   it("keeps everything as one block, and says so, when no headings are recognised", () => {
-    const r = textToLatex("Some Person\nsome@x.io\nI did many things over the years and learned plenty of useful skills along the way, working with many teams on varied projects that mattered a great deal to many users and customers.");
+    const r = textToLatex(
+      "Some Person\nsome@x.io\nI did many things over the years and learned plenty of useful skills along the way, working with many teams on varied projects that mattered a great deal to many users and customers.",
+    );
     expect(r.sections).toEqual([]);
     expect(r.warnings.join(" ")).toMatch(/No section headings/);
     expect(r.latex).toContain("I did many things");
@@ -120,13 +144,16 @@ describe("textToLatex edge cases", () => {
   });
 
   it("neutralises LaTeX injected through the text", () => {
-    const r = textToLatex("Name\nSkills\n\\input{/etc/passwd} \\write18{rm -rf} {\\def\\x{}} $x$ ~ ^");
+    const r = textToLatex(
+      "Name\nSkills\n\\input{/etc/passwd} \\write18{rm -rf} {\\def\\x{}} $x$ ~ ^",
+    );
     expect(r.latex).not.toMatch(/\\input\{/);
     expect(r.latex).toContain("\\textbackslash{}input\\{/etc/passwd\\}");
     expect(r.latex).toContain("\\$x\\$");
   });
 
   it("handles empty-looking and huge-but-valid input without throwing", () => {
-    for (const t of ["", "\n\n", "Education", "Education\n", "•", "A\n".repeat(5000)]) expect(() => textToLatex(t)).not.toThrow();
+    for (const t of ["", "\n\n", "Education", "Education\n", "•", "A\n".repeat(5000)])
+      expect(() => textToLatex(t)).not.toThrow();
   });
 });

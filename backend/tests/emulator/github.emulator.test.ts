@@ -40,24 +40,47 @@ afterAll(async () => {
 const NOW = "2026-06-15T12:00:00.000Z";
 const later = (s: number) => new Date(Date.parse(NOW) + s * 1000).toISOString();
 const conn = (uid: string): ConnectionRecord => ({
-  owner_uid: uid, github_user_id: "1001", login: "alice", profile_url: "https://github.com/alice", permissions: [], status: "connected", connected_at: NOW, last_synced_at: null, last_attempt_at: null,
-  next_sync_allowed_at: null, last_error: null, last_error_at: null, sync_lock_until: null,
+  owner_uid: uid,
+  github_user_id: "1001",
+  login: "alice",
+  profile_url: "https://github.com/alice",
+  permissions: [],
+  status: "connected",
+  connected_at: NOW,
+  last_synced_at: null,
+  last_attempt_at: null,
+  next_sync_allowed_at: null,
+  last_error: null,
+  last_error_at: null,
+  sync_lock_until: null,
 });
 const hash = (c: string) => c.repeat(64).slice(0, 64);
 
 describe("Firestore emulator: GitHub store", () => {
   it("consumes a one-time state exactly once, even when requested concurrently", async () => {
-    await store.saveState(hash("a"), { owner_uid: "u1", code_verifier: "v", created_at: NOW, expires_at: later(600) });
-    const results = await Promise.all(Array.from({ length: 6 }, () => store.consumeState(hash("a"))));
+    await store.saveState(hash("a"), {
+      owner_uid: "u1",
+      code_verifier: "v",
+      created_at: NOW,
+      expires_at: later(600),
+    });
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () => store.consumeState(hash("a"))),
+    );
     expect(results.filter((r) => r !== null)).toHaveLength(1);
     expect(await store.consumeState(hash("a"))).toBeNull();
     expect(await store.consumeState("not-a-hash")).toBeNull();
   });
 
   it("lets only one student claim a GitHub account, under a race", async () => {
-    const outcomes = await Promise.all(["race-u1", "race-u2", "race-u3", "race-u4"].map((u) => store.claimIdentity("777001", u, NOW)));
+    const outcomes = await Promise.all(
+      ["race-u1", "race-u2", "race-u3", "race-u4"].map((u) =>
+        store.claimIdentity("777001", u, NOW),
+      ),
+    );
     expect(outcomes.filter(Boolean)).toHaveLength(1);
-    const owner = (await db.collection(names.identities).doc("777001").get()).data()!.owner_uid as string;
+    const owner = (await db.collection(names.identities).doc("777001").get()).data()!
+      .owner_uid as string;
     expect(await store.claimIdentity("777001", owner, NOW)).toBe(true); // the owner can re-claim
     const other = ["race-u1", "race-u2", "race-u3", "race-u4"].find((u) => u !== owner)!;
     await store.releaseIdentity("777001", other); // not theirs: no effect
@@ -68,7 +91,9 @@ describe("Firestore emulator: GitHub store", () => {
 
   it("grants the sync lock to one caller at a time, and it expires", async () => {
     await store.saveConnection(conn("lock-u"));
-    const got = await Promise.all(Array.from({ length: 5 }, () => store.acquireSyncLock("lock-u", NOW, later(90))));
+    const got = await Promise.all(
+      Array.from({ length: 5 }, () => store.acquireSyncLock("lock-u", NOW, later(90))),
+    );
     expect(got.filter(Boolean)).toHaveLength(1);
     expect(await store.acquireSyncLock("lock-u", later(30), later(120))).toBe(false);
     expect(await store.acquireSyncLock("lock-u", later(91), later(180))).toBe(true); // a crashed holder cannot block forever
@@ -79,7 +104,10 @@ describe("Firestore emulator: GitHub store", () => {
 
   it("never returns another student's records and rejects unsafe ids", async () => {
     await store.saveConnection(conn("own-u"));
-    await db.collection(names.connections).doc("steal-u").set({ ...conn("someone-else") }); // a record filed under the wrong key
+    await db
+      .collection(names.connections)
+      .doc("steal-u")
+      .set({ ...conn("someone-else") }); // a record filed under the wrong key
     expect((await store.getConnection("own-u"))?.owner_uid).toBe("own-u");
     expect(await store.getConnection("steal-u")).toBeNull();
     expect(await store.getCredential("steal-u")).toBeNull();
@@ -88,8 +116,19 @@ describe("Firestore emulator: GitHub store", () => {
   });
 
   it("prunes a student's old and expired states and nobody else's", async () => {
-    for (let i = 0; i < 5; i++) await store.saveState(hash(String(i)), { owner_uid: "prune-u", code_verifier: "v", created_at: later(i), expires_at: later(600 + i) });
-    await store.saveState(hash("f"), { owner_uid: "other-u", code_verifier: "v", created_at: NOW, expires_at: later(600) });
+    for (let i = 0; i < 5; i++)
+      await store.saveState(hash(String(i)), {
+        owner_uid: "prune-u",
+        code_verifier: "v",
+        created_at: later(i),
+        expires_at: later(600 + i),
+      });
+    await store.saveState(hash("f"), {
+      owner_uid: "other-u",
+      code_verifier: "v",
+      created_at: NOW,
+      expires_at: later(600),
+    });
     expect(await store.pruneStates("prune-u", later(10), 3)).toBe(2);
     expect(await store.consumeState(hash("0"))).toBeNull();
     expect(await store.consumeState(hash("4"))).not.toBeNull();
@@ -102,25 +141,36 @@ describe("Firestore emulator: GitHub flow end to end (GitHub itself is scripted)
     const fresh = new FirestoreGithubStore(db, names);
     const h = harness({ store: fresh });
     const uid = `flow-${run}`;
-    expect(await h.connect(uid, alice({ id: 555001, repos: sampleRepos("alice") }))).toContain("github=connected");
-    expect((await request(h.app).post("/api/github/sync").set(h.auth(uid)).send({})).body.outcome).toBe("synced");
+    expect(await h.connect(uid, alice({ id: 555001, repos: sampleRepos("alice") }))).toContain(
+      "github=connected",
+    );
+    expect(
+      (await request(h.app).post("/api/github/sync").set(h.auth(uid)).send({})).body.outcome,
+    ).toBe("synced");
     const repos = await request(h.app).get("/api/github/repositories").set(h.auth(uid));
     expect(repos.body.repositories[0].name_with_owner).toBe("alice/todo-app");
-    expect((await request(h.app).get("/api/github/contributions").set(h.auth(uid))).body.available).toBe(true);
+    expect(
+      (await request(h.app).get("/api/github/contributions").set(h.auth(uid))).body.available,
+    ).toBe(true);
 
     // what is physically stored: the token only encrypted, bound to this student and account
     const cred = (await db.collection(names.credentials).doc(uid).get()).data()!;
     expect(JSON.stringify(cred)).not.toContain(h.gh.tokenIssued[0]!);
     expect(new TokenVault(TEST_KEY).open(cred.sealed, uid, "555001")).toBe(h.gh.tokenIssued[0]);
     for (const c of Object.values(names)) {
-      for (const d of (await db.collection(c).get()).docs) if (JSON.stringify(d.data()).includes(h.gh.tokenIssued[0]!)) throw new Error(`token found in plain text in ${c}`);
+      for (const d of (await db.collection(c).get()).docs)
+        if (JSON.stringify(d.data()).includes(h.gh.tokenIssued[0]!))
+          throw new Error(`token found in plain text in ${c}`);
     }
 
     const del = await request(h.app).delete("/api/github/connection").set(h.auth(uid));
     expect(del.body).toMatchObject({ revoked_at_github: true, data_removed: true });
-    for (const c of [names.connections, names.credentials, names.insights]) expect((await db.collection(c).doc(uid).get()).exists).toBe(false);
+    for (const c of [names.connections, names.credentials, names.insights])
+      expect((await db.collection(c).doc(uid).get()).exists).toBe(false);
     expect((await db.collection(names.identities).doc("555001").get()).exists).toBe(false);
-    expect((await request(h.app).get("/api/github/repositories").set(h.auth(uid))).body.error.code).toBe("GITHUB_NOT_CONNECTED");
+    expect(
+      (await request(h.app).get("/api/github/repositories").set(h.auth(uid))).body.error.code,
+    ).toBe("GITHUB_NOT_CONNECTED");
   });
 
   it("keeps two students' data apart in Firestore and refuses to link one GitHub account twice", async () => {
@@ -128,8 +178,21 @@ describe("Firestore emulator: GitHub flow end to end (GitHub itself is scripted)
     const a = `iso-a-${run}`;
     const b = `iso-b-${run}`;
     await h.connect(a, alice({ id: 555101, repos: sampleRepos("alice") }));
-    expect(await h.connect(b, alice({ id: 555101, repos: sampleRepos("alice") }))).toContain("reason=already_linked");
-    await h.connect(b, { id: 555102, login: "bob", repos: [{ nameWithOwner: "bob/lib", tree: ["README.md"], readme: { text: "# lib" }, pushedAt: "2026-06-01T00:00:00Z" }] });
+    expect(await h.connect(b, alice({ id: 555101, repos: sampleRepos("alice") }))).toContain(
+      "reason=already_linked",
+    );
+    await h.connect(b, {
+      id: 555102,
+      login: "bob",
+      repos: [
+        {
+          nameWithOwner: "bob/lib",
+          tree: ["README.md"],
+          readme: { text: "# lib" },
+          pushedAt: "2026-06-01T00:00:00Z",
+        },
+      ],
+    });
     await request(h.app).post("/api/github/sync").set(h.auth(a)).send({});
     await request(h.app).post("/api/github/sync").set(h.auth(b)).send({});
     const ra = await request(h.app).get("/api/github/repositories").set(h.auth(a));

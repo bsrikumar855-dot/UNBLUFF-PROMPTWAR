@@ -53,7 +53,11 @@ export class FirebaseTokenVerifier implements TokenVerifier {
   private readonly appCheckVerifier: AppCheckVerifier | null = null;
 
   /** `verifyIdToken` is injectable for unit tests; production uses the Admin SDK. */
-  constructor(projectId: string, verifyIdToken?: (token: string) => Promise<VerifiedToken>, credentials?: ServiceAccountCredentials | null) {
+  constructor(
+    projectId: string,
+    verifyIdToken?: (token: string) => Promise<VerifiedToken>,
+    credentials?: ServiceAccountCredentials | null,
+  ) {
     if (verifyIdToken) {
       this.verifyIdToken = verifyIdToken;
       return;
@@ -61,7 +65,18 @@ export class FirebaseTokenVerifier implements TokenVerifier {
     const app =
       getApps().length > 0
         ? getApp()
-        : initializeApp({ projectId, ...(credentials ? { credential: cert({ projectId: credentials.project_id ?? projectId, clientEmail: credentials.client_email, privateKey: credentials.private_key }) } : {}) });
+        : initializeApp({
+            projectId,
+            ...(credentials
+              ? {
+                  credential: cert({
+                    projectId: credentials.project_id ?? projectId,
+                    clientEmail: credentials.client_email,
+                    privateKey: credentials.private_key,
+                  }),
+                }
+              : {}),
+          });
     const auth = getAuth(app);
     this.auth = auth;
     const appCheck = getAppCheck(app);

@@ -3,7 +3,11 @@ import { claimHeader } from "./question.js";
 import { criteriaList, LEVEL_FOCUS } from "./shared.js";
 
 export function retestPrompt(
-  ctx: QuestionContext & { missingConcepts: string[]; rootCause: string | null; previousQuestions: string[] },
+  ctx: QuestionContext & {
+    missingConcepts: string[];
+    rootCause: string | null;
+    previousQuestions: string[];
+  },
 ): string {
   const previous = ctx.previousQuestions.map((q) => `- ${q}`).join("\n") || "- (none)";
   const gaps = ctx.missingConcepts.map((c) => `- ${c}`).join("\n");

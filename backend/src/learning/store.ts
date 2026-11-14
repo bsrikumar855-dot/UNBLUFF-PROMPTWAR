@@ -44,7 +44,9 @@ export class MemoryLearningPathStore implements LearningPathStore {
   }
   async listByOwner(uid: string) {
     if (!SAFE_UID.test(uid)) return [];
-    return [...this.docs.values()].filter((r) => r.owner_uid === uid).map((r) => structuredClone(r));
+    return [...this.docs.values()]
+      .filter((r) => r.owner_uid === uid)
+      .map((r) => structuredClone(r));
   }
   async delete(id: string) {
     this.docs.delete(id);
@@ -53,7 +55,10 @@ export class MemoryLearningPathStore implements LearningPathStore {
 
 export class FirestoreLearningPathStore implements LearningPathStore {
   private readonly col;
-  constructor(db: Firestore = new Firestore({ ignoreUndefinedProperties: true }), name = "unbluff_learning_paths") {
+  constructor(
+    db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
+    name = "unbluff_learning_paths",
+  ) {
     this.col = db.collection(name);
   }
   async get(id: string) {

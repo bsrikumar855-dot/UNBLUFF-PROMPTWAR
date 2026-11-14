@@ -17,9 +17,7 @@ export function useSessionState(): SessionContextValue {
 export function useInterrogationState(): InterrogationContextValue {
   const context = useContext(InterrogationContext);
   if (!context) {
-    throw new Error(
-      "useInterrogationState must be used within an InterrogationProvider"
-    );
+    throw new Error("useInterrogationState must be used within an InterrogationProvider");
   }
   return context;
 }

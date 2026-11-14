@@ -13,4 +13,6 @@ export interface InterrogationContextValue {
 }
 
 export const SessionContext = createContext<SessionContextValue | undefined>(undefined);
-export const InterrogationContext = createContext<InterrogationContextValue | undefined>(undefined);
+export const InterrogationContext = createContext<InterrogationContextValue | undefined>(
+  undefined
+);

@@ -30,7 +30,12 @@ export class LlmBudget {
 
   async status(uid: string): Promise<UsageResponse> {
     const now = this.now();
-    return { date: utcDay(now), used: await this.deps.store.get(uid, utcDay(now)), limit: this.deps.limit, resets_at: nextUtcMidnight(now) };
+    return {
+      date: utcDay(now),
+      used: await this.deps.store.get(uid, utcDay(now)),
+      limit: this.deps.limit,
+      resets_at: nextUtcMidnight(now),
+    };
   }
 
   /** Counts one call, or refuses it once the day's budget is used. */
@@ -53,7 +58,10 @@ export class LlmBudget {
 function limitReached(now: Date): ApiError {
   const resets = new Date(nextUtcMidnight(now));
   const hours = Math.max(1, Math.ceil((resets.getTime() - now.getTime()) / 3_600_000));
-  return new ApiError("DAILY_LIMIT_REACHED", `You've used today's AI allowance. It resets in about ${hours} hour${hours === 1 ? "" : "s"}.`);
+  return new ApiError(
+    "DAILY_LIMIT_REACHED",
+    `You've used today's AI allowance. It resets in about ${hours} hour${hours === 1 ? "" : "s"}.`,
+  );
 }
 
 /** Route guard for endpoints whose whole purpose is a model call (mount after requireAuth). */
@@ -72,7 +80,11 @@ export function requireLlmBudget(budget: LlmBudget): RequestHandler {
  * Wraps a provider so every model call made while serving a signed-in request is charged to that student first. Calls
  * outside a request (none today) are let through and logged, so a future background job cannot silently bypass it.
  */
-export function budgetedProvider(inner: LLMProvider, budget: LlmBudget, logger: Logger): LLMProvider {
+export function budgetedProvider(
+  inner: LLMProvider,
+  budget: LlmBudget,
+  logger: Logger,
+): LLMProvider {
   return new Proxy(inner, {
     get(target, prop, receiver) {
       const value = Reflect.get(target, prop, receiver) as unknown;
@@ -80,7 +92,11 @@ export function budgetedProvider(inner: LLMProvider, budget: LlmBudget, logger: 
       return async (...args: unknown[]) => {
         const uid = currentUid();
         if (uid) await budget.charge(uid);
-        else logger.warn({ method: String(prop) }, "language-model call outside a signed-in request: not charged to any budget");
+        else
+          logger.warn(
+            { method: String(prop) },
+            "language-model call outside a signed-in request: not charged to any budget",
+          );
         return (value as (...a: unknown[]) => unknown).apply(target, args);
       };
     },

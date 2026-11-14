@@ -7,10 +7,15 @@ import { ConfirmRequestSchema, ExtractRequestSchema } from "../validation/reques
 
 export function claimsRouter(service: AssessmentService, llmLimiter: RequestHandler): Router {
   const router = Router();
-  router.post("/claims/extract", llmLimiter, validateBody(ExtractRequestSchema), async (req, res) => {
-    const body: ClaimsResponse = await service.extract(uidOf(res), req.body as ExtractRequest);
-    res.json(body);
-  });
+  router.post(
+    "/claims/extract",
+    llmLimiter,
+    validateBody(ExtractRequestSchema),
+    async (req, res) => {
+      const body: ClaimsResponse = await service.extract(uidOf(res), req.body as ExtractRequest);
+      res.json(body);
+    },
+  );
   router.post("/claims/confirm", validateBody(ConfirmRequestSchema), async (req, res) => {
     const { session_id, claims } = req.body as ConfirmRequest;
     const body: ClaimsResponse = await service.confirm(uidOf(res), session_id, claims);

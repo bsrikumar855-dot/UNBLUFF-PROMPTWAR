@@ -3,7 +3,14 @@ import { isSkillsListLine } from "../../src/core/claims.js";
 
 describe("isSkillsListLine", () => {
   it("flags bare keyword lists", () => {
-    for (const l of ["Skills: Node.js, PostgreSQL, Redis", "Technical Skills – Python | SQL | Docker", "Tech stack: React, TypeScript", "Languages: Java; Go", "Tools & Technologies: Git, Docker, Jenkins"]) expect(isSkillsListLine(l), l).toBe(true);
+    for (const l of [
+      "Skills: Node.js, PostgreSQL, Redis",
+      "Technical Skills – Python | SQL | Docker",
+      "Tech stack: React, TypeScript",
+      "Languages: Java; Go",
+      "Tools & Technologies: Git, Docker, Jenkins",
+    ])
+      expect(isSkillsListLine(l), l).toBe(true);
   });
   it("keeps real claims and ambiguous lines", () => {
     for (const l of [
@@ -13,6 +20,7 @@ describe("isSkillsListLine", () => {
       "Skills",
       "Experience: Backend Intern, Acme Labs",
       "Languages: fluent in English and Hindi, wrote a 20-page Spanish thesis",
-    ]) expect(isSkillsListLine(l), l).toBe(false);
+    ])
+      expect(isSkillsListLine(l), l).toBe(false);
   });
 });

@@ -2,7 +2,17 @@
  * Orchestrator. Runs each event (profile submitted, assessment submitted, goal changed) through a fixed routing table of agents and records every step and handoff in the visible agent log. Routing is a table, not a model decision, so the agent sequence is predictable and testable.
  */
 import { ApiError } from "../errors.js";
-import { computeGaps, progressSummary, roleMatch, topicName, type CertMapping, type AssessmentSource, type LearnerSkillState, type LearningPath, type PathChange } from "../core/path.js";
+import {
+  computeGaps,
+  progressSummary,
+  roleMatch,
+  topicName,
+  type CertMapping,
+  type AssessmentSource,
+  type LearnerSkillState,
+  type LearningPath,
+  type PathChange,
+} from "../core/path.js";
 import type { Role } from "../types.js";
 import { careerMatcherAgent } from "./careerMatcher.js";
 import { curriculumPlannerAgent } from "./curriculumPlanner.js";
@@ -10,11 +20,26 @@ import { mentorAgent } from "./mentorAgent.js";
 import { profilerAgent } from "./profiler.js";
 import { progressEvaluatorAgent } from "./progressEvaluator.js";
 import { creditVerifiedEvidence, ingestAssessment } from "./skillAnalyst.js";
-import type { AgentContext, AgentLogEntry, AgentName, AgentResult, EventType, LearnerProfile, MentorFacts, MentorNote } from "./types.js";
+import type {
+  AgentContext,
+  AgentLogEntry,
+  AgentName,
+  AgentResult,
+  EventType,
+  LearnerProfile,
+  MentorFacts,
+  MentorNote,
+} from "./types.js";
 
 export type LearningEvent =
   | { type: "PROFILE_SUBMITTED"; profile: LearnerProfile; role: Role }
-  | { type: "ASSESSMENT_SUBMITTED"; skill: string; score: number; source: AssessmentSource; missing_concepts?: string[] }
+  | {
+      type: "ASSESSMENT_SUBMITTED";
+      skill: string;
+      score: number;
+      source: AssessmentSource;
+      missing_concepts?: string[];
+    }
   | { type: "GOAL_CHANGED"; role: Role };
 
 export interface RouteStep {
@@ -27,9 +52,25 @@ export interface RouteStep {
  * Who handles each event, in order. A fixed table: routing is a pure function of the event type, never chosen by a model.
  */
 export const ROUTES: Readonly<Record<EventType, readonly RouteStep[]>> = {
-  PROFILE_SUBMITTED: [{ agent: "profiler" }, { agent: "skill_analyst" }, { agent: "career_matcher" }, { agent: "curriculum_planner" }, { agent: "mentor" }],
-  ASSESSMENT_SUBMITTED: [{ agent: "skill_analyst" }, { agent: "progress_evaluator" }, { agent: "curriculum_planner", only_if: "remedial_added" }, { agent: "mentor" }],
-  GOAL_CHANGED: [{ agent: "profiler" }, { agent: "career_matcher" }, { agent: "curriculum_planner" }, { agent: "mentor" }],
+  PROFILE_SUBMITTED: [
+    { agent: "profiler" },
+    { agent: "skill_analyst" },
+    { agent: "career_matcher" },
+    { agent: "curriculum_planner" },
+    { agent: "mentor" },
+  ],
+  ASSESSMENT_SUBMITTED: [
+    { agent: "skill_analyst" },
+    { agent: "progress_evaluator" },
+    { agent: "curriculum_planner", only_if: "remedial_added" },
+    { agent: "mentor" },
+  ],
+  GOAL_CHANGED: [
+    { agent: "profiler" },
+    { agent: "career_matcher" },
+    { agent: "curriculum_planner" },
+    { agent: "mentor" },
+  ],
 };
 
 export const AGENT_LABEL: Readonly<Record<AgentName, string>> = {
@@ -43,7 +84,8 @@ export const AGENT_LABEL: Readonly<Record<AgentName, string>> = {
 
 /** The fixed route for an event type. An unknown type is refused rather than silently doing nothing. */
 export function route(type: EventType): readonly RouteStep[] {
-  if (!Object.prototype.hasOwnProperty.call(ROUTES, type)) throw new ApiError("BAD_REQUEST", `Unknown learning event: ${String(type)}`);
+  if (!Object.prototype.hasOwnProperty.call(ROUTES, type))
+    throw new ApiError("BAD_REQUEST", `Unknown learning event: ${String(type)}`);
   return ROUTES[type];
 }
 
@@ -67,11 +109,20 @@ export interface EventOutcome {
   log: AgentLogEntry[];
 }
 
-export function buildFacts(event: EventType, role: Role, path: LearningPath, change: PathChange | null, ctx: AgentContext): MentorFacts {
+export function buildFacts(
+  event: EventType,
+  role: Role,
+  path: LearningPath,
+  change: PathChange | null,
+  ctx: AgentContext,
+): MentorFacts {
   const gaps = computeGaps(role, path.states, ctx.graph).gaps;
   const progress = progressSummary(path, path.states, role, ctx.graph);
   const upcoming = path.steps.filter((s) => s.status !== "done");
-  const next = upcoming.find((s) => s.status === "remedial") ?? upcoming.find((s) => s.status === "active") ?? null;
+  const next =
+    upcoming.find((s) => s.status === "remedial") ??
+    upcoming.find((s) => s.status === "active") ??
+    null;
   const byId = new Map(ctx.resources.map((r) => [r.id, r]));
   const open = path.steps.find((s) => s.status === "remedial");
   return {
@@ -83,7 +134,15 @@ export function buildFacts(event: EventType, role: Role, path: LearningPath, cha
     change_reason: (change ?? path.history[path.history.length - 1]!).reason,
     top_gaps: gaps.flatMap((g) => g.missing_topics.map((t) => t.name)).slice(0, 3),
     next_step: next
-      ? { label: next.kind === "remedial" ? `Revisit: ${next.concept}` : topicName(next.skill_id, ctx.graph), resources: next.resource_ids.flatMap((id) => (byId.has(id) ? [{ title: byId.get(id)!.title, url: byId.get(id)!.url }] : [])) }
+      ? {
+          label:
+            next.kind === "remedial"
+              ? `Revisit: ${next.concept}`
+              : topicName(next.skill_id, ctx.graph),
+          resources: next.resource_ids.flatMap((id) =>
+            byId.has(id) ? [{ title: byId.get(id)!.title, url: byId.get(id)!.url }] : [],
+          ),
+        }
       : null,
     remedial: open?.concept ?? null,
   };
@@ -98,7 +157,12 @@ interface Executed {
  * Runs one learning event through its fixed route and returns the new state plus the Agent Activity log, including a
  * handoff line between each pair of agents that ran. `logSeed` continues the id sequence of the stored log.
  */
-export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: AgentContext, logSeed: number): Promise<EventOutcome> {
+export async function runEvent(
+  event: LearningEvent,
+  prior: LearnerState,
+  ctx: AgentContext,
+  logSeed: number,
+): Promise<EventOutcome> {
   const executed: Executed[] = [];
   let profile = prior.profile;
   let role = prior.role;
@@ -109,7 +173,12 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
   let certificationSkills: CertMapping[] = [];
   let remedialAdded = false;
   let note: MentorNote | null = null;
-  let result: { skill_id: string; score: number; source: AssessmentSource; missing_concepts?: string[] } | null = null;
+  let result: {
+    skill_id: string;
+    score: number;
+    source: AssessmentSource;
+    missing_concepts?: string[];
+  } | null = null;
 
   if (event.type === "PROFILE_SUBMITTED") {
     profile = event.profile;
@@ -129,13 +198,38 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
           unrecognized = r.output.unrecognized;
           certificationSkills = r.output.certification_skills;
         }
-        executed.push({ agent: "profiler", result: event.type === "GOAL_CHANGED" ? { ...r, log: [{ ...r.log[0]!, action: "reuse_profile", summary: `Reused the learner's ${states.length} known skill state(s) for the new goal; nothing was re-entered.` }], handoff: `${states.length} skill state(s) carried over` } : r });
+        executed.push({
+          agent: "profiler",
+          result:
+            event.type === "GOAL_CHANGED"
+              ? {
+                  ...r,
+                  log: [
+                    {
+                      ...r.log[0]!,
+                      action: "reuse_profile",
+                      summary: `Reused the learner's ${states.length} known skill state(s) for the new goal; nothing was re-entered.`,
+                    },
+                  ],
+                  handoff: `${states.length} skill state(s) carried over`,
+                }
+              : r,
+        });
         break;
       }
       case "skill_analyst": {
         if (event.type === "ASSESSMENT_SUBMITTED") {
-          const r = await ingestAssessment({ skill: event.skill, score: event.score, source: event.source, missing_concepts: event.missing_concepts }, ctx);
-          if (!r.output.result) throw new ApiError("BAD_REQUEST", r.output.error ?? "Unknown skill");
+          const r = await ingestAssessment(
+            {
+              skill: event.skill,
+              score: event.score,
+              source: event.source,
+              missing_concepts: event.missing_concepts,
+            },
+            ctx,
+          );
+          if (!r.output.result)
+            throw new ApiError("BAD_REQUEST", r.output.error ?? "Unknown skill");
           result = r.output.result;
           executed.push({ agent: "skill_analyst", result: r });
         } else {
@@ -157,7 +251,10 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
           executed.push({ agent: "curriculum_planner", result: r });
         } else if (event.type === "GOAL_CHANGED") {
           if (!path) throw new ApiError("BAD_REQUEST", "There is no roadmap to change yet.");
-          const r = await curriculumPlannerAgent.run({ kind: "goal_change", path: { ...path, states }, role }, ctx);
+          const r = await curriculumPlannerAgent.run(
+            { kind: "goal_change", path: { ...path, states }, role },
+            ctx,
+          );
           path = r.output.path;
           change = r.output.change;
           states = path.states;
@@ -169,7 +266,8 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
         break;
       }
       case "progress_evaluator": {
-        if (!path || !result) throw new ApiError("BAD_REQUEST", "There is no roadmap to assess against yet.");
+        if (!path || !result)
+          throw new ApiError("BAD_REQUEST", "There is no roadmap to assess against yet.");
         let r;
         try {
           r = await progressEvaluatorAgent.run({ path, result, role }, ctx);
@@ -198,10 +296,22 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
   let n = logSeed;
   const at = ctx.now.toISOString();
   executed.forEach((e, i) => {
-    for (const d of e.result.log) log.push({ id: `log-${n++}`, at, kind: "action", to: null, ...d });
+    for (const d of e.result.log)
+      log.push({ id: `log-${n++}`, at, kind: "action", to: null, ...d });
     const next = executed[i + 1];
     if (next) {
-      log.push({ id: `log-${n++}`, at, kind: "handoff", agent: e.agent, to: next.agent, action: "handoff", summary: `${AGENT_LABEL[e.agent]} → ${AGENT_LABEL[next.agent]}: ${e.result.handoff}`, decided_by: "deterministic", inputs_ref: e.agent, outputs_ref: next.agent });
+      log.push({
+        id: `log-${n++}`,
+        at,
+        kind: "handoff",
+        agent: e.agent,
+        to: next.agent,
+        action: "handoff",
+        summary: `${AGENT_LABEL[e.agent]} → ${AGENT_LABEL[next.agent]}: ${e.result.handoff}`,
+        decided_by: "deterministic",
+        inputs_ref: e.agent,
+        outputs_ref: next.agent,
+      });
     }
   });
 
@@ -216,4 +326,3 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
     log,
   };
 }
-

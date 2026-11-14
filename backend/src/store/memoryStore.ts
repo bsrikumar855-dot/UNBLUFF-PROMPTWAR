@@ -44,7 +44,9 @@ export class MemoryStore implements SessionStore {
   }
 
   async listByOwner(uid: string): Promise<Session[]> {
-    return [...this.sessions.values()].filter((s) => s.owner_uid === uid).map((s) => structuredClone(s));
+    return [...this.sessions.values()]
+      .filter((s) => s.owner_uid === uid)
+      .map((s) => structuredClone(s));
   }
 
   async delete(id: string): Promise<void> {

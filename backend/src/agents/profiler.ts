@@ -17,7 +17,9 @@ export interface ProfilerOutput {
   certification_skills: CertMapping[];
 }
 
-const clean = (xs: readonly string[]): string[] => [...new Set(xs.map((s) => s.trim()).filter(Boolean))];
+const clean = (xs: readonly string[]): string[] => [
+  ...new Set(xs.map((s) => s.trim()).filter(Boolean)),
+];
 
 /**
  * Normalizes what the learner entered. Skills they list, the skills of their projects and the topics their
@@ -37,7 +39,9 @@ export const profilerAgent: Agent<ProfilerInput, ProfilerOutput> = {
     }
     const certs = skillsFromCertifications(profile.certifications, ctx.graph.certifications ?? []);
     for (const t of certs.topics) topics.add(t);
-    const states = [...topics].sort().map((skill_id) => ({ skill_id, declared: true, verified_proficiency: null }));
+    const states = [...topics]
+      .sort()
+      .map((skill_id) => ({ skill_id, declared: true, verified_proficiency: null }));
     const mapped = certs.mappings.filter((m) => m.topics.length > 0);
     const certNote =
       certs.mappings.length === 0

@@ -70,7 +70,10 @@ const Empty: React.FC<{ title: string; text: string }> = ({ title, text }) => (
     <h3 className="serif mt-5 text-heading font-medium text-ink-primary">{title}</h3>
     <p className="mt-1.5 max-w-md text-sm leading-relaxed text-ink-secondary">{text}</p>
     <div className="mt-6 flex flex-wrap justify-center gap-3">
-      <Link to={routes.dsaQuestions} className={buttonClasses("primary", "md", "rounded-full")}>
+      <Link
+        to={routes.dsaQuestions}
+        className={buttonClasses("primary", "md", "rounded-full")}
+      >
         <SquareCode aria-hidden="true" />
         Browse questions
       </Link>
@@ -147,7 +150,9 @@ const DsaProgressPage: React.FC = () => {
     }
     return [...byTopic.entries()].sort(
       (a, b) =>
-        b[1].solved - a[1].solved || b[1].tracked - a[1].tracked || a[0].localeCompare(b[0])
+        b[1].solved - a[1].solved ||
+        b[1].tracked - a[1].tracked ||
+        a[0].localeCompare(b[0])
     );
   }, [records, titles]);
 
@@ -220,8 +225,8 @@ const DsaProgressPage: React.FC = () => {
                 Track your learning journey
               </p>
               <p className="mt-0.5 text-xs leading-snug text-ink-secondary">
-                View solved questions, topic-wise progress, bookmarks and notes, all in one
-                place.
+                View solved questions, topic-wise progress, bookmarks and notes, all in
+                one place.
               </p>
             </div>
           </div>
@@ -244,7 +249,11 @@ const DsaProgressPage: React.FC = () => {
             <StatTile icon={Target} label="Questions solved" hint="Self-reported">
               {counts.solved}
             </StatTile>
-            <StatTile icon={ListChecks} label="Attempted" hint="Questions you are working on">
+            <StatTile
+              icon={ListChecks}
+              label="Attempted"
+              hint="Questions you are working on"
+            >
               {counts.attempted}
             </StatTile>
             <StatTile icon={Bookmark} label="Bookmarked" hint="Questions you saved">
@@ -314,7 +323,9 @@ const DsaProgressPage: React.FC = () => {
                       {topics.map(([topic, c]) => (
                         <li key={topic} className={cn(TILE, "px-4 py-3.5")}>
                           <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-                            <span className="font-semibold text-ink-primary">{topic}</span>
+                            <span className="font-semibold text-ink-primary">
+                              {topic}
+                            </span>
                             <span className="text-ink-secondary">
                               {c.solved} solved of {c.tracked} tracked
                             </span>

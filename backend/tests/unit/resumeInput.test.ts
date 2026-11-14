@@ -3,7 +3,8 @@ import { clampText, MAX_CLAIM_TEXT, normalizeResume } from "../../src/core/claim
 
 describe("resume normalisation and claim clamping", () => {
   it("splits one-line PDF text on bullets, collapses spaces, drops blanks", () => {
-    const raw = "Priya  Sharma\r\n\r\nProjects • Built a React dashboard ●  Wrote Jest tests ▪ Used Git ◦ Led a team";
+    const raw =
+      "Priya  Sharma\r\n\r\nProjects • Built a React dashboard ●  Wrote Jest tests ▪ Used Git ◦ Led a team";
     expect(normalizeResume(raw).split("\n")).toEqual([
       "Priya Sharma",
       "Projects",

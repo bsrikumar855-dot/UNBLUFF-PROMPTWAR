@@ -1,5 +1,20 @@
-import type { CareerEmployment, CareerJob, CareerReality, CareerRequirement, CareerSalary, CareerSeniority, CareerWorkMode } from "../types.js";
-import { EMPLOYMENT_TYPES, FREEHIRE_SITE, REALITIES, SENIORITIES, WORK_MODES, type RawJob } from "./freehire.js";
+import type {
+  CareerEmployment,
+  CareerJob,
+  CareerReality,
+  CareerRequirement,
+  CareerSalary,
+  CareerSeniority,
+  CareerWorkMode,
+} from "../types.js";
+import {
+  EMPLOYMENT_TYPES,
+  FREEHIRE_SITE,
+  REALITIES,
+  SENIORITIES,
+  WORK_MODES,
+  type RawJob,
+} from "./freehire.js";
 
 /**
  * Turns one validated Freehire posting into the shape the app uses. Nothing is invented: a field upstream did not state
@@ -7,7 +22,21 @@ import { EMPLOYMENT_TYPES, FREEHIRE_SITE, REALITIES, SENIORITIES, WORK_MODES, ty
  * and credential-free, and an opaque company identifier is not shown as if it were a company name.
  */
 
-const NAMED: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ndash: "-", mdash: "-", hellip: "...", rsquo: "'", lsquo: "'", rdquo: '"', ldquo: '"' };
+const NAMED: Record<string, string> = {
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  apos: "'",
+  nbsp: " ",
+  ndash: "-",
+  mdash: "-",
+  hellip: "...",
+  rsquo: "'",
+  lsquo: "'",
+  rdquo: '"',
+  ldquo: '"',
+};
 
 function decodeEntities(s: string): string {
   return s
@@ -46,7 +75,14 @@ export function safeHttpsUrl(raw: string | null | undefined): string | null {
   if (!raw) return null;
   try {
     const u = new URL(raw.trim());
-    if (u.protocol !== "https:" || u.username || u.password || !u.hostname.includes(".") || raw.length > 2000) return null;
+    if (
+      u.protocol !== "https:" ||
+      u.username ||
+      u.password ||
+      !u.hostname.includes(".") ||
+      raw.length > 2000
+    )
+      return null;
     return u.toString();
   } catch {
     return null;
@@ -62,11 +98,16 @@ const companyName = (name: string | undefined): string | null => {
   return n.slice(0, 200);
 };
 
-const pick = <T extends string>(allowed: readonly T[], v: unknown): T | null => (typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : null);
-const str = (v: unknown, max = 200): string | null => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
-const nonNegInt = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : null);
-const iso = (v: string | undefined): string | null => (v && !Number.isNaN(Date.parse(v)) ? v : null);
-const clean = (l: string[] | undefined, max: number): string[] => [...new Set((l ?? []).map((x) => x.trim()).filter(Boolean))].slice(0, max);
+const pick = <T extends string>(allowed: readonly T[], v: unknown): T | null =>
+  typeof v === "string" && (allowed as readonly string[]).includes(v) ? (v as T) : null;
+const str = (v: unknown, max = 200): string | null =>
+  typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
+const nonNegInt = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : null;
+const iso = (v: string | undefined): string | null =>
+  v && !Number.isNaN(Date.parse(v)) ? v : null;
+const clean = (l: string[] | undefined, max: number): string[] =>
+  [...new Set((l ?? []).map((x) => x.trim()).filter(Boolean))].slice(0, max);
 
 function salaryOf(e: Record<string, unknown>): CareerSalary | null {
   const min = nonNegInt(e.salary_min);
@@ -128,7 +169,8 @@ export function normalizeJob(raw: RawJob): CareerJob {
           class: rClass,
           age_days: nonNegInt(reality.age_days),
           repost_count: nonNegInt(reality.repost_count),
-          fake_freshness: typeof reality.fake_freshness === "boolean" ? reality.fake_freshness : null,
+          fake_freshness:
+            typeof reality.fake_freshness === "boolean" ? reality.fake_freshness : null,
         }
       : null,
     ghost_level: str(ghost?.level, 40),

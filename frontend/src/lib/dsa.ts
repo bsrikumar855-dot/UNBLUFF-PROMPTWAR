@@ -7,7 +7,12 @@ export const STATUS_LABEL: Record<DsaStatus, string> = {
   needs_revision: "Needs revision",
 };
 
-export const STATUS_ORDER: DsaStatus[] = ["not_started", "attempted", "solved", "needs_revision"];
+export const STATUS_ORDER: DsaStatus[] = [
+  "not_started",
+  "attempted",
+  "solved",
+  "needs_revision",
+];
 
 export const DIFFICULTY_LABEL: Record<DsaDifficulty, string> = {
   easy: "Easy",

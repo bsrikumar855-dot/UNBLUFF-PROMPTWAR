@@ -43,13 +43,24 @@ export interface StatsMeta {
   difficulty: DsaDifficulty | null;
 }
 
-export const emptyFailures = (): Record<FailureVerdict, number> => ({ wrong_answer: 0, time_limit_exceeded: 0, compile_error: 0, runtime_error: 0 });
+export const emptyFailures = (): Record<FailureVerdict, number> => ({
+  wrong_answer: 0,
+  time_limit_exceeded: 0,
+  compile_error: 0,
+  runtime_error: 0,
+});
 
 /**
  * Folds one judged submission into a question's rollup. Pure and idempotent: an event id already in
  * `events` changes nothing (`applied: false`), so retries and duplicate deliveries cannot inflate totals.
  */
-export function applyEvent(prev: StatsRecord | null, event: StatsEvent, meta: StatsMeta, maxEvents: number, now: string): { record: StatsRecord; applied: boolean } {
+export function applyEvent(
+  prev: StatsRecord | null,
+  event: StatsEvent,
+  meta: StatsMeta,
+  maxEvents: number,
+  now: string,
+): { record: StatsRecord; applied: boolean } {
   const base: StatsRecord = prev ?? {
     owner_uid: meta.owner_uid,
     question_id: meta.question_id,
@@ -69,7 +80,13 @@ export function applyEvent(prev: StatsRecord | null, event: StatsEvent, meta: St
   };
   if (base.events.some((e) => e.id === event.id)) return { record: base, applied: false };
 
-  const r: StatsRecord = { ...base, failures: { ...base.failures }, events: [...base.events], topics: meta.topics, difficulty: meta.difficulty };
+  const r: StatsRecord = {
+    ...base,
+    failures: { ...base.failures },
+    events: [...base.events],
+    topics: meta.topics,
+    difficulty: meta.difficulty,
+  };
   r.attempts += 1;
   r.first_attempt = r.first_attempt ?? { verdict: event.verdict, at: event.at };
   if (event.verdict === "accepted") {
@@ -91,6 +108,9 @@ export function applyEvent(prev: StatsRecord | null, event: StatsEvent, meta: St
   return { record: r, applied: true };
 }
 
-export const totalFailures = (r: StatsRecord): number => ALGORITHMIC.concat(TECHNICAL).reduce((s, v) => s + r.failures[v as FailureVerdict], 0);
-export const algorithmicFailures = (r: StatsRecord): number => ALGORITHMIC.reduce((s, v) => s + r.failures[v], 0);
-export const technicalFailures = (r: StatsRecord): number => TECHNICAL.reduce((s, v) => s + r.failures[v], 0);
+export const totalFailures = (r: StatsRecord): number =>
+  ALGORITHMIC.concat(TECHNICAL).reduce((s, v) => s + r.failures[v as FailureVerdict], 0);
+export const algorithmicFailures = (r: StatsRecord): number =>
+  ALGORITHMIC.reduce((s, v) => s + r.failures[v], 0);
+export const technicalFailures = (r: StatsRecord): number =>
+  TECHNICAL.reduce((s, v) => s + r.failures[v], 0);

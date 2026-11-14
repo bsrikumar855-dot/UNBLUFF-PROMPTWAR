@@ -20,7 +20,8 @@ export const RequireAuth: React.FC = () => {
   }
   // A deliberate sign-out leaves for the home page with no return address, so whoever signs in next on this browser is
   // never sent to the previous student's last page (e.g. one of their session ids).
-  if (status === "signedOut" && signedOutOnPurpose) return <Navigate to={routes.home} replace />;
+  if (status === "signedOut" && signedOutOnPurpose)
+    return <Navigate to={routes.home} replace />;
   if (status === "signedOut") {
     return (
       <Navigate
@@ -32,6 +33,7 @@ export const RequireAuth: React.FC = () => {
   }
   // Student features need a verified email (the backend enforces it too). Settings stays open so an account can still be
   // exported or deleted.
-  if (user?.emailVerified === false && location.pathname !== routes.settings) return <VerifyEmailGate />;
+  if (user?.emailVerified === false && location.pathname !== routes.settings)
+    return <VerifyEmailGate />;
   return <Outlet />;
 };

@@ -1,6 +1,10 @@
 import { MockProvider } from "../../src/llm/mock.js";
 import type { MentorChatOutput, MentorSummaryOutput } from "../../src/llm/schemas.js";
-import { MemoryMentorStore, type ConversationRecord, type MemoryRecord } from "../../src/mentor/store.js";
+import {
+  MemoryMentorStore,
+  type ConversationRecord,
+  type MemoryRecord,
+} from "../../src/mentor/store.js";
 
 /** The deterministic mock model, plus a log of every prompt it was given and hooks to script failures and answers. */
 export class RecordingLlm extends MockProvider {
@@ -16,7 +20,10 @@ export class RecordingLlm extends MockProvider {
     return this.chatImpl ? this.chatImpl(input) : super.mentorChat(input);
   }
 
-  override async mentorSummarize(input: { system: string; prompt: string }): Promise<MentorSummaryOutput> {
+  override async mentorSummarize(input: {
+    system: string;
+    prompt: string;
+  }): Promise<MentorSummaryOutput> {
     this.summaries.push(input);
     return this.summaryImpl ? this.summaryImpl(input) : super.mentorSummarize(input);
   }

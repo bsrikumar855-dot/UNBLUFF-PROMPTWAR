@@ -43,7 +43,9 @@ function start() {
 function stop() {
   if (!listening) return;
   listening = false;
-  window.removeEventListener("scroll", schedule, { capture: true } as EventListenerOptions);
+  window.removeEventListener("scroll", schedule, {
+    capture: true,
+  } as EventListenerOptions);
   window.removeEventListener("resize", schedule);
 }
 
@@ -54,12 +56,19 @@ const bottomInset = (rootMargin: string): number => {
   return m ? Number(m[1]) / 100 : 0;
 };
 
-export function useSeen(ref: RefObject<Element>, rootMargin = "0px 0px -8% 0px"): boolean {
+export function useSeen(
+  ref: RefObject<Element>,
+  rootMargin = "0px 0px -8% 0px"
+): boolean {
   const [seen, setSeen] = useState(!canObserve());
   useEffect(() => {
     const el = ref.current;
     if (seen || !el || !canObserve()) return;
-    const entry: Entry = { el, inset: bottomInset(rootMargin), done: () => setSeen(true) };
+    const entry: Entry = {
+      el,
+      inset: bottomInset(rootMargin),
+      done: () => setSeen(true),
+    };
     pending.add(entry);
     start();
     schedule(); // an element already on screen (or above it) is seen on the next frame

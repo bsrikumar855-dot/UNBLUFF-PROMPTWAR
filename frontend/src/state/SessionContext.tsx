@@ -1,10 +1,5 @@
 import React, { useReducer, type ReactNode } from "react";
-import type {
-  Claim,
-  BlindSpot,
-  Progress,
-  SessionMode,
-} from "@/types/contract";
+import type { Claim, BlindSpot, Progress, SessionMode } from "@/types/contract";
 import { SessionContext } from "./contexts";
 
 export interface SessionState {
@@ -82,7 +77,9 @@ function sessionReducer(state: SessionState, action: SessionAction): SessionStat
       const known = state.claims.some((c) => c.id === claim.id);
       return {
         ...state,
-        claims: known ? state.claims.map((c) => (c.id === claim.id ? claim : c)) : [...state.claims, claim],
+        claims: known
+          ? state.claims.map((c) => (c.id === claim.id ? claim : c))
+          : [...state.claims, claim],
         progress: action.payload.progress,
       };
     }

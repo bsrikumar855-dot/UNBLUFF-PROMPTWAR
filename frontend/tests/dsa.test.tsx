@@ -5,7 +5,13 @@ import { AppRoutes } from "@/App";
 import { AuthProvider } from "@/auth/AuthContext";
 import type { AuthClient, AuthUser } from "@/auth/types";
 import { api } from "@/api/endpoints";
-import type { CompaniesResponse, DsaProgress, DsaSource, QuestionSummary, QuestionsResponse } from "@/types/contract";
+import type {
+  CompaniesResponse,
+  DsaProgress,
+  DsaSource,
+  QuestionSummary,
+  QuestionsResponse,
+} from "@/types/contract";
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -42,7 +48,10 @@ const q = (n: number, over: Partial<QuestionSummary> = {}): QuestionSummary => (
   ...over,
 });
 
-const questionsPage = (questions: QuestionSummary[], over: Partial<QuestionsResponse> = {}): QuestionsResponse => ({
+const questionsPage = (
+  questions: QuestionSummary[],
+  over: Partial<QuestionsResponse> = {}
+): QuestionsResponse => ({
   questions,
   page: 1,
   page_size: 20,
@@ -78,7 +87,7 @@ function renderAt(path: string, user: AuthUser | null = null) {
       <MemoryRouter initialEntries={[path]}>
         <AppRoutes />
       </MemoryRouter>
-    </AuthProvider>,
+    </AuthProvider>
   );
 }
 
@@ -115,9 +124,16 @@ describe("DSA Arena landing", () => {
     renderAt("/dsa");
     expect(await screen.findByRole("heading", { name: "DSA Arena" })).toBeInTheDocument();
     expect(await screen.findByText(/12 questions in the catalogue/)).toBeInTheDocument();
-    expect(screen.getByText(/No catalogue available for this company/)).toBeInTheDocument();
-    expect(screen.getByRole("note")).toHaveTextContent(/not real company interview data/i);
-    expect(screen.getByRole("link", { name: /Acme/ })).toHaveAttribute("href", "/dsa/companies/acme");
+    expect(
+      screen.getByText(/No catalogue available for this company/)
+    ).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(
+      /not real company interview data/i
+    );
+    expect(screen.getByRole("link", { name: /Acme/ })).toHaveAttribute(
+      "href",
+      "/dsa/companies/acme"
+    );
     expect(screen.queryByRole("link", { name: "My progress" })).not.toBeInTheDocument(); // signed out
   });
 
@@ -125,19 +141,38 @@ describe("DSA Arena landing", () => {
     mocked.getCompanies.mockResolvedValue(companies);
     renderAt("/dsa");
     await screen.findByText("Acme");
-    fireEvent.change(screen.getByLabelText("Search companies"), { target: { value: "acm" } });
-    await waitFor(() => expect(mocked.getCompanies).toHaveBeenLastCalledWith(expect.objectContaining({ search: "acm", page: 1 })));
+    fireEvent.change(screen.getByLabelText("Search companies"), {
+      target: { value: "acm" },
+    });
+    await waitFor(() =>
+      expect(mocked.getCompanies).toHaveBeenLastCalledWith(
+        expect.objectContaining({ search: "acm", page: 1 })
+      )
+    );
   });
 
   it("shows an honest empty state when no catalogue is loaded, and an error with retry", async () => {
-    mocked.getCompanies.mockResolvedValueOnce({ companies: [], page: 1, page_size: 24, total: 0, total_pages: 1, source: null });
+    mocked.getCompanies.mockResolvedValueOnce({
+      companies: [],
+      page: 1,
+      page_size: 24,
+      total: 0,
+      total_pages: 1,
+      source: null,
+    });
     renderAt("/dsa");
-    expect(await screen.findByText(/Nothing to browse until a catalogue is loaded/)).toBeInTheDocument();
-    expect(screen.getAllByRole("note")[0]).toHaveTextContent(/No question catalogue is loaded/);
+    expect(
+      await screen.findByText(/Nothing to browse until a catalogue is loaded/)
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("note")[0]).toHaveTextContent(
+      /No question catalogue is loaded/
+    );
   });
 
   it("shows a retryable error", async () => {
-    mocked.getCompanies.mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce(companies);
+    mocked.getCompanies
+      .mockRejectedValueOnce(new Error("boom"))
+      .mockResolvedValueOnce(companies);
     renderAt("/dsa");
     fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
     expect(await screen.findByText("Acme")).toBeInTheDocument();
@@ -146,11 +181,25 @@ describe("DSA Arena landing", () => {
 
 describe("Question explorer", () => {
   it("reads filters from the URL, queries the server with them and shows results", async () => {
-    mocked.getQuestions.mockResolvedValue(questionsPage([q(1), q(2, { difficulty: "hard" })]));
-    renderAt("/dsa/questions?difficulty=medium&topic=Arrays&q=sample&page=1&sort=difficulty&order=desc");
-    expect(await screen.findByRole("link", { name: "Sample Problem 1" })).toBeInTheDocument();
+    mocked.getQuestions.mockResolvedValue(
+      questionsPage([q(1), q(2, { difficulty: "hard" })])
+    );
+    renderAt(
+      "/dsa/questions?difficulty=medium&topic=Arrays&q=sample&page=1&sort=difficulty&order=desc"
+    );
+    expect(
+      await screen.findByRole("link", { name: "Sample Problem 1" })
+    ).toBeInTheDocument();
     expect(mocked.getQuestions).toHaveBeenCalledWith(
-      expect.objectContaining({ search: "sample", difficulty: "medium", topic: "Arrays", sort: "difficulty", order: "desc", page: 1, page_size: 20 }),
+      expect.objectContaining({
+        search: "sample",
+        difficulty: "medium",
+        topic: "Arrays",
+        sort: "difficulty",
+        order: "desc",
+        page: 1,
+        page_size: 20,
+      })
     );
     expect(screen.getByLabelText("Difficulty")).toHaveValue("medium");
     expect(screen.getByLabelText("Topic")).toHaveValue("Arrays");
@@ -158,96 +207,160 @@ describe("Question explorer", () => {
   });
 
   it("changing a filter requests the server again and resets to page 1", async () => {
-    mocked.getQuestions.mockResolvedValue(questionsPage([q(1)], { page: 2, total_pages: 3, total: 41 }));
+    mocked.getQuestions.mockResolvedValue(
+      questionsPage([q(1)], { page: 2, total_pages: 3, total: 41 })
+    );
     renderAt("/dsa/questions?page=2");
     await screen.findByText("Page 2 of 3");
     fireEvent.change(screen.getByLabelText("Difficulty"), { target: { value: "hard" } });
-    await waitFor(() => expect(mocked.getQuestions).toHaveBeenLastCalledWith(expect.objectContaining({ difficulty: "hard", page: 1 })));
+    await waitFor(() =>
+      expect(mocked.getQuestions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ difficulty: "hard", page: 1 })
+      )
+    );
   });
 
   it("paginates through the server", async () => {
-    mocked.getQuestions.mockResolvedValue(questionsPage([q(1)], { total_pages: 3, total: 41 }));
+    mocked.getQuestions.mockResolvedValue(
+      questionsPage([q(1)], { total_pages: 3, total: 41 })
+    );
     renderAt("/dsa/questions");
     await screen.findByText("Page 1 of 3");
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    await waitFor(() => expect(mocked.getQuestions).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
+    await waitFor(() =>
+      expect(mocked.getQuestions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 2 })
+      )
+    );
     expect(screen.getByRole("button", { name: "Previous" })).toBeInTheDocument();
   });
 
   it("scopes to a company route and shows its header and an unavailable catalogue honestly", async () => {
     mocked.getCompany.mockResolvedValue({
-      company: { id: "empty-co", name: "Empty Co", question_count: 0, catalogue_available: false },
+      company: {
+        id: "empty-co",
+        name: "Empty Co",
+        question_count: 0,
+        catalogue_available: false,
+      },
       topics: [],
       difficulties: { easy: 0, medium: 0, hard: 0 },
       source: sample,
     });
-    mocked.getQuestions.mockResolvedValue(questionsPage([], { facets: { topics: [], difficulties: [] } }));
+    mocked.getQuestions.mockResolvedValue(
+      questionsPage([], { facets: { topics: [], difficulties: [] } })
+    );
     renderAt("/dsa/companies/empty-co");
     expect(await screen.findByRole("heading", { name: "Empty Co" })).toBeInTheDocument();
-    expect(await screen.findByText(/No catalogue is available for this company/)).toBeInTheDocument();
-    expect(await screen.findByText(/No questions are available for this company/)).toBeInTheDocument();
-    expect(mocked.getQuestions).toHaveBeenCalledWith(expect.objectContaining({ company: "empty-co" }));
+    expect(
+      await screen.findByText(/No catalogue is available for this company/)
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No questions are available for this company/)
+    ).toBeInTheDocument();
+    expect(mocked.getQuestions).toHaveBeenCalledWith(
+      expect.objectContaining({ company: "empty-co" })
+    );
   });
 
   it("shows the no-match empty state when filters exclude everything", async () => {
     mocked.getQuestions.mockResolvedValue(questionsPage([]));
     renderAt("/dsa/questions?topic=Graphs");
-    expect(await screen.findByText(/No questions match these filters/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/No questions match these filters/)
+    ).toBeInTheDocument();
   });
 
   it("shows the signed-in student's status and bookmark on rows, and invites signed-out visitors to sign in", async () => {
     mocked.getQuestions.mockResolvedValue(questionsPage([q(1), q(2)]));
-    mocked.getDsaProgress.mockResolvedValue({ progress: [rec({ question_id: "q_1", status: "solved", bookmarked: true })] });
+    mocked.getDsaProgress.mockResolvedValue({
+      progress: [rec({ question_id: "q_1", status: "solved", bookmarked: true })],
+    });
     const { unmount } = renderAt("/dsa/questions", signedIn);
-    const row = (await screen.findByRole("link", { name: "Sample Problem 1" })).closest("li")!;
+    const row = (await screen.findByRole("link", { name: "Sample Problem 1" })).closest(
+      "li"
+    )!;
     expect(await within(row).findByText("Solved")).toBeInTheDocument();
     expect(within(row).getByText("Bookmarked")).toBeInTheDocument();
     unmount();
 
     renderAt("/dsa/questions", null);
     await screen.findByRole("link", { name: "Sample Problem 1" });
-    expect(await screen.findByText(/to track progress, bookmarks and notes/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/to track progress, bookmarks and notes/)
+    ).toBeInTheDocument();
     expect(mocked.getDsaProgress).toHaveBeenCalledTimes(1); // never requested while signed out
   });
 });
 
 describe("Question detail and personal progress", () => {
-  const detail = { question: q(1), companies: [{ id: "acme", name: "Acme" }], source: sample };
+  const detail = {
+    question: q(1),
+    companies: [{ id: "acme", name: "Acme" }],
+    source: sample,
+  };
 
   it("links to the original problem, offers no code execution, and asks signed-out visitors to sign in", async () => {
     mocked.getQuestion.mockResolvedValue(detail);
     renderAt("/dsa/questions/q_1", null);
-    expect(await screen.findByRole("heading", { name: "Sample Problem 1" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Sample Problem 1" })
+    ).toBeInTheDocument();
     const link = screen.getByRole("link", { name: /Open original problem/ });
     expect(link).toHaveAttribute("href", "https://example.com/p/1");
     expect(link).toHaveAttribute("rel", expect.stringContaining("noopener"));
-    expect(screen.queryByRole("button", { name: /^(run|submit)/i })).not.toBeInTheDocument();
-    expect(await screen.findByText(/to save your status, bookmark and notes/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^(run|submit)/i })
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/to save your status, bookmark and notes/)
+    ).toBeInTheDocument();
     expect(screen.queryByRole("radiogroup", { name: "Status" })).not.toBeInTheDocument();
     expect(mocked.getDsaProgress).not.toHaveBeenCalled();
   });
 
   it("saves status, bookmark and notes through the server and shows what the server returns", async () => {
     mocked.getQuestion.mockResolvedValue(detail);
-    mocked.getDsaProgress.mockResolvedValue({ progress: [rec({ notes: "stored note" })] });
-    mocked.putDsaProgress.mockImplementation(async (id, patch) => rec({ question_id: id, ...patch, notes: patch.notes ?? "stored note" }));
+    mocked.getDsaProgress.mockResolvedValue({
+      progress: [rec({ notes: "stored note" })],
+    });
+    mocked.putDsaProgress.mockImplementation(async (id, patch) =>
+      rec({ question_id: id, ...patch, notes: patch.notes ?? "stored note" })
+    );
     renderAt("/dsa/questions/q_1", signedIn);
 
     const notes = await screen.findByLabelText(/Notes/);
     await waitFor(() => expect(notes).toHaveValue("stored note"));
-    expect(screen.getByRole("radio", { name: "Attempted" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: "Attempted" })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
 
     fireEvent.click(screen.getByRole("radio", { name: "Solved" }));
-    await waitFor(() => expect(mocked.putDsaProgress).toHaveBeenCalledWith("q_1", { status: "solved" }));
-    await waitFor(() => expect(screen.getByRole("radio", { name: "Solved" })).toHaveAttribute("aria-checked", "true"));
+    await waitFor(() =>
+      expect(mocked.putDsaProgress).toHaveBeenCalledWith("q_1", { status: "solved" })
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("radio", { name: "Solved" })).toHaveAttribute(
+        "aria-checked",
+        "true"
+      )
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Bookmark" }));
-    await waitFor(() => expect(mocked.putDsaProgress).toHaveBeenCalledWith("q_1", { bookmarked: true }));
-    expect(await screen.findByRole("button", { name: "Bookmarked" })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() =>
+      expect(mocked.putDsaProgress).toHaveBeenCalledWith("q_1", { bookmarked: true })
+    );
+    expect(await screen.findByRole("button", { name: "Bookmarked" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
 
     fireEvent.change(notes, { target: { value: "new insight" } });
     fireEvent.click(screen.getByRole("button", { name: "Save notes" }));
-    await waitFor(() => expect(mocked.putDsaProgress).toHaveBeenCalledWith("q_1", { notes: "new insight" }));
+    await waitFor(() =>
+      expect(mocked.putDsaProgress).toHaveBeenCalledWith("q_1", { notes: "new insight" })
+    );
     expect(await screen.findByText("Notes saved")).toBeInTheDocument();
     expect(notes).toHaveValue("new insight");
   });
@@ -273,7 +386,14 @@ describe("Question detail and personal progress", () => {
 
 describe("Access control in the UI", () => {
   it("sends signed-out visitors from /dsa/progress to sign in, but keeps the catalogue public", async () => {
-    mocked.getCompanies.mockResolvedValue({ companies: [], page: 1, page_size: 24, total: 0, total_pages: 1, source: sample });
+    mocked.getCompanies.mockResolvedValue({
+      companies: [],
+      page: 1,
+      page_size: 24,
+      total: 0,
+      total_pages: 1,
+      source: sample,
+    });
     const { unmount } = renderAt("/dsa/progress", null);
     expect(await screen.findByRole("heading", { name: "Sign in" })).toBeInTheDocument();
     unmount();
@@ -284,14 +404,19 @@ describe("Access control in the UI", () => {
   it("My progress lists records, joins titles and flags questions removed from the catalogue", async () => {
     const { ApiError } = await import("@/api/types");
     mocked.getDsaProgress.mockResolvedValue({
-      progress: [rec({ question_id: "q_1", status: "solved", notes: "my note" }), rec({ question_id: "q_removed", status: "needs_revision" })],
+      progress: [
+        rec({ question_id: "q_1", status: "solved", notes: "my note" }),
+        rec({ question_id: "q_removed", status: "needs_revision" }),
+      ],
     });
     mocked.getQuestion.mockImplementation(async (id) => {
       if (id === "q_removed") throw new ApiError("gone", "QUESTION_NOT_FOUND", 404);
       return { question: q(1), companies: [], source: sample };
     });
     renderAt("/dsa/progress", signedIn);
-    expect(await screen.findByRole("link", { name: "Sample Problem 1" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Sample Problem 1" })
+    ).toBeInTheDocument();
     expect(screen.getByText("my note")).toBeInTheDocument();
     expect(await screen.findByText(/no longer in the catalogue/)).toBeInTheDocument();
   });
@@ -310,8 +435,12 @@ describe("Access control in the UI", () => {
     }));
     renderAt("/dsa/progress", signedIn);
     const summary = await screen.findByRole("region", { name: "Summary" });
-    expect(within(summary).getByText("Questions solved").nextElementSibling).toHaveTextContent("1");
-    expect(within(summary).getByText("Bookmarked").nextElementSibling).toHaveTextContent("1");
+    expect(
+      within(summary).getByText("Questions solved").nextElementSibling
+    ).toHaveTextContent("1");
+    expect(within(summary).getByText("Bookmarked").nextElementSibling).toHaveTextContent(
+      "1"
+    );
     expect(within(summary).getByText("Notes").nextElementSibling).toHaveTextContent("1");
 
     const open = (name: RegExp) => {
@@ -320,8 +449,12 @@ describe("Access control in the UI", () => {
       fireEvent.click(tab);
     };
     open(/Solved questions/);
-    expect(await screen.findByRole("link", { name: "Sample Problem 1" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Sample Problem 2" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("link", { name: "Sample Problem 1" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Sample Problem 2" })
+    ).not.toBeInTheDocument();
 
     open(/Topic progress/);
     expect(await screen.findByText(/Self-reported, not judged/)).toBeInTheDocument();
@@ -331,7 +464,10 @@ describe("Access control in the UI", () => {
     mocked.getDsaProgress.mockResolvedValue({ progress: [] });
     renderAt("/dsa/progress", signedIn);
     expect(await screen.findByText("Nothing tracked yet.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Browse questions/ })).toHaveAttribute("href", "/dsa/questions");
+    expect(screen.getByRole("link", { name: /Browse questions/ })).toHaveAttribute(
+      "href",
+      "/dsa/questions"
+    );
   });
 });
 
@@ -347,23 +483,46 @@ describe("Catalogue size and provenance are reported honestly", () => {
   };
 
   it("a catalogue with questions but no companies says how many questions it holds and why there are no company lists", async () => {
-    mocked.getCompanies.mockResolvedValue({ companies: [], page: 1, page_size: 24, total: 0, total_pages: 1, source: practicePack });
-    mocked.getQuestions.mockResolvedValue(questionsPage([q(1)], { total: 10, source: practicePack }));
+    mocked.getCompanies.mockResolvedValue({
+      companies: [],
+      page: 1,
+      page_size: 24,
+      total: 0,
+      total_pages: 1,
+      source: practicePack,
+    });
+    mocked.getQuestions.mockResolvedValue(
+      questionsPage([q(1)], { total: 10, source: practicePack })
+    );
     renderAt("/dsa");
-    expect(await screen.findByText(/It holds 10 questions, none linked to a company/)).toBeInTheDocument();
-    expect(screen.getByText(/only after an approved dataset with company links is imported/)).toBeInTheDocument();
-    expect(screen.queryByText(/not real company interview data/i)).not.toBeInTheDocument(); // not mislabelled as sample data
+    expect(
+      await screen.findByText(/It holds 10 questions, none linked to a company/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/only after an approved dataset with company links is imported/)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/not real company interview data/i)
+    ).not.toBeInTheDocument(); // not mislabelled as sample data
     expect(screen.getByRole("note")).toHaveTextContent(/first-party practice pack/i);
   });
 
   it("the question explorer shows the true server total and walks pages of twenty", async () => {
-    mocked.getQuestions.mockResolvedValue(questionsPage([q(1), q(2)], { total: 250, total_pages: 13, page_size: 20 }));
+    mocked.getQuestions.mockResolvedValue(
+      questionsPage([q(1), q(2)], { total: 250, total_pages: 13, page_size: 20 })
+    );
     renderAt("/dsa/questions");
     expect(await screen.findByText("Page 1 of 13")).toBeInTheDocument();
     expect(screen.getByText("250")).toBeInTheDocument();
-    expect(mocked.getQuestions).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, page_size: 20 }));
+    expect(mocked.getQuestions).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, page_size: 20 })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
-    await waitFor(() => expect(mocked.getQuestions).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, page_size: 20 })));
+    await waitFor(() =>
+      expect(mocked.getQuestions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 2, page_size: 20 })
+      )
+    );
   });
 });
 
@@ -379,7 +538,9 @@ describe("A catalogue from an unlicensed source is labelled as local evaluation 
       is_sample_data: false,
     };
     mocked.getCompanies.mockResolvedValue({
-      companies: [{ id: "acme", name: "Acme", question_count: 129, catalogue_available: true }],
+      companies: [
+        { id: "acme", name: "Acme", question_count: 129, catalogue_available: true },
+      ],
       page: 1,
       page_size: 24,
       total: 1,
@@ -389,7 +550,9 @@ describe("A catalogue from an unlicensed source is labelled as local evaluation 
     mocked.getQuestions.mockResolvedValue(questionsPage([q(1)], { source: local }));
     renderAt("/dsa");
     expect(await screen.findByText(/declares no licence/i)).toBeInTheDocument();
-    expect(screen.getByText(/must not be deployed or redistributed/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/must not be deployed or redistributed/i)
+    ).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/unlicensed local use/i);
     expect(screen.queryByText(/Sample data for development/i)).not.toBeInTheDocument();
     expect(await screen.findByText(/129 questions in the catalogue/)).toBeInTheDocument();

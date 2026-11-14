@@ -54,7 +54,10 @@ export class MemoryProgressStore implements ProgressStore {
 export class FirestoreProgressStore implements ProgressStore {
   private readonly collection;
 
-  constructor(collectionName = "unbluff_dsa_progress", db = new Firestore({ ignoreUndefinedProperties: true })) {
+  constructor(
+    collectionName = "unbluff_dsa_progress",
+    db = new Firestore({ ignoreUndefinedProperties: true }),
+  ) {
     this.collection = db.collection(collectionName);
   }
 
@@ -76,7 +79,9 @@ export class FirestoreProgressStore implements ProgressStore {
 
   async listByOwner(uid: string): Promise<ProgressRecord[]> {
     const snap = await this.collection.where("owner_uid", "==", uid).get();
-    return snap.docs.map((d) => toRecord(d.data() as Record<string, unknown>, uid)).filter((r): r is ProgressRecord => r !== null);
+    return snap.docs
+      .map((d) => toRecord(d.data() as Record<string, unknown>, uid))
+      .filter((r): r is ProgressRecord => r !== null);
   }
 }
 

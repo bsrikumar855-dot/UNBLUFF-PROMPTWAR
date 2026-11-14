@@ -6,7 +6,8 @@ import { rememberThisDevice } from "./remember";
 
 const PREFIX = "unbluff:draft:";
 /** Session storage on a device the student chose not to be remembered on, so closing the browser drops the drafts. */
-const store = (): Storage => (rememberThisDevice() ? window.localStorage : window.sessionStorage);
+const store = (): Storage =>
+  rememberThisDevice() ? window.localStorage : window.sessionStorage;
 const key = (uid: string, questionId: string, language: string) =>
   `${PREFIX}${uid}:${questionId}:${language}`;
 

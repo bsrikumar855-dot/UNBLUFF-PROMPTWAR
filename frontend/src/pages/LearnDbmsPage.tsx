@@ -57,7 +57,10 @@ const LearnDbmsPage: React.FC = () => {
           )}
           {!progress.signedIn && (
             <p className={cn(TILE, "px-4 py-3 text-sm text-ink-secondary")}>
-              <Link to={routes.login} className="text-redline underline underline-offset-4">
+              <Link
+                to={routes.login}
+                className="text-redline underline underline-offset-4"
+              >
                 Sign in
               </Link>{" "}
               to take the quizzes and keep your results.

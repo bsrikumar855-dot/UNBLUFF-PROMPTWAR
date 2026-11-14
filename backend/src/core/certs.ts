@@ -5,7 +5,11 @@ import type { CertMapping, CertRule } from "./pathTypes.js";
 
 /** Lower case, punctuation (except "+" and ".") becomes a space, runs of spaces collapse: "CompTIA Network+" -> "comptia network+". */
 export function normalizeCertText(s: string): string {
-  return s.toLowerCase().replace(/[^a-z0-9+.\s]/g, " ").replace(/\s+/g, " ").trim();
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9+.\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** True when the keyword occurs in the text as whole words ("cka" matches "CKA exam", never "package"). */
@@ -20,7 +24,10 @@ function hasWords(normalizedText: string, keyword: string): boolean {
  * and adds no skill. `topics` is the sorted union of all matched topics. The caller counts those topics as DECLARED
  * only (never verified), so the usual 40% cap still applies.
  */
-export function skillsFromCertifications(certs: readonly string[], rules: readonly CertRule[]): { mappings: CertMapping[]; topics: string[] } {
+export function skillsFromCertifications(
+  certs: readonly string[],
+  rules: readonly CertRule[],
+): { mappings: CertMapping[]; topics: string[] } {
   const seen = new Set<string>();
   const mappings: CertMapping[] = [];
   for (const raw of certs) {

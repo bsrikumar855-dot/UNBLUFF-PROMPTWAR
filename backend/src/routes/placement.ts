@@ -18,12 +18,25 @@ const ActionBody = z.strictObject({
   date: ymdString.optional(),
   reason: z.string().trim().min(3, "Give a reason of at least 3 characters").max(200).optional(),
 });
-const AssistantBody = z.strictObject({ message: z.string().trim().min(1, "Write a question").max(500) });
+const AssistantBody = z.strictObject({
+  message: z.string().trim().min(1, "Write a question").max(500),
+});
 const ApplyBody = z.strictObject({
   change: z.discriminatedUnion("kind", [
-    z.strictObject({ kind: z.literal("lighter_day"), date: ymdString, max_minutes: z.number().int().min(0).max(480) }),
-    z.strictObject({ kind: z.literal("postpone_day"), date: ymdString, days: z.number().int().min(1).max(14) }),
-    z.strictObject({ kind: z.literal("set_daily_minutes"), minutes: z.number().int().min(15).max(480) }),
+    z.strictObject({
+      kind: z.literal("lighter_day"),
+      date: ymdString,
+      max_minutes: z.number().int().min(0).max(480),
+    }),
+    z.strictObject({
+      kind: z.literal("postpone_day"),
+      date: ymdString,
+      days: z.number().int().min(1).max(14),
+    }),
+    z.strictObject({
+      kind: z.literal("set_daily_minutes"),
+      minutes: z.number().int().min(15).max(480),
+    }),
   ]),
 });
 
@@ -36,7 +49,10 @@ function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
 const noStore = { "Cache-Control": "no-store" };
 
 /** The unified placement planner. Every route needs a verified student; the owner is always the token's uid. */
-export function placementRouter(placement: PlacementService, limiters: { refresh: RequestHandler; assistant: RequestHandler; action: RequestHandler }): Router {
+export function placementRouter(
+  placement: PlacementService,
+  limiters: { refresh: RequestHandler; assistant: RequestHandler; action: RequestHandler },
+): Router {
   const router = Router();
 
   router.get("/placement/profile", async (_req, res) => {
@@ -59,9 +75,16 @@ export function placementRouter(placement: PlacementService, limiters: { refresh
   router.post("/placement/tasks/:taskId/action", limiters.action, async (req, res) => {
     const id = parse(taskId, req.params.taskId);
     const b = parse(ActionBody, req.body ?? {});
-    if (b.action === "reschedule" && !b.date) throw new ApiError("BAD_REQUEST", "Choose a date to move the task to.");
-    if (b.action === "skip" && !b.reason) throw new ApiError("BAD_REQUEST", "Give a reason for skipping.");
-    const body: PlacementTaskActionRequest = { action: b.action, ...(b.days !== undefined ? { days: b.days } : {}), ...(b.date ? { date: b.date } : {}), ...(b.reason ? { reason: b.reason } : {}) };
+    if (b.action === "reschedule" && !b.date)
+      throw new ApiError("BAD_REQUEST", "Choose a date to move the task to.");
+    if (b.action === "skip" && !b.reason)
+      throw new ApiError("BAD_REQUEST", "Give a reason for skipping.");
+    const body: PlacementTaskActionRequest = {
+      action: b.action,
+      ...(b.days !== undefined ? { days: b.days } : {}),
+      ...(b.date ? { date: b.date } : {}),
+      ...(b.reason ? { reason: b.reason } : {}),
+    };
     res.set(noStore).json(await placement.taskAction(uidOf(res), id, body));
   });
   router.post("/placement/assistant", limiters.assistant, async (req, res) => {
@@ -70,7 +93,11 @@ export function placementRouter(placement: PlacementService, limiters: { refresh
   });
   router.post("/placement/changes/apply", limiters.action, async (req, res) => {
     const b = parse(ApplyBody, req.body ?? {});
-    res.set(noStore).json(await placement.applyChange(uidOf(res), b.change as PlacementApplyChangeRequest["change"]));
+    res
+      .set(noStore)
+      .json(
+        await placement.applyChange(uidOf(res), b.change as PlacementApplyChangeRequest["change"]),
+      );
   });
   router.delete("/placement/data", async (_req, res) => {
     await placement.deleteAll(uidOf(res));

@@ -16,12 +16,32 @@ export const role = roles.get("frontend_developer")!;
 export const UID = "user-1";
 export const silentLogger = pino({ level: "silent" });
 
-export function claim(id: string, skillId: string | null, verdict: Verdict, proficiency: number, extra: Partial<Claim> = {}): Claim {
-  return { ...newClaim(id, { text: `claim ${id}`, resume_line: null, skill_id: skillId, source: "declared" }), verdict, proficiency, ...extra };
+export function claim(
+  id: string,
+  skillId: string | null,
+  verdict: Verdict,
+  proficiency: number,
+  extra: Partial<Claim> = {},
+): Claim {
+  return {
+    ...newClaim(id, {
+      text: `claim ${id}`,
+      resume_line: null,
+      skill_id: skillId,
+      source: "declared",
+    }),
+    verdict,
+    proficiency,
+    ...extra,
+  };
 }
 
 /** Raw LLM grade where the listed criteria pass with the given quote. */
-export function rawGrade(passing: Criterion[], quote: string | null, flags: Partial<Pick<RawGrade, "admits_gap" | "needs_clarification">> = {}): RawGrade {
+export function rawGrade(
+  passing: Criterion[],
+  quote: string | null,
+  flags: Partial<Pick<RawGrade, "admits_gap" | "needs_clarification">> = {},
+): RawGrade {
   const criteria = Object.fromEntries(
     CRITERIA.map((n): [Criterion, CriterionResult] => [
       n,
@@ -30,7 +50,11 @@ export function rawGrade(passing: Criterion[], quote: string | null, flags: Part
         : { passed: false, evidence_quote: null, missing_concept: `missing ${n}` },
     ]),
   ) as Record<Criterion, CriterionResult>;
-  return { criteria, admits_gap: flags.admits_gap ?? false, needs_clarification: flags.needs_clarification ?? false };
+  return {
+    criteria,
+    admits_gap: flags.admits_gap ?? false,
+    needs_clarification: flags.needs_clarification ?? false,
+  };
 }
 
 export const ALL: Criterion[] = [...CRITERIA];
@@ -53,7 +77,13 @@ export class ScriptedProvider extends MockProvider implements LLMProvider {
 export function service(llm: LLMProvider = new MockProvider()) {
   const store = new MemoryStore();
   let t = Date.parse("2026-09-26T10:00:00Z");
-  const svc = new AssessmentService({ store, llm, roles, logger: silentLogger, now: () => new Date((t += 1000)) });
+  const svc = new AssessmentService({
+    store,
+    llm,
+    roles,
+    logger: silentLogger,
+    now: () => new Date((t += 1000)),
+  });
   return { svc, store };
 }
 
@@ -63,4 +93,5 @@ export async function reactSession(svc: AssessmentService) {
   return res.session_id;
 }
 
-export const GOOD = "I built the cart with useState and useReducer, when state updates React re-renders the component and diffs the virtual DOM";
+export const GOOD =
+  "I built the cart with useState and useReducer, when state updates React re-renders the component and diffs the virtual DOM";

@@ -6,8 +6,13 @@ import type { Role } from "../../src/types.js";
 import { roles } from "../helpers.js";
 
 const dir = join(import.meta.dirname, "..", "..", "data", "learning");
-interface RawGraph { skill_topics: Record<string, { topic: string; share: number }[]>; prerequisites: Record<string, string[]> }
-interface RawRes { resources: { id: string; skill_id: string; url: string }[] }
+interface RawGraph {
+  skill_topics: Record<string, { topic: string; share: number }[]>;
+  prerequisites: Record<string, string[]>;
+}
+interface RawRes {
+  resources: { id: string; skill_id: string; url: string }[];
+}
 const rawGraph = () => JSON.parse(readFileSync(join(dir, "graph.json"), "utf8")) as RawGraph;
 const rawRes = () => JSON.parse(readFileSync(join(dir, "resources.json"), "utf8")) as RawRes;
 const all = roles.list().map((s) => roles.get(s.id)!) as Role[];

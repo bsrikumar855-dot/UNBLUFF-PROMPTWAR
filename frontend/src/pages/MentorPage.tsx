@@ -70,7 +70,10 @@ const Illustration: React.FC<{ icon: LucideIcon; size?: "sm" | "md" }> = ({
 
 /** A quiet notice on a glass tile, with an icon. */
 const Note: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p role="note" className={cn(TILE, "flex items-start gap-3 px-4 py-3 text-sm text-ink-secondary")}>
+  <p
+    role="note"
+    className={cn(TILE, "flex items-start gap-3 px-4 py-3 text-sm text-ink-secondary")}
+  >
     <Info size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-ink-muted" />
     <span className="min-w-0">{children}</span>
   </p>
@@ -91,7 +94,11 @@ const MessageBody: React.FC<{ text: string }> = ({ text }) => {
             <code>{part.replace(/\n$/, "")}</code>
           </pre>
         ) : part.trim() === "" ? null : (
-          <InlineMarkdown key={i} text={part.replace(/^\n+|\n+$/g, "")} className="[&>*:last-child]:mb-0" />
+          <InlineMarkdown
+            key={i}
+            text={part.replace(/^\n+|\n+$/g, "")}
+            className="[&>*:last-child]:mb-0"
+          />
         )
       )}
     </div>
@@ -100,7 +107,8 @@ const MessageBody: React.FC<{ text: string }> = ({ text }) => {
 
 const PROBLEM_MIN = 20;
 const PROBLEM_MAX = 4000;
-const EXPLAIN_PROBLEM = "Explain this problem in plain words with a small example. Do not give the approach or any code yet.";
+const EXPLAIN_PROBLEM =
+  "Explain this problem in plain words with a small example. Do not give the approach or any code yet.";
 
 interface Pending {
   clientMessageId: string;
@@ -157,7 +165,11 @@ const MentorEngineNote: React.FC = () => {
       role="note"
       className="flex items-start gap-3 rounded-2xl bg-redline-soft/60 px-4 py-3 text-sm text-ink-primary shadow-[inset_0_0_0_1px_rgba(179,41,26,0.18)]"
     >
-      <AlertTriangle size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-redline" />
+      <AlertTriangle
+        size={18}
+        aria-hidden="true"
+        className="mt-0.5 shrink-0 text-redline"
+      />
       <span>
         <span className="font-semibold">Mock mode.</span> This server answers with a
         built-in stand-in, not an AI model. Nothing you read here comes from Gemini.
@@ -168,7 +180,11 @@ const MentorEngineNote: React.FC = () => {
       role="note"
       className={cn(TILE, "flex items-start gap-3 px-4 py-3 text-sm text-ink-secondary")}
     >
-      <CheckCircle2 size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-verified" />
+      <CheckCircle2
+        size={18}
+        aria-hidden="true"
+        className="mt-0.5 shrink-0 text-verified"
+      />
       <span>
         <span className="font-semibold text-ink-primary">Live model.</span> Answers come
         from {engine.model ?? "the AI model"} through the UNBLUFF server.
@@ -365,7 +381,10 @@ const MentorPage: React.FC = () => {
     <div className="flex flex-col gap-4 px-4 py-4 sm:px-5 lg:h-dvh lg:flex-row lg:pl-5 lg:pr-6">
       <aside
         aria-label="Conversations"
-        className={cn(GLASS, "flex shrink-0 flex-col gap-4 p-4 lg:w-72 lg:overflow-y-auto")}
+        className={cn(
+          GLASS,
+          "flex shrink-0 flex-col gap-4 p-4 lg:w-72 lg:overflow-y-auto"
+        )}
       >
         <div className="flex items-center justify-between gap-2">
           <Button className={cn(pill, "flex-1")} onClick={startNew}>
@@ -382,7 +401,10 @@ const MentorPage: React.FC = () => {
             {showList ? "Hide history" : "History"}
           </button>
         </div>
-        <div id="conversation-list" className={`${showList ? "block" : "hidden"} lg:block`}>
+        <div
+          id="conversation-list"
+          className={`${showList ? "block" : "hidden"} lg:block`}
+        >
           {listError !== null && (
             <ErrorState error={listError} onRetry={() => void loadList()} />
           )}
@@ -479,12 +501,17 @@ const MentorPage: React.FC = () => {
               AI <em>Mentor</em>
             </h1>
             <p className="mt-1.5 text-sm leading-relaxed text-ink-secondary">
-              Ask about DSA, your code, interviews or your preparation plan. The mentor can
-              make mistakes, so check important facts.
+              Ask about DSA, your code, interviews or your preparation plan. The mentor
+              can make mistakes, so check important facts.
             </p>
           </div>
           <div className={cn(GLASS, "hidden items-center gap-3 px-4 py-3 md:flex")}>
-            <BookOpen size={22} strokeWidth={1.6} aria-hidden="true" className="text-redline" />
+            <BookOpen
+              size={22}
+              strokeWidth={1.6}
+              aria-hidden="true"
+              className="text-redline"
+            />
             <p className="text-xs leading-snug text-ink-secondary">
               Learn smarter
               <br />
@@ -512,10 +539,12 @@ const MentorPage: React.FC = () => {
         )}
         {leetcodeContext && (
           <Note>
-            <span className="font-semibold text-ink-primary">LeetCode context is on.</span>{" "}
+            <span className="font-semibold text-ink-primary">
+              LeetCode context is on.
+            </span>{" "}
             The mentor sees a short summary of the numbers you imported, labelled as
-            supplied by you and dated. It cannot see your LeetCode account, and it will not
-            treat the numbers as live or as proof of problem-solving ability.
+            supplied by you and dated. It cannot see your LeetCode account, and it will
+            not treat the numbers as live or as proof of problem-solving ability.
           </Note>
         )}
 
@@ -543,9 +572,17 @@ const MentorPage: React.FC = () => {
                     : cn(TILE, "text-ink-primary hover:bg-white")
                 )}
               >
-                <Icon size={24} strokeWidth={1.6} aria-hidden="true" className="shrink-0" />
+                <Icon
+                  size={24}
+                  strokeWidth={1.6}
+                  aria-hidden="true"
+                  className="shrink-0"
+                />
                 <span className="min-w-0">
-                  <span aria-hidden="true" className="serif block text-[15px] font-medium leading-tight">
+                  <span
+                    aria-hidden="true"
+                    className="serif block text-[15px] font-medium leading-tight"
+                  >
                     {md.label}
                   </span>
                   <span
@@ -606,7 +643,10 @@ const MentorPage: React.FC = () => {
                 className={pill}
                 disabled={sending || !problemUsable}
                 onClick={() =>
-                  void send({ clientMessageId: newClientMessageId(), message: EXPLAIN_PROBLEM })
+                  void send({
+                    clientMessageId: newClientMessageId(),
+                    message: EXPLAIN_PROBLEM,
+                  })
                 }
               >
                 Explain this problem
@@ -625,7 +665,12 @@ const MentorPage: React.FC = () => {
           </details>
         )}
 
-        <div className={cn(GLASS, "flex min-h-[26rem] flex-1 flex-col overflow-hidden lg:min-h-0")}>
+        <div
+          className={cn(
+            GLASS,
+            "flex min-h-[26rem] flex-1 flex-col overflow-hidden lg:min-h-0"
+          )}
+        >
           {loadingConversation && (
             <LoadingState className="px-5 py-3" message="Loading conversation…" />
           )}
@@ -701,7 +746,16 @@ const MentorPage: React.FC = () => {
             ))}
             {sending && (
               <div className="self-start rounded-full bg-white/70 px-4 py-2.5 text-ink-secondary shadow-[inset_0_0_0_1px_rgba(24,24,27,0.07),inset_0_1px_0_rgba(255,255,255,0.95)] backdrop-blur-sm">
-                <LatticeLoader label="The mentor is thinking" pattern="orbit" grid={3} shape="round" color="#b3291a" cellSize={7} gap={2} fontSize={14} />
+                <LatticeLoader
+                  label="The mentor is thinking"
+                  pattern="orbit"
+                  grid={3}
+                  shape="round"
+                  color="#b3291a"
+                  cellSize={7}
+                  gap={2}
+                  fontSize={14}
+                />
               </div>
             )}
           </div>
@@ -839,7 +893,10 @@ const MentorNotices: React.FC<{ notice: MentorChatResponse }> = ({ notice }) => 
       </p>
     )}
     {notice.degraded && (
-      <p role="alert" className="rounded-2xl bg-redline-soft/60 px-4 py-2.5 text-ink-primary shadow-[inset_0_0_0_1px_rgba(179,41,26,0.18)]">
+      <p
+        role="alert"
+        className="rounded-2xl bg-redline-soft/60 px-4 py-2.5 text-ink-primary shadow-[inset_0_0_0_1px_rgba(179,41,26,0.18)]"
+      >
         The answer worked, but something could not be saved
         {notice.persistence.conversation === "failed"
           ? ": this exchange is not in your history"

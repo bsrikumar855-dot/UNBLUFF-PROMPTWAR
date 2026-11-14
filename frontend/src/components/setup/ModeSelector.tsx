@@ -6,12 +6,14 @@ const MODE_OPTIONS = [
   {
     value: "prepare" as SessionMode,
     title: "Teach me — Prepare",
-    description: "Find the gaps before the interview does. UNBLUFF flags weak areas and helps you close them first.",
+    description:
+      "Find the gaps before the interview does. UNBLUFF flags weak areas and helps you close them first.",
   },
   {
     value: "defense" as SessionMode,
     title: "Challenge me — Interview Defense",
-    description: "Defend what your resume claims, right now, under the same pressure a real interviewer would apply.",
+    description:
+      "Defend what your resume claims, right now, under the same pressure a real interviewer would apply.",
   },
 ];
 

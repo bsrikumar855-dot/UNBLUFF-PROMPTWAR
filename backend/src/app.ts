@@ -17,7 +17,20 @@ import { appCheckGuard, type AppCheckMode, type AppCheckVerifier } from "./secur
 import { requireLlmBudget, type LlmBudget } from "./security/budget.js";
 import type { RevocationGuard } from "./security/revocation.js";
 import { errorHandler, notFound } from "./middleware/errorHandler.js";
-import { createAccountLimiters, createCareerLimiters, createCodeLimiters, createGithubLimiters, createLeetcodeLimiters, createLearnLimiters, createMentorLimiter, createResumeLimiters, createPlacementLimiters, createRateLimiters, DEFAULT_RATE_LIMITS, type RateLimitOptions } from "./middleware/rateLimit.js";
+import {
+  createAccountLimiters,
+  createCareerLimiters,
+  createCodeLimiters,
+  createGithubLimiters,
+  createLeetcodeLimiters,
+  createLearnLimiters,
+  createMentorLimiter,
+  createResumeLimiters,
+  createPlacementLimiters,
+  createRateLimiters,
+  DEFAULT_RATE_LIMITS,
+  type RateLimitOptions,
+} from "./middleware/rateLimit.js";
 import { accountRouter } from "./routes/account.js";
 import { claimsRouter } from "./routes/claims.js";
 import { demoRouter } from "./routes/demo.js";
@@ -113,7 +126,12 @@ export function createApp(deps: AppDeps): Express {
     const started = performance.now();
     res.on("finish", () => {
       deps.logger.info(
-        { method: req.method, path: req.path, status: res.statusCode, ms: Math.round(performance.now() - started) },
+        {
+          method: req.method,
+          path: req.path,
+          status: res.statusCode,
+          ms: Math.round(performance.now() - started),
+        },
         "request",
       );
     });
@@ -124,8 +142,12 @@ export function createApp(deps: AppDeps): Express {
   const api = express.Router();
   api.use(limiters.global);
   // Before every router: only the real web app may call the API once App Check is enforced (health and GitHub's redirect exempt).
-  api.use(appCheckGuard(deps.appCheck?.mode ?? "off", deps.appCheck?.verifier ?? null, deps.logger));
-  api.use(healthRouter(deps.llm, { exposeModel: deps.exposeModel ?? false, probe: deps.readyProbe }));
+  api.use(
+    appCheckGuard(deps.appCheck?.mode ?? "off", deps.appCheck?.verifier ?? null, deps.logger),
+  );
+  api.use(
+    healthRouter(deps.llm, { exposeModel: deps.exposeModel ?? false, probe: deps.readyProbe }),
+  );
   api.use(rolesRouter(deps.roles));
   api.use(demoRouter(deps.demoReportJson)); // synthetic data only; public by design
   api.use(dsaCatalogueRouter(() => deps.catalogue)); // public, read-only catalogue
@@ -138,23 +160,56 @@ export function createApp(deps: AppDeps): Express {
   // deliberately mounts it above this line (and the route audit test lists it as public).
   api.use(requireAuth(deps.verifier, { revocation: deps.revocation ?? null, logger: deps.logger }));
   // The account routes stay reachable before the email is verified, so a student can always see, export or delete their data.
-  api.use(accountRouter(deps.account, createAccountLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS), deps.budget));
+  api.use(
+    accountRouter(
+      deps.account,
+      createAccountLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS),
+      deps.budget,
+    ),
+  );
   if (deps.requireEmailVerification ?? true) api.use(requireVerifiedEmail(deps.logger));
   // Model-backed routes: a per-student rate limit on top of the per-IP one, and a fast refusal once today's budget is used.
   // (The budget itself is enforced per model call by the provider wrapper; interview turns and the report rely on that
   // alone, so resuming an open question or reading a report still works when the allowance is used up.)
   const llmGuards = [limiters.llmUser, requireLlmBudget(deps.budget)];
-  api.post(["/claims/extract", "/fix-task", "/mentor/chat", "/mentor/conversations/:conversationId/summary", "/placement/assistant", "/learning-path", "/learning-path/:id/assessment", "/learning-path/:id/goal"], llmGuards);
+  api.post(
+    [
+      "/claims/extract",
+      "/fix-task",
+      "/mentor/chat",
+      "/mentor/conversations/:conversationId/summary",
+      "/placement/assistant",
+      "/learning-path",
+      "/learning-path/:id/assessment",
+      "/learning-path/:id/goal",
+    ],
+    llmGuards,
+  );
   api.post("/interrogate", limiters.llmUser);
   api.use(sessionsRouter(deps.service));
   api.use(dsaProgressRouter(deps.dsaProgress));
   api.use(analyticsRouter(deps.analytics));
   api.use(githubRouter(deps.github, githubLimiters));
-  api.use(placementRouter(deps.placement, createPlacementLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
+  api.use(
+    placementRouter(
+      deps.placement,
+      createPlacementLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS),
+    ),
+  );
   api.use(careerRouter(deps.career, createCareerLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
-  api.use(leetcodeRouter(deps.leetcode, createLeetcodeLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
-  api.use(learnPrivateRouter(deps.learn, createLearnLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
-  if (deps.learningPath) api.use(learningPathRouter(deps.learningPath, createLearnLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
+  api.use(
+    leetcodeRouter(deps.leetcode, createLeetcodeLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)),
+  );
+  api.use(
+    learnPrivateRouter(deps.learn, createLearnLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)),
+  );
+  if (deps.learningPath)
+    api.use(
+      learningPathRouter(
+        deps.learningPath,
+        createLearnLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS),
+      ),
+    );
   api.use(resumeRouter(deps.resume, createResumeLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
   api.use(mentorRouter(deps.mentor, createMentorLimiter(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
   api.use(codePrivateRouter(deps.code, createCodeLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));

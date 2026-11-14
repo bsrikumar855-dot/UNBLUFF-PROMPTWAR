@@ -9,11 +9,17 @@ import { useSeen } from "./useSeen";
  * A hairline that draws itself from the left when it comes into view: the product's structural gesture, like an editor
  * ruling a line under a heading. Purely decorative (`aria-hidden`); without motion it is simply a rule.
  */
-export const RuleDraw: React.FC<{ className?: string; delay?: number; duration?: number; tone?: "ink" | "line" | "redline" }> = ({ className, delay = 0, duration = DUR.slow, tone = "line" }) => {
+export const RuleDraw: React.FC<{
+  className?: string;
+  delay?: number;
+  duration?: number;
+  tone?: "ink" | "line" | "redline";
+}> = ({ className, delay = 0, duration = DUR.slow, tone = "line" }) => {
   const ref = useRef<HTMLSpanElement>(null);
   const animated = canObserve();
   const seen = useSeen(ref, "0px 0px -4% 0px");
-  const colour = tone === "ink" ? "bg-ink-primary" : tone === "redline" ? "bg-redline" : "bg-line";
+  const colour =
+    tone === "ink" ? "bg-ink-primary" : tone === "redline" ? "bg-redline" : "bg-line";
   return (
     <span ref={ref} aria-hidden="true" className={cn("block h-px w-full", className)}>
       <m.span

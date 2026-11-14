@@ -27,8 +27,16 @@ const data = loadLearningData(join(import.meta.dirname, "..", "..", "data", "lea
 const { graph, resources } = data;
 const NOW = new Date("2026-11-14T08:00:00.000Z");
 const fullstack = roles.get("fullstack_developer")!;
-const declared = (id: string): LearnerSkillState => ({ skill_id: id, declared: true, verified_proficiency: null });
-const verified = (id: string, p: number): LearnerSkillState => ({ skill_id: id, declared: true, verified_proficiency: p });
+const declared = (id: string): LearnerSkillState => ({
+  skill_id: id,
+  declared: true,
+  verified_proficiency: null,
+});
+const verified = (id: string, p: number): LearnerSkillState => ({
+  skill_id: id,
+  declared: true,
+  verified_proficiency: p,
+});
 const PS_STATES = [declared("python"), declared("sql"), declared("html")];
 
 describe("effectiveMastery", () => {
@@ -36,7 +44,9 @@ describe("effectiveMastery", () => {
     expect(effectiveMastery(verified("sql", 0.9))).toBe(0.9);
     expect(effectiveMastery(verified("sql", 0))).toBe(0); // verified beats declared
     expect(effectiveMastery(declared("sql"))).toBe(DECLARED_MASTERY);
-    expect(effectiveMastery({ skill_id: "sql", declared: false, verified_proficiency: null })).toBe(0);
+    expect(effectiveMastery({ skill_id: "sql", declared: false, verified_proficiency: null })).toBe(
+      0,
+    );
   });
   it("clamps to 0..1", () => {
     expect(effectiveMastery(verified("sql", 1.4))).toBe(1);
@@ -69,7 +79,9 @@ describe("computeGaps: the problem-statement student (Python, SQL, HTML -> Full 
   it("finds JavaScript, React and Node.js as gaps (mapped onto Frontend Fundamentals and REST API Design)", () => {
     expect(missing).toEqual(expect.arrayContaining(["JavaScript", "React", "Node.js"]));
     expect(missing).not.toContain("HTML"); // declared, so present
-    expect(gaps.find((g) => g.skill_id === "web_frontend")!.missing_topics.map((t) => t.topic)).toEqual(["javascript", "react", "css"]);
+    expect(
+      gaps.find((g) => g.skill_id === "web_frontend")!.missing_topics.map((t) => t.topic),
+    ).toEqual(["javascript", "react", "css"]);
   });
   it("marks declared-only skills as unverified and counts them at 40%", () => {
     const sql = gaps.find((g) => g.skill_id === "sql_databases")!;
@@ -90,7 +102,9 @@ describe("computeGaps: the problem-statement student (Python, SQL, HTML -> Full 
 
 describe("computeGaps: verified learners", () => {
   it("lists fully verified skills as strengths and no gaps", () => {
-    const all = fullstack.skills.flatMap((s) => (graph.skill_topics[s.id] ?? [{ topic: s.id }]).map((t) => verified(t.topic, 1)));
+    const all = fullstack.skills.flatMap((s) =>
+      (graph.skill_topics[s.id] ?? [{ topic: s.id }]).map((t) => verified(t.topic, 1)),
+    );
     const r = computeGaps(fullstack, all, graph);
     expect(r.gaps).toEqual([]);
     expect(r.strengths).toHaveLength(fullstack.skills.length);
@@ -102,8 +116,28 @@ describe("computeGaps: verified learners", () => {
 });
 
 describe("selectResources", () => {
-  const res = (id: string, type: Resource["type"], level: Resource["level"], skill = "t"): Resource => ({ id, skill_id: skill, title: id, url: "https://x.test", type, est_minutes: 10, level });
-  const pool = [res("d-ex", "exercise", "advanced"), res("c-tut", "tutorial", "intermediate"), res("a-ex", "exercise", "beginner"), res("b-course", "course", "beginner"), res("e-extra", "tutorial", "advanced"), res("other", "tutorial", "beginner", "u")];
+  const res = (
+    id: string,
+    type: Resource["type"],
+    level: Resource["level"],
+    skill = "t",
+  ): Resource => ({
+    id,
+    skill_id: skill,
+    title: id,
+    url: "https://x.test",
+    type,
+    est_minutes: 10,
+    level,
+  });
+  const pool = [
+    res("d-ex", "exercise", "advanced"),
+    res("c-tut", "tutorial", "intermediate"),
+    res("a-ex", "exercise", "beginner"),
+    res("b-course", "course", "beginner"),
+    res("e-extra", "tutorial", "advanced"),
+    res("other", "tutorial", "beginner", "u"),
+  ];
   it("prefers one tutorial/course and one exercise, max 3", () => {
     const ids = selectResources("t", pool);
     expect(ids).toHaveLength(3);
@@ -125,11 +159,32 @@ describe("selectResources", () => {
 });
 
 describe("orderTopologically and normalizeSteps", () => {
-  const step = (topic: string, gap: number, over: Partial<PathStep> = {}): PathStep => ({ id: `step-${topic}`, skill_id: topic, role_skill_id: null, kind: "core", resource_ids: [], status: "pending", order: 0, reason: "", gap, blocked_by: [], review_later: false, concept: null, ...over });
-  const g = (prerequisites: Record<string, string[]>): LearningGraph => ({ topic_names: {}, skill_topics: {}, prerequisites });
+  const step = (topic: string, gap: number, over: Partial<PathStep> = {}): PathStep => ({
+    id: `step-${topic}`,
+    skill_id: topic,
+    role_skill_id: null,
+    kind: "core",
+    resource_ids: [],
+    status: "pending",
+    order: 0,
+    reason: "",
+    gap,
+    blocked_by: [],
+    review_later: false,
+    concept: null,
+    ...over,
+  });
+  const g = (prerequisites: Record<string, string[]>): LearningGraph => ({
+    topic_names: {},
+    skill_topics: {},
+    prerequisites,
+  });
 
   it("puts prerequisites first, then bigger gaps, then ids", () => {
-    const out = orderTopologically([step("b", 0.1), step("a", 0.1), step("c", 0.5), step("d", 0.9)], g({ d: ["c"], c: ["a"] }));
+    const out = orderTopologically(
+      [step("b", 0.1), step("a", 0.1), step("c", 0.5), step("d", 0.9)],
+      g({ d: ["c"], c: ["a"] }),
+    );
     // a is the only free step; then c (0.5) beats b (0.1); d (0.9) follows c; b comes last.
     expect(out.map((s) => s.skill_id)).toEqual(["a", "c", "d", "b"]);
   });
@@ -138,12 +193,21 @@ describe("orderTopologically and normalizeSteps", () => {
     expect(out.map((s) => s.skill_id)).toEqual(["b", "a"]);
   });
   it("breaks a full tie (same topic, same gap) by step id", () => {
-    const out = orderTopologically([step("t", 0.1, { id: "b" }), step("t", 0.1, { id: "a" })], g({}));
+    const out = orderTopologically(
+      [step("t", 0.1, { id: "b" }), step("t", 0.1, { id: "a" })],
+      g({}),
+    );
     expect(out.map((s) => s.id)).toEqual(["a", "b"]);
   });
   it("normalizeSteps keeps a stable order for steps with the same order number (by id)", () => {
-    const out = normalizeSteps([step("x", 0.1, { id: "z", order: 1 }), step("y", 0.1, { id: "m", order: 1 })]);
-    expect(out.map((s) => [s.id, s.order])).toEqual([["m", 1], ["z", 2]]);
+    const out = normalizeSteps([
+      step("x", 0.1, { id: "z", order: 1 }),
+      step("y", 0.1, { id: "m", order: 1 }),
+    ]);
+    expect(out.map((s) => [s.id, s.order])).toEqual([
+      ["m", 1],
+      ["z", 2],
+    ]);
   });
   it("does not loop forever on a cycle", () => {
     const out = orderTopologically([step("a", 0.2), step("b", 0.1)], g({ a: ["b"], b: ["a"] }));
@@ -156,8 +220,16 @@ describe("orderTopologically and normalizeSteps", () => {
       step("b", 0.1, { order: 2, blocked_by: ["r1"] }),
       step("d", 0.1, { order: 4, blocked_by: ["gone"], status: "done" }),
     ]);
-    expect(out.map((s) => [s.id, s.status, s.order])).toEqual([["r1", "remedial", 1], ["step-b", "blocked", 2], ["step-c", "active", 3], ["step-d", "done", 4]]);
-    const unblocked = normalizeSteps([step("a", 0.1, { id: "r1", status: "done", order: 1 }), step("b", 0.1, { order: 2, blocked_by: ["r1"] })]);
+    expect(out.map((s) => [s.id, s.status, s.order])).toEqual([
+      ["r1", "remedial", 1],
+      ["step-b", "blocked", 2],
+      ["step-c", "active", 3],
+      ["step-d", "done", 4],
+    ]);
+    const unblocked = normalizeSteps([
+      step("a", 0.1, { id: "r1", status: "done", order: 1 }),
+      step("b", 0.1, { order: 2, blocked_by: ["r1"] }),
+    ]);
     expect(unblocked[1]).toMatchObject({ status: "active", blocked_by: [] });
   });
 });
@@ -191,17 +263,34 @@ describe("buildPath", () => {
     }
   });
   it("records the initial change with a template reason", () => {
-    expect(path).toMatchObject({ role_id: "fullstack_developer", version: 1, created_from: "initial", pace: "normal" });
+    expect(path).toMatchObject({
+      role_id: "fullstack_developer",
+      version: 1,
+      created_from: "initial",
+      pace: "normal",
+    });
     expect(path.history).toHaveLength(1);
     expect(path.history[0]!.reason).toMatch(/Built a \d+-step path for Full Stack Developer/);
-    expect(path.steps.find((s) => s.skill_id === "javascript")!.reason).toBe("JavaScript is required by Full Stack Developer (20% of the role), never practiced");
+    expect(path.steps.find((s) => s.skill_id === "javascript")!.reason).toBe(
+      "JavaScript is required by Full Stack Developer (20% of the role), never practiced",
+    );
   });
   it("gives a verified-but-low topic a step that says what was shown", () => {
-    const p = buildPath(fullstack, [...PS_STATES, verified("javascript", 0.2)], resources, graph, NOW);
-    expect(p.steps.find((s) => s.skill_id === "javascript")!.reason).toMatch(/only 20% shown so far/);
+    const p = buildPath(
+      fullstack,
+      [...PS_STATES, verified("javascript", 0.2)],
+      resources,
+      graph,
+      NOW,
+    );
+    expect(p.steps.find((s) => s.skill_id === "javascript")!.reason).toMatch(
+      /only 20% shown so far/,
+    );
   });
   it("builds no steps when every skill is verified, and says so", () => {
-    const all = fullstack.skills.flatMap((s) => (graph.skill_topics[s.id] ?? [{ topic: s.id }]).map((t) => verified(t.topic, 0.9)));
+    const all = fullstack.skills.flatMap((s) =>
+      (graph.skill_topics[s.id] ?? [{ topic: s.id }]).map((t) => verified(t.topic, 0.9)),
+    );
     const p = buildPath(fullstack, all, resources, graph, NOW);
     expect(p.steps).toEqual([]);
     expect(p.history[0]!.reason).toMatch(/No gaps found/);
@@ -220,12 +309,24 @@ describe("buildPath", () => {
     expect(strict.steps.map((s) => s.skill_id)).toContain("nodejs");
   });
   it("gives a topic shared by two skills one step only", () => {
-    const role: Role = { ...fullstack, skills: [{ ...fullstack.skills[0]!, id: "a", weight: 0.5 }, { ...fullstack.skills[1]!, id: "b", weight: 0.5 }] };
-    const g: LearningGraph = { topic_names: { shared: "Shared" }, prerequisites: {}, skill_topics: { a: [{ topic: "shared", share: 1 }], b: [{ topic: "shared", share: 1 }] } };
+    const role: Role = {
+      ...fullstack,
+      skills: [
+        { ...fullstack.skills[0]!, id: "a", weight: 0.5 },
+        { ...fullstack.skills[1]!, id: "b", weight: 0.5 },
+      ],
+    };
+    const g: LearningGraph = {
+      topic_names: { shared: "Shared" },
+      prerequisites: {},
+      skill_topics: { a: [{ topic: "shared", share: 1 }], b: [{ topic: "shared", share: 1 }] },
+    };
     expect(buildPath(role, [], [], g, NOW).steps).toHaveLength(1);
   });
   it("rejects unknown skill ids", () => {
-    expect(() => buildPath(fullstack, [declared("cobol")], resources, graph, NOW)).toThrow(/Unknown skill id/);
+    expect(() => buildPath(fullstack, [declared("cobol")], resources, graph, NOW)).toThrow(
+      /Unknown skill id/,
+    );
   });
 });
 
@@ -236,25 +337,63 @@ describe("progressSummary and roleMatch", () => {
     expect(p.percent_complete).toBe(0);
     expect(p.next_step!.status).toBe("active");
     expect(p.skill_bars).toHaveLength(fullstack.skills.length);
-    expect(p.skill_bars.find((b) => b.skill_id === "sql_databases")).toMatchObject({ mastery: 0.4, unverified: true });
-    expect(p.skill_bars.find((b) => b.skill_id === "rest_apis")).toMatchObject({ mastery: 0, unverified: false });
+    expect(p.skill_bars.find((b) => b.skill_id === "sql_databases")).toMatchObject({
+      mastery: 0.4,
+      unverified: true,
+    });
+    expect(p.skill_bars.find((b) => b.skill_id === "rest_apis")).toMatchObject({
+      mastery: 0,
+      unverified: false,
+    });
   });
   it("weights completion by step gap", () => {
     const js = path.steps.find((s) => s.skill_id === "javascript")!;
-    const done = { ...path, steps: path.steps.map((s) => (s.id === js.id ? { ...s, status: "done" as const } : s)) };
+    const done = {
+      ...path,
+      steps: path.steps.map((s) => (s.id === js.id ? { ...s, status: "done" as const } : s)),
+    };
     const total = path.steps.reduce((a, s) => a + s.gap, 0);
-    expect(progressSummary(done, done.states, fullstack, graph).percent_complete).toBe(Math.round((100 * js.gap) / total));
+    expect(progressSummary(done, done.states, fullstack, graph).percent_complete).toBe(
+      Math.round((100 * js.gap) / total),
+    );
   });
   it("prefers an open remedial step as next, and reports 100% for an empty path", () => {
-    const withRemedial = { ...path, steps: [{ ...path.steps[0]!, id: "r", kind: "remedial" as const, status: "remedial" as const, gap: 0 }, ...path.steps] };
-    expect(progressSummary(withRemedial, withRemedial.states, fullstack, graph).next_step!.id).toBe("r");
+    const withRemedial = {
+      ...path,
+      steps: [
+        {
+          ...path.steps[0]!,
+          id: "r",
+          kind: "remedial" as const,
+          status: "remedial" as const,
+          gap: 0,
+        },
+        ...path.steps,
+      ],
+    };
+    expect(progressSummary(withRemedial, withRemedial.states, fullstack, graph).next_step!.id).toBe(
+      "r",
+    );
     const empty = { ...path, steps: [] };
-    expect(progressSummary(empty, empty.states, fullstack, graph)).toMatchObject({ percent_complete: 100, next_step: null });
+    expect(progressSummary(empty, empty.states, fullstack, graph)).toMatchObject({
+      percent_complete: 100,
+      next_step: null,
+    });
   });
   it("matches a role by weighted effective mastery", () => {
     expect(roleMatch(fullstack, [], graph)).toBe(0);
-    expect(roleMatch(fullstack, PS_STATES, graph)).toBe(Math.round(100 * (0.2 * 0.4 * 0.15 + 0.2 * 0.4)));
-    expect(roleMatch(fullstack, fullstack.skills.flatMap((s) => (graph.skill_topics[s.id] ?? [{ topic: s.id }]).map((t) => verified(t.topic, 1))), graph)).toBe(100);
+    expect(roleMatch(fullstack, PS_STATES, graph)).toBe(
+      Math.round(100 * (0.2 * 0.4 * 0.15 + 0.2 * 0.4)),
+    );
+    expect(
+      roleMatch(
+        fullstack,
+        fullstack.skills.flatMap((s) =>
+          (graph.skill_topics[s.id] ?? [{ topic: s.id }]).map((t) => verified(t.topic, 1)),
+        ),
+        graph,
+      ),
+    ).toBe(100);
   });
 });
 
@@ -264,7 +403,10 @@ describe("curated data", () => {
       const role = roles.get(summary.id)!;
       for (const skill of role.skills) {
         for (const t of graph.skill_topics[skill.id] ?? [{ topic: skill.id }]) {
-          expect(resources.some((r) => r.skill_id === t.topic), `${role.id}/${skill.id}/${t.topic}`).toBe(true);
+          expect(
+            resources.some((r) => r.skill_id === t.topic),
+            `${role.id}/${skill.id}/${t.topic}`,
+          ).toBe(true);
         }
       }
     }

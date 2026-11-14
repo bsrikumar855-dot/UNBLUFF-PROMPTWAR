@@ -22,8 +22,12 @@ const RunBody = z
     question_id: questionId.optional(),
     sample_index: z.number().int().min(0).max(4).optional(),
   })
-  .refine((b) => b.sample_index === undefined || b.question_id !== undefined, { message: "sample_index needs a question_id" })
-  .refine((b) => b.sample_index === undefined || b.stdin === undefined, { message: "Use either stdin or sample_index, not both" });
+  .refine((b) => b.sample_index === undefined || b.question_id !== undefined, {
+    message: "sample_index needs a question_id",
+  })
+  .refine((b) => b.sample_index === undefined || b.stdin === undefined, {
+    message: "Use either stdin or sample_index, not both",
+  });
 
 const SubmitBody = z.strictObject({ question_id: questionId, language, source });
 const ListQuery = z.strictObject({ question_id: questionId.optional() });
@@ -47,7 +51,10 @@ export function codePublicRouter(code: CodeService): Router {
 }
 
 /** Authenticated: run, submit and the caller's own history. The uid always comes from the verified token. */
-export function codePrivateRouter(code: CodeService, limiters: { run: RequestHandler; submit: RequestHandler }): Router {
+export function codePrivateRouter(
+  code: CodeService,
+  limiters: { run: RequestHandler; submit: RequestHandler },
+): Router {
   const router = Router();
 
   router.post("/code/run", limiters.run, async (req, res) => {
@@ -62,11 +69,15 @@ export function codePrivateRouter(code: CodeService, limiters: { run: RequestHan
 
   router.get("/code/submissions", async (req, res) => {
     const q = parse(ListQuery, req.query);
-    res.set("Cache-Control", "no-store").json(await code.listSubmissions(uidOf(res), q.question_id));
+    res
+      .set("Cache-Control", "no-store")
+      .json(await code.listSubmissions(uidOf(res), q.question_id));
   });
 
   router.get("/code/submissions/:submissionId", async (req, res) => {
-    res.set("Cache-Control", "no-store").json(await code.getSubmission(uidOf(res), parse(submissionId, req.params.submissionId)));
+    res
+      .set("Cache-Control", "no-store")
+      .json(await code.getSubmission(uidOf(res), parse(submissionId, req.params.submissionId)));
   });
 
   router.delete("/code/submissions/:submissionId", async (req, res) => {

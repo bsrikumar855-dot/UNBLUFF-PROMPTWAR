@@ -13,9 +13,13 @@ const list = (xs: readonly string[]): string => (xs.length === 0 ? "none" : xs.j
 
 /** Deterministic message built only from the facts. Used in mock mode and whenever the model is unavailable. */
 export function templateMessage(f: MentorFacts): string {
-  const next = f.next_step ? `Next up: ${f.next_step.label}${f.next_step.resources[0] ? `, starting with "${f.next_step.resources[0].title}"` : ""}.` : "Your roadmap has no open steps right now.";
+  const next = f.next_step
+    ? `Next up: ${f.next_step.label}${f.next_step.resources[0] ? `, starting with "${f.next_step.resources[0].title}"` : ""}.`
+    : "Your roadmap has no open steps right now.";
   if (f.event === "ASSESSMENT_SUBMITTED") {
-    const lead = f.remedial ? `That result was below the bar, so I put a short review of "${f.remedial}" in front of the next steps.` : "Thanks for the result; I updated your roadmap with it.";
+    const lead = f.remedial
+      ? `That result was below the bar, so I put a short review of "${f.remedial}" in front of the next steps.`
+      : "Thanks for the result; I updated your roadmap with it.";
     return `${lead} ${f.change_reason} You're ${f.percent_complete}% through the roadmap${f.pace === "slow" ? " and I slowed the pace a little" : ""}. ${next}`;
   }
   if (f.event === "GOAL_CHANGED") {
@@ -56,7 +60,9 @@ export const mentorAgent: Agent<MentorInput, MentorOutput> = {
         {
           agent: "mentor",
           action: "write_coaching_message",
-          summary: ai ? "Wrote a coaching message from the facts above with the AI model (language only; it chose nothing)." : "Wrote a coaching message from the facts above using a fixed template (no AI model was used).",
+          summary: ai
+            ? "Wrote a coaching message from the facts above with the AI model (language only; it chose nothing)."
+            : "Wrote a coaching message from the facts above using a fixed template (no AI model was used).",
           decided_by: ai ? "llm" : "deterministic",
           inputs_ref: "facts from the other agents",
           outputs_ref: "coaching message",

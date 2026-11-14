@@ -125,7 +125,11 @@ export class FirestoreCareerStore implements CareerStore {
 
   constructor(
     private readonly db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
-    names = { prefs: "unbluff_career_prefs", tracked: "unbluff_career_jobs", resumes: "unbluff_career_resume_skills" },
+    names = {
+      prefs: "unbluff_career_prefs",
+      tracked: "unbluff_career_jobs",
+      resumes: "unbluff_career_resume_skills",
+    },
   ) {
     this.prefs = db.collection(names.prefs);
     this.tracked = db.collection(names.tracked);

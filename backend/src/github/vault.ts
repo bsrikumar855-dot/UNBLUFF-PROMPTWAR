@@ -28,7 +28,8 @@ export interface VaultKey {
 export function keyProblem(raw: string | undefined): string | null {
   if (!raw?.trim()) return "GITHUB_TOKEN_ENCRYPTION_KEY is empty";
   const key = Buffer.from(raw.trim(), "base64");
-  if (key.length !== 32) return "GITHUB_TOKEN_ENCRYPTION_KEY must be 32 random bytes encoded as base64";
+  if (key.length !== 32)
+    return "GITHUB_TOKEN_ENCRYPTION_KEY must be 32 random bytes encoded as base64";
   return null;
 }
 
@@ -62,7 +63,13 @@ export class TokenVault {
     const cipher = createCipheriv("aes-256-gcm", this.active.key, iv);
     cipher.setAAD(aad(uid, githubUserId));
     const data = Buffer.concat([cipher.update(token, "utf8"), cipher.final()]);
-    return { v: 1, key_id: this.active.id, iv: iv.toString("base64"), tag: cipher.getAuthTag().toString("base64"), data: data.toString("base64") };
+    return {
+      v: 1,
+      key_id: this.active.id,
+      iv: iv.toString("base64"),
+      tag: cipher.getAuthTag().toString("base64"),
+      data: data.toString("base64"),
+    };
   }
 
   /** Throws if the record was tampered with, belongs to someone else, or its key is no longer available. */
@@ -72,7 +79,10 @@ export class TokenVault {
     const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(sealed.iv, "base64"));
     decipher.setAAD(aad(uid, githubUserId));
     decipher.setAuthTag(Buffer.from(sealed.tag, "base64"));
-    return Buffer.concat([decipher.update(Buffer.from(sealed.data, "base64")), decipher.final()]).toString("utf8");
+    return Buffer.concat([
+      decipher.update(Buffer.from(sealed.data, "base64")),
+      decipher.final(),
+    ]).toString("utf8");
   }
 }
 

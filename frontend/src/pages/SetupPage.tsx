@@ -27,7 +27,9 @@ const Numbered: React.FC<{
         {n}
       </span>
       <div>
-        <h2 className="serif text-heading font-medium leading-tight text-ink-primary">{title}</h2>
+        <h2 className="serif text-heading font-medium leading-tight text-ink-primary">
+          {title}
+        </h2>
         <p className="mt-0.5 text-sm text-ink-secondary">{sub}</p>
       </div>
     </div>
@@ -76,7 +78,10 @@ export const SetupPage: React.FC = () => {
                 <FileText size={20} strokeWidth={1.75} />
               </span>
               <div>
-                <h2 id="next-title" className="serif text-heading font-medium text-ink-primary">
+                <h2
+                  id="next-title"
+                  className="serif text-heading font-medium text-ink-primary"
+                >
                   What happens next?
                 </h2>
                 <p className="mt-0.5 text-sm text-ink-secondary">
@@ -86,7 +91,10 @@ export const SetupPage: React.FC = () => {
             </div>
             <ol className="mt-4 flex flex-col gap-3">
               {NEXT.map((line, i) => (
-                <li key={line} className="flex items-center gap-3 text-sm text-ink-secondary">
+                <li
+                  key={line}
+                  className="flex items-center gap-3 text-sm text-ink-secondary"
+                >
                   <span
                     aria-hidden="true"
                     className="grid size-8 shrink-0 place-items-center rounded-full bg-white/80 text-sm font-semibold text-ink-primary shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08)]"
@@ -107,12 +115,15 @@ export const SetupPage: React.FC = () => {
                 <ShieldCheck size={20} strokeWidth={1.75} />
               </span>
               <div>
-                <h2 id="private-title" className="serif text-heading font-medium text-ink-primary">
+                <h2
+                  id="private-title"
+                  className="serif text-heading font-medium text-ink-primary"
+                >
                   Who can see this
                 </h2>
                 <p className="mt-1 text-sm leading-relaxed text-ink-secondary">
-                  Your resume text is used to extract claims for your session. Only you can
-                  open your sessions, and you can delete a session from My sessions.
+                  Your resume text is used to extract claims for your session. Only you
+                  can open your sessions, and you can delete a session from My sessions.
                 </p>
               </div>
             </div>

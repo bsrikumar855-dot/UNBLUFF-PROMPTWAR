@@ -28,14 +28,28 @@ afterAll(async () => {
 
 const id = (n: number) => n.toString(16).padStart(32, "0");
 const rec = (owner: string, n: number, over: Partial<SnapshotRecord> = {}): SnapshotRecord => ({
-  owner_uid: owner, id: id(n), captured_at: `2026-10-${String(10 + n).padStart(2, "0")}T08:00:00.000Z`, imported_at: NOW.toISOString(), source: { kind: "json_file", description: null }, linked_username: null,
-  totals: { solved: 10 + n, easy: null, medium: null, hard: null }, available: null, topics: null, contest: null, activity: null, ...over,
+  owner_uid: owner,
+  id: id(n),
+  captured_at: `2026-10-${String(10 + n).padStart(2, "0")}T08:00:00.000Z`,
+  imported_at: NOW.toISOString(),
+  source: { kind: "json_file", description: null },
+  linked_username: null,
+  totals: { solved: 10 + n, easy: null, medium: null, hard: null },
+  available: null,
+  topics: null,
+  contest: null,
+  activity: null,
+  ...over,
 });
 
 describe("Firestore emulator: LeetCode store", () => {
   it("creates a snapshot once: the same id again returns false and changes nothing", async () => {
     expect(await store.createSnapshot(rec("la", 1))).toBe(true);
-    expect(await store.createSnapshot(rec("la", 1, { totals: { solved: 999, easy: null, medium: null, hard: null } }))).toBe(false);
+    expect(
+      await store.createSnapshot(
+        rec("la", 1, { totals: { solved: 999, easy: null, medium: null, hard: null } }),
+      ),
+    ).toBe(false);
     expect((await store.getSnapshot("la", id(1)))!.totals.solved).toBe(11);
   });
 
@@ -58,7 +72,14 @@ describe("Firestore emulator: LeetCode store", () => {
   });
 
   it("keeps one connection per student and deletes snapshots only for the owner", async () => {
-    const c = (u: string, name: string) => ({ owner_uid: u, username: name, username_key: name.toLowerCase(), profile_url: `https://leetcode.com/u/${name}/`, linked_at: "x", updated_at: "x" });
+    const c = (u: string, name: string) => ({
+      owner_uid: u,
+      username: name,
+      username_key: name.toLowerCase(),
+      profile_url: `https://leetcode.com/u/${name}/`,
+      linked_at: "x",
+      updated_at: "x",
+    });
     await store.saveConnection(c("lc", "First"));
     await store.saveConnection(c("lc", "Second"));
     await store.saveConnection(c("ld", "Other"));
@@ -81,13 +102,29 @@ describe("Firestore emulator: LeetCode store", () => {
       return service.confirm("le", { ...r, content_hash: p.content_hash! });
     };
     await service.link("le", "https://leetcode.com/u/lee215/");
-    expect((await imp(good({ captured_at: "2026-09-10T08:00:00Z", totals: { solved: 80, easy: 40, medium: 32, hard: 8 }, topics: undefined, activity: undefined }))).status).toBe("imported");
+    expect(
+      (
+        await imp(
+          good({
+            captured_at: "2026-09-10T08:00:00Z",
+            totals: { solved: 80, easy: 40, medium: 32, hard: 8 },
+            topics: undefined,
+            activity: undefined,
+          }),
+        )
+      ).status,
+    ).toBe("imported");
     expect((await imp(good())).status).toBe("imported");
     expect((await imp(good())).status).toBe("already_imported");
     expect((await service.history("le")).total).toBe(2);
     const ins = await service.insights("le");
     expect(ins.trend).toMatchObject({ available: true, solved_change: 20, days: 30 });
-    expect(ins.connection.states).toMatchObject({ profile_linked: true, imported_data_available: true, officially_connected: false, live_sync_unavailable: true });
+    expect(ins.connection.states).toMatchObject({
+      profile_linked: true,
+      imported_data_available: true,
+      officially_connected: false,
+      live_sync_unavailable: true,
+    });
     expect((await service.insights("lf")).available).toBe(false); // another student sees nothing
     await service.unlink("le", "all");
     expect((await service.history("le")).total).toBe(0);

@@ -8,7 +8,11 @@ import { AuthError, type AuthClient, type AuthUser } from "./types";
 const KEY = "unbluff.mockAuth";
 
 function uidFor(email: string): string {
-  const slug = email.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+  const slug = email
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
   return `demo-${slug || "student"}`;
 }
 
@@ -86,4 +90,7 @@ export const mockAuthClient: AuthClient = {
 };
 
 /** True only for a dev/demo build that asked for it; never in a production build, and never under test (so a local .env can't change test results). */
-export const MOCK_AUTH_ENABLED = import.meta.env.VITE_AUTH_MODE === "mock" && !import.meta.env.PROD && import.meta.env.MODE !== "test";
+export const MOCK_AUTH_ENABLED =
+  import.meta.env.VITE_AUTH_MODE === "mock" &&
+  !import.meta.env.PROD &&
+  import.meta.env.MODE !== "test";

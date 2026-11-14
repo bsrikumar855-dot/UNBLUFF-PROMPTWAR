@@ -8,7 +8,10 @@ import type { Session, SessionStore } from "./SessionStore.js";
 export class FirestoreStore implements SessionStore {
   private readonly collection;
 
-  constructor(collectionName = "unbluff_sessions", db = new Firestore({ ignoreUndefinedProperties: true })) {
+  constructor(
+    collectionName = "unbluff_sessions",
+    db = new Firestore({ ignoreUndefinedProperties: true }),
+  ) {
     this.collection = db.collection(collectionName);
   }
 
@@ -24,7 +27,9 @@ export class FirestoreStore implements SessionStore {
     // and this sidesteps Firestore's nested-array restrictions.
     // owner_uid is duplicated as a top-level field so listByOwner can use a single-field equality query
     // (no composite index). The copy inside `json` remains the authority for access checks.
-    await this.collection.doc(session.id).set({ json: JSON.stringify(session), owner_uid: session.owner_uid, updated_at: new Date() });
+    await this.collection
+      .doc(session.id)
+      .set({ json: JSON.stringify(session), owner_uid: session.owner_uid, updated_at: new Date() });
   }
 
   async listByOwner(uid: string): Promise<Session[]> {

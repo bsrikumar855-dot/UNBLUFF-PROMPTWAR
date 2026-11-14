@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { MAX_RESUME_CHARS, MAX_RESUME_SKILLS, SKILL_VOCABULARY, extractResumeSkills, isKnownSkill, skillLabel } from "../../src/careers/resumeSkills.js";
-import { MATCH_WEIGHTS, SKILL_CREDIT, matchJob, type CareerSignals } from "../../src/careers/match.js";
+import {
+  MAX_RESUME_CHARS,
+  MAX_RESUME_SKILLS,
+  SKILL_VOCABULARY,
+  extractResumeSkills,
+  isKnownSkill,
+  skillLabel,
+} from "../../src/careers/resumeSkills.js";
+import {
+  MATCH_WEIGHTS,
+  SKILL_CREDIT,
+  matchJob,
+  type CareerSignals,
+} from "../../src/careers/match.js";
 import { normalizeJob } from "../../src/careers/normalize.js";
 import { CareerService } from "../../src/careers/service.js";
 import { MemoryCareerStore } from "../../src/careers/store.js";
@@ -10,12 +22,33 @@ import { fakeFreehire, fakePlacement, profile, rawJob, verifiedReact } from "../
 import { silentLogger } from "../helpers.js";
 
 const slugs = (text: string) => extractResumeSkills(text).map((s) => s.slug);
-const code = async (p: Promise<unknown> | (() => unknown)) => (typeof p === "function" ? Promise.resolve().then(p) : p).then(() => "ok", (e: unknown) => (e instanceof ApiError ? e.code : "other"));
+const code = async (p: Promise<unknown> | (() => unknown)) =>
+  (typeof p === "function" ? Promise.resolve().then(p) : p).then(
+    () => "ok",
+    (e: unknown) => (e instanceof ApiError ? e.code : "other"),
+  );
 
 describe("finding skills in resume text", () => {
   it("recognises common spellings, including symbols, and maps them to Freehire slugs", () => {
-    const found = slugs("Skills: JavaScript, TypeScript, C++, C#, Node.js, Next.js, PostgreSQL, CI/CD, Power BI, .NET, scikit-learn, Google Cloud, Amazon Web Services");
-    for (const s of ["javascript", "typescript", "cpp", "csharp", "nodejs", "nextjs", "postgresql", "ci-cd", "powerbi", "dotnet", "scikit-learn", "gcp", "aws"]) expect(found, s).toContain(s);
+    const found = slugs(
+      "Skills: JavaScript, TypeScript, C++, C#, Node.js, Next.js, PostgreSQL, CI/CD, Power BI, .NET, scikit-learn, Google Cloud, Amazon Web Services",
+    );
+    for (const s of [
+      "javascript",
+      "typescript",
+      "cpp",
+      "csharp",
+      "nodejs",
+      "nextjs",
+      "postgresql",
+      "ci-cd",
+      "powerbi",
+      "dotnet",
+      "scikit-learn",
+      "gcp",
+      "aws",
+    ])
+      expect(found, s).toContain(s);
   });
 
   it("keeps similar names apart", () => {
@@ -26,21 +59,35 @@ describe("finding skills in resume text", () => {
     expect(slugs("Used GitHub for version control")).toEqual(["github"]);
     expect(slugs("Used Git and GitHub")).toEqual(expect.arrayContaining(["git", "github"]));
     expect(slugs("Built apps with React Native")).toEqual(["react-native"]);
-    expect(slugs("React and React Native")).toEqual(expect.arrayContaining(["react", "react-native"]));
+    expect(slugs("React and React Native")).toEqual(
+      expect.arrayContaining(["react", "react-native"]),
+    );
     expect(slugs("Kubernetes (k8s)")).toEqual(["kubernetes"]);
   });
 
   it("does not mistake ordinary words for languages: they need their exact capitalisation, and bare go, c and r are not matched", () => {
-    expect(slugs("I will go to the store and ruby is a gem, rust never sleeps, swift reply, dart board, scala")).toEqual([]);
-    expect(slugs("Wrote services in Swift, Rust, Ruby, Dart and Scala")).toEqual(expect.arrayContaining(["swift", "rust", "ruby", "dart", "scala"]));
+    expect(
+      slugs(
+        "I will go to the store and ruby is a gem, rust never sleeps, swift reply, dart board, scala",
+      ),
+    ).toEqual([]);
+    expect(slugs("Wrote services in Swift, Rust, Ruby, Dart and Scala")).toEqual(
+      expect.arrayContaining(["swift", "rust", "ruby", "dart", "scala"]),
+    );
     expect(slugs("Written in Go and C and R")).toEqual([]);
     expect(slugs("Wrote Golang services")).toEqual(["go"]);
-    expect(slugs("Used node and express to manage the graph of nodes, and to express interest")).toEqual([]);
-    expect(slugs("Used Node.js and Express.js")).toEqual(expect.arrayContaining(["nodejs", "express"]));
+    expect(
+      slugs("Used node and express to manage the graph of nodes, and to express interest"),
+    ).toEqual([]);
+    expect(slugs("Used Node.js and Express.js")).toEqual(
+      expect.arrayContaining(["nodejs", "express"]),
+    );
   });
 
   it("counts mentions, orders by them, and shows where the first one was found", () => {
-    const r = extractResumeSkills("Built a Python tool. Later used Python for data work, plus SQL.\nPython again.");
+    const r = extractResumeSkills(
+      "Built a Python tool. Later used Python for data work, plus SQL.\nPython again.",
+    );
     expect(r.map((s) => s.slug)).toEqual(["python", "sql"]);
     expect(r[0]).toMatchObject({ slug: "python", label: "Python", mentions: 3 });
     expect(r[0]!.evidence).toContain("Python");
@@ -48,7 +95,9 @@ describe("finding skills in resume text", () => {
   });
 
   it("keeps contact details out of the evidence snippet", () => {
-    const r = extractResumeSkills("Jane Doe jane.doe@example.com +91 98765 43210 https://jane.dev/portfolio Python developer");
+    const r = extractResumeSkills(
+      "Jane Doe jane.doe@example.com +91 98765 43210 https://jane.dev/portfolio Python developer",
+    );
     const e = r.find((s) => s.slug === "python")!.evidence;
     expect(e).not.toMatch(/example\.com|98765|jane\.dev/);
     expect(e).toContain("Python");
@@ -85,24 +134,34 @@ describe("finding skills in resume text", () => {
   });
 
   it("finds each vocabulary skill by its first alias (no alias is dead)", () => {
-    for (const v of SKILL_VOCABULARY) expect(slugs(`Experience with ${v.aliases[0]} in projects.`), v.slug).toContain(v.slug);
+    for (const v of SKILL_VOCABULARY)
+      expect(slugs(`Experience with ${v.aliases[0]} in projects.`), v.slug).toContain(v.slug);
   });
 });
 
 function service() {
   const freehire = fakeFreehire();
   const store = new MemoryCareerStore();
-  const career = new CareerService({ freehire, store, placement: fakePlacement({ skills: [verifiedReact] }), logger: silentLogger, now: () => new Date("2026-10-18T10:00:00Z") });
+  const career = new CareerService({
+    freehire,
+    store,
+    placement: fakePlacement({ skills: [verifiedReact] }),
+    logger: silentLogger,
+    now: () => new Date("2026-10-18T10:00:00Z"),
+  });
   return { career, store, freehire };
 }
 
 describe("reviewing and saving skills from a resume", () => {
-  const RESUME = "Frontend intern. Built apps with React, TypeScript and CSS. Used Git, Docker and PostgreSQL. jane@example.com";
+  const RESUME =
+    "Frontend intern. Built apps with React, TypeScript and CSS. Used Git, Docker and PostgreSQL. jane@example.com";
 
   it("extracting stores nothing and makes no request to Freehire", async () => {
     const { career, store, freehire } = service();
     const r = career.extractFromResume(RESUME);
-    expect(r.skills.map((s) => s.slug)).toEqual(expect.arrayContaining(["react", "typescript", "css", "git", "docker", "postgresql"]));
+    expect(r.skills.map((s) => s.slug)).toEqual(
+      expect.arrayContaining(["react", "typescript", "css", "git", "docker", "postgresql"]),
+    );
     expect(r.text_chars).toBe(RESUME.length);
     expect(r.vocabulary_size).toBe(SKILL_VOCABULARY.length);
     expect(await store.getResume("u1")).toBeNull();
@@ -119,10 +178,15 @@ describe("reviewing and saving skills from a resume", () => {
   it("keeps only the skills the student confirms, never the resume, and replaces them on each save", async () => {
     const { career, store } = service();
     const saved = await career.saveResumeSkills("u1", ["react", "css", "react"]);
-    expect(saved.skills).toEqual([{ slug: "react", label: "React" }, { slug: "css", label: "CSS" }]);
+    expect(saved.skills).toEqual([
+      { slug: "react", label: "React" },
+      { slug: "css", label: "CSS" },
+    ]);
     expect(saved.saved_at).toBe("2026-10-18T10:00:00.000Z");
     expect(JSON.stringify(await store.getResume("u1"))).not.toMatch(/Frontend intern|jane/);
-    expect((await career.saveResumeSkills("u1", ["python"])).skills).toEqual([{ slug: "python", label: "Python" }]);
+    expect((await career.saveResumeSkills("u1", ["python"])).skills).toEqual([
+      { slug: "python", label: "Python" },
+    ]);
     expect((await career.resumeSkills("u1")).skills.map((s) => s.slug)).toEqual(["python"]);
     expect(await career.saveResumeSkills("u1", [])).toEqual({ skills: [], saved_at: null });
     expect(await store.getResume("u1")).toBeNull();
@@ -151,7 +215,17 @@ describe("reviewing and saving skills from a resume", () => {
   it("shows confirmed skills in the preferences response, apart from verified and typed ones", async () => {
     const { career } = service();
     await career.saveResumeSkills("u1", ["react", "docker", "css"]);
-    await career.putPreferences("u1", { categories: [], skills: ["python", "docker"], countries: [], cities: [], work_modes: [], employment_types: [], must_match_location: false, must_match_work_mode: false, must_match_employment: false });
+    await career.putPreferences("u1", {
+      categories: [],
+      skills: ["python", "docker"],
+      countries: [],
+      cities: [],
+      work_modes: [],
+      employment_types: [],
+      must_match_location: false,
+      must_match_work_mode: false,
+      must_match_employment: false,
+    });
     const p = (await career.preferences("u1")).profile;
     expect(p.verified_skills).toEqual(["react"]); // strongest evidence wins: react is verified
     expect(p.resume_skills).toEqual(["css", "docker"]);
@@ -161,7 +235,10 @@ describe("reviewing and saving skills from a resume", () => {
 });
 
 describe("resume skills in matching", () => {
-  const signals = (resume: string[], over: Partial<CareerSignals["skills"]> = {}): CareerSignals => ({
+  const signals = (
+    resume: string[],
+    over: Partial<CareerSignals["skills"]> = {},
+  ): CareerSignals => ({
     experience: "beginner",
     categories: { primary: ["frontend"], related: [] },
     skills: { verified: new Set(), resume: new Set(resume), self: new Set(), ...over },
@@ -172,8 +249,14 @@ describe("resume skills in matching", () => {
 
   it("counts a resume skill as a stated skill (0.7), labelled as from the resume, below a verified one", () => {
     const m = matchJob(job, signals(["react", "css"]));
-    expect(m.matched_skills).toEqual([{ skill: "react", provenance: "resume" }, { skill: "css", provenance: "resume" }]);
-    expect(m.components.find((c) => c.key === "skills")!.value).toBeCloseTo((2 * SKILL_CREDIT.resume) / 2, 10);
+    expect(m.matched_skills).toEqual([
+      { skill: "react", provenance: "resume" },
+      { skill: "css", provenance: "resume" },
+    ]);
+    expect(m.components.find((c) => c.key === "skills")!.value).toBeCloseTo(
+      (2 * SKILL_CREDIT.resume) / 2,
+      10,
+    );
     const verified = matchJob(job, signals([], { verified: new Set(["react", "css"]) }));
     expect(verified.components.find((c) => c.key === "skills")!.value).toBe(1);
     expect(m.reasons.join(" ")).toMatch(/react \(from your resume\)/);
@@ -182,7 +265,12 @@ describe("resume skills in matching", () => {
   });
 
   it("makes a student with only resume skills scoreable, and never treats them as verified", () => {
-    const d = deriveSignals({ profile: profile({ preferred_language: null }), skills: [], prefs: null, resumeSkills: ["react"] });
+    const d = deriveSignals({
+      profile: profile({ preferred_language: null }),
+      skills: [],
+      prefs: null,
+      resumeSkills: ["react"],
+    });
     expect(d.verified_skills).toEqual([]);
     expect(d.resume_skills).toEqual(["react"]);
     expect(d.notes.join(" ")).not.toMatch(/No skills to compare yet/);
@@ -190,11 +278,19 @@ describe("resume skills in matching", () => {
   });
 
   it("prefers the strongest evidence when a skill is in several places", () => {
-    const d = deriveSignals({ profile: profile(), skills: [verifiedReact], prefs: null, resumeSkills: ["react", "css"] });
+    const d = deriveSignals({
+      profile: profile(),
+      skills: [verifiedReact],
+      prefs: null,
+      resumeSkills: ["react", "css"],
+    });
     expect(d.verified_skills).toEqual(["react"]);
     expect(d.resume_skills).toEqual(["css"]);
     const m = matchJob(job, d.signals);
-    expect(m.matched_skills).toEqual([{ skill: "react", provenance: "verified" }, { skill: "css", provenance: "resume" }]);
+    expect(m.matched_skills).toEqual([
+      { skill: "react", provenance: "verified" },
+      { skill: "css", provenance: "resume" },
+    ]);
   });
 
   it("points a student with no skills at the resume upload", () => {

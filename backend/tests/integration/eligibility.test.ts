@@ -20,7 +20,13 @@ import { bearer, fixtureCatalogue, fixtureSuites, testApp } from "./app.js";
 
 const Q = "q_fixture_01";
 
-function suiteFor(opts: { demonstration?: boolean; eligible?: boolean; license?: "own_work" | "development_fixture" } = {}) {
+function suiteFor(
+  opts: {
+    demonstration?: boolean;
+    eligible?: boolean;
+    license?: "own_work" | "development_fixture";
+  } = {},
+) {
   const demonstration = opts.demonstration ?? false;
   return new SuiteRegistry(
     parseSuiteFile({
@@ -31,9 +37,16 @@ function suiteFor(opts: { demonstration?: boolean; eligible?: boolean; license?:
           revision: "t1",
           is_demonstration: demonstration,
           statement: null,
-          source: { name: "t", license_status: opts.license ?? (demonstration ? "development_fixture" : "own_work"), license_note: "t" },
+          source: {
+            name: "t",
+            license_status: opts.license ?? (demonstration ? "development_fixture" : "own_work"),
+            license_note: "t",
+          },
           samples: [{ input: "s\n", expected_output: "s\n" }],
-          tests: ["1", "2", "3", "4", "5"].map((n) => ({ input: `${n}\n`, expected_output: `${n}\n` })),
+          tests: ["1", "2", "3", "4", "5"].map((n) => ({
+            input: `${n}\n`,
+            expected_output: `${n}\n`,
+          })),
           limits: { cpu_time_seconds: 2, memory_mb: 128 },
           starter_code: {},
           eligibility: { analytics_eligible: opts.eligible ?? !demonstration, reason: "test" },
@@ -43,12 +56,24 @@ function suiteFor(opts: { demonstration?: boolean; eligible?: boolean; license?:
   );
 }
 
-function build(opts: { mock?: boolean; verified?: boolean; allowMock?: boolean; suites?: SuiteRegistry }) {
+function build(opts: {
+  mock?: boolean;
+  verified?: boolean;
+  allowMock?: boolean;
+  suites?: SuiteRegistry;
+}) {
   const catalogue = fixtureCatalogue();
   const submissions = new MemorySubmissionStore();
   const progressStore = new MemoryProgressStore();
   const progress = new DsaProgressService(progressStore, () => catalogue);
-  const analytics = new AnalyticsService({ stats: new MemoryStatsStore(), revisions: new MemoryRevisionStore(), submissions, progress, catalogue: () => catalogue, logger: silentLogger });
+  const analytics = new AnalyticsService({
+    stats: new MemoryStatsStore(),
+    revisions: new MemoryRevisionStore(),
+    submissions,
+    progress,
+    catalogue: () => catalogue,
+    logger: silentLogger,
+  });
   const code = new CodeService({
     provider: new FakeProvider({ mock: opts.mock ?? false }),
     suites: opts.suites ?? suiteFor(),
@@ -60,23 +85,73 @@ function build(opts: { mock?: boolean; verified?: boolean; allowMock?: boolean; 
     allowMockToCount: opts.allowMock,
     onJudged: (r) => analytics.recordSubmission(r),
   });
-  const app = testApp({ autoAuth: false, code, analytics, catalogue, progressStore, submissionStore: submissions });
+  const app = testApp({
+    autoAuth: false,
+    code,
+    analytics,
+    catalogue,
+    progressStore,
+    submissionStore: submissions,
+  });
   const as = { Authorization: bearer("alice") };
-  const submit = (source: string) => request(app).post("/api/code/submit").set(as).send({ question_id: Q, language: "python", source });
-  const overview = async () => (await request(app).get("/api/me/dsa-analytics").set(as).expect(200)).body;
-  const progressList = async () => (await request(app).get("/api/me/dsa-progress").set(as).expect(200)).body.progress as { status: string }[];
+  const submit = (source: string) =>
+    request(app)
+      .post("/api/code/submit")
+      .set(as)
+      .send({ question_id: Q, language: "python", source });
+  const overview = async () =>
+    (await request(app).get("/api/me/dsa-analytics").set(as).expect(200)).body;
+  const progressList = async () =>
+    (await request(app).get("/api/me/dsa-progress").set(as).expect(200)).body.progress as {
+      status: string;
+    }[];
   return { app, submissions, submit, overview, progressList };
 }
 
 describe("exactly one combination counts", () => {
-  const combos: { name: string; opts: Parameters<typeof build>[0]; source: string; status: string }[] = [
-    { name: "eligible suite + non-mock + verified + accepted", opts: {}, source: "ECHO", status: "counted" },
+  const combos: {
+    name: string;
+    opts: Parameters<typeof build>[0];
+    source: string;
+    status: string;
+  }[] = [
+    {
+      name: "eligible suite + non-mock + verified + accepted",
+      opts: {},
+      source: "ECHO",
+      status: "counted",
+    },
     { name: "same, rejected", opts: {}, source: "WRONG", status: "counted" },
-    { name: "demonstration suite", opts: { suites: suiteFor({ demonstration: true }) }, source: "ECHO", status: "excluded_demonstration" },
-    { name: "demonstration suite declared eligible is impossible, so a fixture licence alone also excludes", opts: { suites: suiteFor({ license: "development_fixture", eligible: false }) }, source: "ECHO", status: "excluded_demonstration" },
-    { name: "suite not declared eligible", opts: { suites: suiteFor({ eligible: false }) }, source: "ECHO", status: "excluded_ineligible_suite" },
-    { name: "mock provider, even verified", opts: { mock: true, verified: true }, source: "ECHO", status: "excluded_mock_execution" },
-    { name: "unverified provider", opts: { verified: false }, source: "ECHO", status: "excluded_unverified_provider" },
+    {
+      name: "demonstration suite",
+      opts: { suites: suiteFor({ demonstration: true }) },
+      source: "ECHO",
+      status: "excluded_demonstration",
+    },
+    {
+      name: "demonstration suite declared eligible is impossible, so a fixture licence alone also excludes",
+      opts: { suites: suiteFor({ license: "development_fixture", eligible: false }) },
+      source: "ECHO",
+      status: "excluded_demonstration",
+    },
+    {
+      name: "suite not declared eligible",
+      opts: { suites: suiteFor({ eligible: false }) },
+      source: "ECHO",
+      status: "excluded_ineligible_suite",
+    },
+    {
+      name: "mock provider, even verified",
+      opts: { mock: true, verified: true },
+      source: "ECHO",
+      status: "excluded_mock_execution",
+    },
+    {
+      name: "unverified provider",
+      opts: { verified: false },
+      source: "ECHO",
+      status: "excluded_unverified_provider",
+    },
     { name: "judge error", opts: {}, source: "JUDGE", status: "excluded_judge_error" },
   ];
 
@@ -95,17 +170,38 @@ describe("exactly one combination counts", () => {
     const res = await c.submit("ECHO").expect(200);
     expect(res.body.analytics_status).toBe("counted");
     const [stored] = await c.submissions.listByOwner("alice");
-    expect(stored).toMatchObject({ provider_mock: true, mock_counting_allowed: true, provider_verified: true, suite_eligible: true, judged_tests: 5, total: 5 });
+    expect(stored).toMatchObject({
+      provider_mock: true,
+      mock_counting_allowed: true,
+      provider_verified: true,
+      suite_eligible: true,
+      judged_tests: 5,
+      total: 5,
+    });
     expect(() => loadConfig({ LLM_MODE: "mock", ALLOW_MOCK_ANALYTICS: "true" })).not.toThrow(); // unknown variables are ignored, so nothing in the environment can enable it
-    expect(loadConfig({ LLM_MODE: "mock", ALLOW_MOCK_ANALYTICS: "true" })).not.toHaveProperty("allowMockToCount");
+    expect(loadConfig({ LLM_MODE: "mock", ALLOW_MOCK_ANALYTICS: "true" })).not.toHaveProperty(
+      "allowMockToCount",
+    );
   });
 
   it("the shipped demonstration exercises never count, whatever the provider flags say", async () => {
     const catalogue = fixtureCatalogue();
     const submissions = new MemorySubmissionStore();
     const progress = new DsaProgressService(new MemoryProgressStore(), () => catalogue);
-    const code = new CodeService({ provider: new FakeProvider({ mock: false, solve: (s) => s }), suites: fixtureSuites(), catalogue: () => catalogue, progress, submissions, logger: silentLogger, providerVerified: true });
-    const res = await code.submit("alice", { question_id: "q_fixture_06", language: "python", source: "ECHO" });
+    const code = new CodeService({
+      provider: new FakeProvider({ mock: false, solve: (s) => s }),
+      suites: fixtureSuites(),
+      catalogue: () => catalogue,
+      progress,
+      submissions,
+      logger: silentLogger,
+      providerVerified: true,
+    });
+    const res = await code.submit("alice", {
+      question_id: "q_fixture_06",
+      language: "python",
+      source: "ECHO",
+    });
     expect(res.analytics_status).toBe("excluded_demonstration");
   });
 });
@@ -148,7 +244,13 @@ describe("isCountable re-checks the record's own evidence", () => {
     judged_tests: 5,
     provider_mock: false,
   };
-  const wrong: SubmissionRecord = { ...good, id: "sub_wrong", verdict: "wrong_answer", passed: 2, failed_test: 3 };
+  const wrong: SubmissionRecord = {
+    ...good,
+    id: "sub_wrong",
+    verdict: "wrong_answer",
+    passed: 2,
+    failed_test: 3,
+  };
 
   it("accepts consistent genuine records", () => {
     expect(isCountable(good)).toBe(true);
@@ -156,7 +258,15 @@ describe("isCountable re-checks the record's own evidence", () => {
   });
 
   it.each([
-    ["legacy record without provenance", { analytics_status: undefined, provider_verified: undefined, suite_eligible: undefined, judged_tests: undefined }],
+    [
+      "legacy record without provenance",
+      {
+        analytics_status: undefined,
+        provider_verified: undefined,
+        suite_eligible: undefined,
+        judged_tests: undefined,
+      },
+    ],
     ["marked counted but the operator flag was off", { provider_verified: false }],
     ["marked counted but the suite was not eligible", { suite_eligible: false }],
     ["marked counted but the suite licence is a fixture", { suite_license: "development_fixture" }],
@@ -184,7 +294,10 @@ describe("isCountable re-checks the record's own evidence", () => {
     const c = build({});
     const forged: SubmissionRecord = { ...good, id: "sub_forged", judged_tests: 0 }; // claims acceptance without any test having run
     await c.submissions.save(forged);
-    const analytics = await request(c.app).post("/api/me/dsa-analytics/refresh").set({ Authorization: bearer("alice") }).expect(200);
+    const analytics = await request(c.app)
+      .post("/api/me/dsa-analytics/refresh")
+      .set({ Authorization: bearer("alice") })
+      .expect(200);
     expect(analytics.body.totals.solved_unique).toBe(0);
     expect(analytics.body.exclusions.unknown_provenance).toBe(1);
   });
@@ -194,16 +307,31 @@ describe("invalid or missing provider configuration", () => {
   it("with no execution service configured, submit fails honestly, nothing is stored and nothing counts", async () => {
     const app = testApp({ autoAuth: false }); // UnavailableProvider
     const as = { Authorization: bearer("alice") };
-    const res = await request(app).post("/api/code/submit").set(as).send({ question_id: Q, language: "python", source: "x" });
+    const res = await request(app)
+      .post("/api/code/submit")
+      .set(as)
+      .send({ question_id: Q, language: "python", source: "x" });
     expect(res.status).toBe(503);
     expect((await request(app).get("/api/code/submissions").set(as)).body.submissions).toEqual([]);
-    expect((await request(app).get("/api/me/dsa-analytics").set(as)).body.has_eligible_activity).toBe(false);
+    expect(
+      (await request(app).get("/api/me/dsa-analytics").set(as)).body.has_eligible_activity,
+    ).toBe(false);
   });
 
   it("rejects invalid execution settings at startup", () => {
-    expect(() => loadConfig({ LLM_MODE: "mock", EXECUTION_PROVIDER: "judge0" })).toThrow(/JUDGE0_URL is required/);
-    expect(() => loadConfig({ LLM_MODE: "mock", EXECUTION_PROVIDER: "judge0", JUDGE0_URL: "http://judge.example.com" })).toThrow(/https/);
-    expect(() => loadConfig({ LLM_MODE: "mock", EXECUTION_PROVIDER: "something-else" })).toThrow(/EXECUTION_PROVIDER/);
+    expect(() => loadConfig({ LLM_MODE: "mock", EXECUTION_PROVIDER: "judge0" })).toThrow(
+      /JUDGE0_URL is required/,
+    );
+    expect(() =>
+      loadConfig({
+        LLM_MODE: "mock",
+        EXECUTION_PROVIDER: "judge0",
+        JUDGE0_URL: "http://judge.example.com",
+      }),
+    ).toThrow(/https/);
+    expect(() => loadConfig({ LLM_MODE: "mock", EXECUTION_PROVIDER: "something-else" })).toThrow(
+      /EXECUTION_PROVIDER/,
+    );
     expect(loadConfig({ LLM_MODE: "mock" }).EXECUTION_PROVIDER_VERIFIED).toBe(false);
   });
 });

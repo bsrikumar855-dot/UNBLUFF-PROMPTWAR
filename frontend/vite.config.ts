@@ -20,33 +20,40 @@ function connectSrcPolicy(mode: string): Plugin {
   return {
     name: "unbluff-connect-src-policy",
     apply: "build",
-    transformIndexHtml: (html) => html.replace("<head>", `<head>\n    ${cspMetaTag(env, { production: mode === "production" })}`),
+    transformIndexHtml: (html) =>
+      html.replace(
+        "<head>",
+        `<head>\n    ${cspMetaTag(env, { production: mode === "production" })}`
+      ),
   };
 }
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  plugins: [react(), connectSrcPolicy(mode)],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  server: {
-    port: 5173,
-    open: false,
-  },
-  build: {
-    outDir: "dist",
-    sourcemap: true,
-  },
-  test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.{test,spec}.{ts,tsx}"],
-    // These tests render whole pages with lazy chunks. A shared two-core CI runner is several times slower than a laptop.
-    testTimeout: 20_000,
-    hookTimeout: 20_000,
-  },
-}) as VitestConfig);
+export default defineConfig(
+  ({ mode }) =>
+    ({
+      plugins: [react(), connectSrcPolicy(mode)],
+      resolve: {
+        alias: {
+          "@": path.resolve(__dirname, "./src"),
+        },
+      },
+      server: {
+        port: 5173,
+        open: false,
+      },
+      build: {
+        outDir: "dist",
+        sourcemap: true,
+      },
+      test: {
+        globals: true,
+        environment: "jsdom",
+        setupFiles: ["./tests/setup.ts"],
+        include: ["tests/**/*.{test,spec}.{ts,tsx}"],
+        // These tests render whole pages with lazy chunks. A shared two-core CI runner is several times slower than a laptop.
+        testTimeout: 20_000,
+        hookTimeout: 20_000,
+      },
+    }) as VitestConfig
+);

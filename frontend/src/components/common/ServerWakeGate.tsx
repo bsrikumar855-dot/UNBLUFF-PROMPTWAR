@@ -67,13 +67,21 @@ export const ServerWakeGate: React.FC = () => {
             className="mx-auto mb-4 block h-8 w-8 animate-spin rounded-full border-4 border-line-strong border-t-redline motion-reduce:animate-none"
             aria-hidden="true"
           />
-          <p className="text-lg font-semibold text-ink-primary">Waking up the server… (~30–60s)</p>
-          <p className="mt-1 text-sm text-ink-secondary">The free host sleeps when idle. This only happens once.</p>
+          <p className="text-lg font-semibold text-ink-primary">
+            Waking up the server… (~30–60s)
+          </p>
+          <p className="mt-1 text-sm text-ink-secondary">
+            The free host sleeps when idle. This only happens once.
+          </p>
         </div>
       ) : (
         <div role="alert" className="max-w-sm text-center">
-          <p className="text-lg font-semibold text-ink-primary">We couldn&apos;t reach the server.</p>
-          <p className="mt-1 mb-4 text-sm text-ink-secondary">Check your connection and try again.</p>
+          <p className="text-lg font-semibold text-ink-primary">
+            We couldn&apos;t reach the server.
+          </p>
+          <p className="mt-1 mb-4 text-sm text-ink-secondary">
+            Check your connection and try again.
+          </p>
           <Button onClick={retry}>Retry</Button>
         </div>
       )}

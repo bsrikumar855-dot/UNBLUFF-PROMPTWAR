@@ -16,25 +16,38 @@ const Q = "flex-grow";
 
 describe("level pass rules", () => {
   it("L1 needs accuracy, specificity and ownership", () => {
-    expect(levelPassed(1, rawGrade(["accuracy", "specificity", "ownership"], Q).criteria)).toBe(true);
-    expect(levelPassed(1, rawGrade(["accuracy", "specificity", "mechanism", "tradeoff"], Q).criteria)).toBe(false);
+    expect(levelPassed(1, rawGrade(["accuracy", "specificity", "ownership"], Q).criteria)).toBe(
+      true,
+    );
+    expect(
+      levelPassed(1, rawGrade(["accuracy", "specificity", "mechanism", "tradeoff"], Q).criteria),
+    ).toBe(false);
   });
   it("L2 needs accuracy and mechanism", () => {
     expect(levelPassed(2, rawGrade(["accuracy", "mechanism"], Q).criteria)).toBe(true);
-    expect(levelPassed(2, rawGrade(["mechanism", "specificity", "ownership", "tradeoff"], Q).criteria)).toBe(false);
+    expect(
+      levelPassed(2, rawGrade(["mechanism", "specificity", "ownership", "tradeoff"], Q).criteria),
+    ).toBe(false);
   });
   it("L3 needs accuracy and tradeoff", () => {
     expect(levelPassed(3, rawGrade(["accuracy", "tradeoff"], Q).criteria)).toBe(true);
     expect(levelPassed(3, rawGrade(["accuracy", "mechanism"], Q).criteria)).toBe(false);
   });
   it("an admitted gap never passes, even if criteria say so", () => {
-    expect(finalizeGrade(rawGrade(ALL, Q, { admits_gap: true }), ANSWER, 1).level_passed).toBe(false);
+    expect(finalizeGrade(rawGrade(ALL, Q, { admits_gap: true }), ANSWER, 1).level_passed).toBe(
+      false,
+    );
   });
 });
 
 describe("verdicts, missing concepts and evidence", () => {
   it("maps levels to verdicts", () => {
-    expect([0, 1, 2, 3].map((n) => verdictForLevels(n as 0 | 1 | 2 | 3))).toEqual(["bluff", "shaky", "shaky", "defended"]);
+    expect([0, 1, 2, 3].map((n) => verdictForLevels(n as 0 | 1 | 2 | 3))).toEqual([
+      "bluff",
+      "shaky",
+      "shaky",
+      "defended",
+    ]);
   });
 
   it("collects missing concepts only from the failing level's required criteria", () => {
@@ -47,7 +60,9 @@ describe("verdicts, missing concepts and evidence", () => {
     raw.criteria.accuracy.missing_concept = null;
     raw.criteria.mechanism.missing_concept = "  ";
     const grade = finalizeGrade(raw, ANSWER, 2);
-    expect(missingConcepts(2, grade, ["explain the event loop"])).toEqual(["explain the event loop"]);
+    expect(missingConcepts(2, grade, ["explain the event loop"])).toEqual([
+      "explain the event loop",
+    ]);
   });
 
   it("an admitted gap misses the whole level", () => {
@@ -76,7 +91,9 @@ describe("start rules", () => {
     expect(canStart("assess", "shaky")).toBe(false);
     expect(canStart("retest", "defended")).toBe(false);
     expect(canStart("retest", "pending")).toBe(false);
-    expect(["shaky", "bluff", "honest_gap"].every((v) => canStart("retest", v as "shaky"))).toBe(true);
+    expect(["shaky", "bluff", "honest_gap"].every((v) => canStart("retest", v as "shaky"))).toBe(
+      true,
+    );
   });
 
   it("retest starts at the first failed level; L1 for bluff and honest_gap", () => {

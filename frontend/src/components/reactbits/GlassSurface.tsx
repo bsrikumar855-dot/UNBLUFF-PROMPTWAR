@@ -1,14 +1,23 @@
 // @ts-nocheck -- vendored from React Bits (MIT + Commons Clause); written without this project's noUncheckedIndexedAccess
-'use client';
+"use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState, useRef, useId, type CSSProperties, type ReactNode, type RefObject } from 'react';
+import {
+  useEffect,
+  useState,
+  useRef,
+  useId,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
-export type GlassSurfaceChannel = 'R' | 'G' | 'B';
+export type GlassSurfaceChannel = "R" | "G" | "B";
 
-export type GlassSurfaceRenderer = 'auto' | 'svg' | 'webgl';
+export type GlassSurfaceRenderer = "auto" | "svg" | "webgl";
 
-export type GlassSurfaceBackdrop = HTMLImageElement | HTMLVideoElement | HTMLCanvasElement;
+export type GlassSurfaceBackdrop =
+  HTMLImageElement | HTMLVideoElement | HTMLCanvasElement;
 
 interface GlassSettings {
   backdrop?: RefObject<GlassSurfaceBackdrop | null> | GlassSurfaceBackdrop | null;
@@ -67,7 +76,7 @@ export interface GlassSurfaceProps {
   blueOffset?: number;
   xChannel?: GlassSurfaceChannel;
   yChannel?: GlassSurfaceChannel;
-  mixBlendMode?: CSSProperties['mixBlendMode'];
+  mixBlendMode?: CSSProperties["mixBlendMode"];
   refraction?: boolean;
   renderer?: GlassSurfaceRenderer;
   backdrop?: RefObject<GlassSurfaceBackdrop | null> | GlassSurfaceBackdrop | null;
@@ -155,7 +164,7 @@ const compileGlass = (gl: WebGL2RenderingContext) => {
   if (!vertex || !fragment || !program) return null;
   gl.attachShader(program, vertex);
   gl.attachShader(program, fragment);
-  gl.bindAttribLocation(program, 0, 'aPosition');
+  gl.bindAttribLocation(program, 0, "aPosition");
   gl.linkProgram(program);
   gl.deleteShader(vertex);
   gl.deleteShader(fragment);
@@ -164,10 +173,17 @@ const compileGlass = (gl: WebGL2RenderingContext) => {
   return null;
 };
 
-const resolveBackdrop = (backdrop: GlassSurfaceProps['backdrop']): GlassSurfaceBackdrop | null => {
-  if (typeof window === 'undefined' || !backdrop) return null;
-  const node = typeof backdrop === 'object' && 'current' in backdrop ? backdrop.current : backdrop;
-  if (node instanceof HTMLImageElement || node instanceof HTMLVideoElement || node instanceof HTMLCanvasElement) {
+const resolveBackdrop = (
+  backdrop: GlassSurfaceProps["backdrop"]
+): GlassSurfaceBackdrop | null => {
+  if (typeof window === "undefined" || !backdrop) return null;
+  const node =
+    typeof backdrop === "object" && "current" in backdrop ? backdrop.current : backdrop;
+  if (
+    node instanceof HTMLImageElement ||
+    node instanceof HTMLVideoElement ||
+    node instanceof HTMLCanvasElement
+  ) {
     return node;
   }
   return null;
@@ -181,7 +197,7 @@ const sourceSize = (node: GlassSurfaceBackdrop): [number, number] => {
 
 const placeAxis = (value: string | undefined, free: number) => {
   if (!value) return free / 2;
-  if (value.endsWith('%')) return (parseFloat(value) / 100) * free;
+  if (value.endsWith("%")) return (parseFloat(value) / 100) * free;
   const px = parseFloat(value);
   return Number.isFinite(px) ? px : free / 2;
 };
@@ -190,25 +206,38 @@ const contentBox = (node: GlassSurfaceBackdrop) => {
   const rect = node.getBoundingClientRect();
   const [naturalWidth, naturalHeight] = sourceSize(node);
   const style = getComputedStyle(node);
-  const fit = style.objectFit || 'fill';
-  if (!naturalWidth || !naturalHeight || fit === 'fill') {
+  const fit = style.objectFit || "fill";
+  if (!naturalWidth || !naturalHeight || fit === "fill") {
     return { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
   }
   const contain = Math.min(rect.width / naturalWidth, rect.height / naturalHeight);
   const cover = Math.max(rect.width / naturalWidth, rect.height / naturalHeight);
-  const scale = fit === 'cover' ? cover : fit === 'contain' ? contain : fit === 'none' ? 1 : Math.min(1, contain);
+  const scale =
+    fit === "cover"
+      ? cover
+      : fit === "contain"
+        ? contain
+        : fit === "none"
+          ? 1
+          : Math.min(1, contain);
   const width = naturalWidth * scale;
   const height = naturalHeight * scale;
-  const [px, py] = (style.objectPosition || '50% 50%').split(' ');
+  const [px, py] = (style.objectPosition || "50% 50%").split(" ");
   return {
     x: rect.left + placeAxis(px, rect.width - width),
     y: rect.top + placeAxis(py ?? px, rect.height - height),
     width,
-    height
+    height,
   };
 };
 
-const distanceLine = (f: Float64Array, d: Float64Array, v: Int32Array, z: Float64Array, n: number) => {
+const distanceLine = (
+  f: Float64Array,
+  d: Float64Array,
+  v: Int32Array,
+  z: Float64Array,
+  n: number
+) => {
   let k = 0;
   v[0] = 0;
   z[0] = -FAR;
@@ -249,13 +278,22 @@ const distanceGrid = (grid: Float32Array, w: number, h: number) => {
   }
 };
 
-const blurLine = (src: Float32Array, dst: Float32Array, offset: number, stride: number, n: number, r: number) => {
+const blurLine = (
+  src: Float32Array,
+  dst: Float32Array,
+  offset: number,
+  stride: number,
+  n: number,
+  r: number
+) => {
   const scale = 1 / (2 * r + 1);
   let sum = src[offset] * (r + 1);
   for (let i = 1; i <= r; i++) sum += src[offset + Math.min(i, n - 1) * stride];
   for (let i = 0; i < n; i++) {
     dst[offset + i * stride] = sum * scale;
-    sum += src[offset + Math.min(i + r + 1, n - 1) * stride] - src[offset + Math.max(i - r, 0) * stride];
+    sum +=
+      src[offset + Math.min(i + r + 1, n - 1) * stride] -
+      src[offset + Math.max(i - r, 0) * stride];
   }
 };
 
@@ -270,23 +308,33 @@ const blurGrid = (grid: Float32Array, w: number, h: number, r: number) => {
 const settle = (x: number) => 1 / (1 + Math.exp(-1.702 * x));
 
 const paint = (w: number, h: number, fill: (data: Uint8ClampedArray) => void) => {
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  const context = canvas.getContext('2d') as CanvasRenderingContext2D;
+  const context = canvas.getContext("2d") as CanvasRenderingContext2D;
   const image = context.createImageData(w, h);
   fill(image.data);
   context.putImageData(image, 0, 0);
   return canvas.toDataURL();
 };
 
-const shade = (depth: Float32Array, w: number, h: number, falloff: (t: number) => number) =>
-  paint(w, h, data => {
+const shade = (
+  depth: Float32Array,
+  w: number,
+  h: number,
+  falloff: (t: number) => number
+) =>
+  paint(w, h, (data) => {
     data.fill(255);
     for (let i = 0; i < w * h; i++) data[i * 4 + 3] = 255 * (1 - falloff(depth[i]));
   });
 
-const traceShape = (image: HTMLImageElement, width: number, height: number, ratio: number): ShapeTrace => {
+const traceShape = (
+  image: HTMLImageElement,
+  width: number,
+  height: number,
+  ratio: number
+): ShapeTrace => {
   const naturalWidth = image.naturalWidth || width;
   const naturalHeight = image.naturalHeight || height;
   const fit = Math.min(width / naturalWidth, height / naturalHeight);
@@ -294,15 +342,23 @@ const traceShape = (image: HTMLImageElement, width: number, height: number, rati
     x: (width - naturalWidth * fit) / 2,
     y: (height - naturalHeight * fit) / 2,
     width: naturalWidth * fit,
-    height: naturalHeight * fit
+    height: naturalHeight * fit,
   };
   const w = Math.max(2, Math.round(width * ratio));
   const h = Math.max(2, Math.round(height * ratio));
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  const context = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
-  context.drawImage(image, box.x * ratio, box.y * ratio, box.width * ratio, box.height * ratio);
+  const context = canvas.getContext("2d", {
+    willReadFrequently: true,
+  }) as CanvasRenderingContext2D;
+  context.drawImage(
+    image,
+    box.x * ratio,
+    box.y * ratio,
+    box.width * ratio,
+    box.height * ratio
+  );
   const pixels = context.getImageData(0, 0, w, h).data;
   const outside = new Float32Array(w * h);
   const inside = new Float32Array(w * h);
@@ -314,25 +370,32 @@ const traceShape = (image: HTMLImageElement, width: number, height: number, rati
   distanceGrid(outside, w, h);
   distanceGrid(inside, w, h);
   const depth = new Float32Array(w * h);
-  for (let i = 0; i < w * h; i++) depth[i] = (Math.sqrt(inside[i]) - Math.sqrt(outside[i])) / ratio;
+  for (let i = 0; i < w * h; i++)
+    depth[i] = (Math.sqrt(inside[i]) - Math.sqrt(outside[i])) / ratio;
   return {
     box,
     depth,
     w,
     h,
     ratio,
-    line: shade(depth, w, h, t => settle(t - 1)),
-    glow: shade(depth, w, h, t => settle((t - 4) / 5))
+    line: shade(depth, w, h, (t) => settle(t - 1)),
+    glow: shade(depth, w, h, (t) => settle((t - 4) / 5)),
   };
 };
 
-const bendShape = (trace: ShapeTrace, edge: number, softness: number, calm: number, level: number) => {
+const bendShape = (
+  trace: ShapeTrace,
+  edge: number,
+  softness: number,
+  calm: number,
+  level: number
+) => {
   const { depth, w, h, ratio } = trace;
   const reach = edge + softness * 2;
   const field = new Float32Array(w * h);
   for (let i = 0; i < w * h; i++) field[i] = Math.min(Math.max(depth[i], -6), reach);
   blurGrid(field, w, h, Math.max(1, Math.round(Math.max(1.5, softness * 0.35) * ratio)));
-  return paint(w, h, data => {
+  return paint(w, h, (data) => {
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const i = y * w + x;
@@ -351,57 +414,59 @@ const bendShape = (trace: ShapeTrace, edge: number, softness: number, calm: numb
 };
 
 const WEBGL_SHADOW = [
-  '0px 4px 16px rgba(17, 17, 26, 0.05)',
-  '0px 8px 24px rgba(17, 17, 26, 0.05)',
-  '0px 16px 56px rgba(17, 17, 26, 0.05)'
-].join(', ');
+  "0px 4px 16px rgba(17, 17, 26, 0.05)",
+  "0px 8px 24px rgba(17, 17, 26, 0.05)",
+  "0px 16px 56px rgba(17, 17, 26, 0.05)",
+].join(", ");
 
 const FRAME_SHADOW = [
-  '0 0 2px 1px light-dark(color-mix(in oklch, black, transparent 85%), color-mix(in oklch, white, transparent 65%)) inset',
-  '0 0 10px 4px light-dark(color-mix(in oklch, black, transparent 90%), color-mix(in oklch, white, transparent 85%)) inset',
-  '0px 4px 16px rgba(17, 17, 26, 0.05) inset',
-  '0px 8px 24px rgba(17, 17, 26, 0.05) inset',
-  '0px 16px 56px rgba(17, 17, 26, 0.05) inset'
-].join(', ');
+  "0 0 2px 1px light-dark(color-mix(in oklch, black, transparent 85%), color-mix(in oklch, white, transparent 65%)) inset",
+  "0 0 10px 4px light-dark(color-mix(in oklch, black, transparent 90%), color-mix(in oklch, white, transparent 85%)) inset",
+  "0px 4px 16px rgba(17, 17, 26, 0.05) inset",
+  "0px 8px 24px rgba(17, 17, 26, 0.05) inset",
+  "0px 16px 56px rgba(17, 17, 26, 0.05) inset",
+].join(", ");
 
 const LINE = {
-  svg: 'light-dark(color-mix(in oklch, black, transparent 85%), color-mix(in oklch, white, transparent 65%))',
-  fallback: 'light-dark(color-mix(in oklch, black, transparent 88%), color-mix(in oklch, white, transparent 72%))'
+  svg: "light-dark(color-mix(in oklch, black, transparent 85%), color-mix(in oklch, white, transparent 65%))",
+  fallback:
+    "light-dark(color-mix(in oklch, black, transparent 88%), color-mix(in oklch, white, transparent 72%))",
 };
 
 const GLOW = {
-  svg: 'light-dark(color-mix(in oklch, black, transparent 90%), color-mix(in oklch, white, transparent 85%))',
-  fallback: 'light-dark(color-mix(in oklch, white, transparent 72%), color-mix(in oklch, white, transparent 90%))'
+  svg: "light-dark(color-mix(in oklch, black, transparent 90%), color-mix(in oklch, white, transparent 85%))",
+  fallback:
+    "light-dark(color-mix(in oklch, white, transparent 72%), color-mix(in oklch, white, transparent 90%))",
 };
 
 const SVG_SHADOW = [
-  '0 0 2px 1px light-dark(color-mix(in oklch, black, transparent 85%), color-mix(in oklch, white, transparent 65%)) inset',
-  '0 0 10px 4px light-dark(color-mix(in oklch, black, transparent 90%), color-mix(in oklch, white, transparent 85%)) inset',
-  '0px 4px 16px rgba(17, 17, 26, 0.05)',
-  '0px 8px 24px rgba(17, 17, 26, 0.05)',
-  '0px 16px 56px rgba(17, 17, 26, 0.05)',
-  '0px 4px 16px rgba(17, 17, 26, 0.05) inset',
-  '0px 8px 24px rgba(17, 17, 26, 0.05) inset',
-  '0px 16px 56px rgba(17, 17, 26, 0.05) inset'
-].join(', ');
+  "0 0 2px 1px light-dark(color-mix(in oklch, black, transparent 85%), color-mix(in oklch, white, transparent 65%)) inset",
+  "0 0 10px 4px light-dark(color-mix(in oklch, black, transparent 90%), color-mix(in oklch, white, transparent 85%)) inset",
+  "0px 4px 16px rgba(17, 17, 26, 0.05)",
+  "0px 8px 24px rgba(17, 17, 26, 0.05)",
+  "0px 16px 56px rgba(17, 17, 26, 0.05)",
+  "0px 4px 16px rgba(17, 17, 26, 0.05) inset",
+  "0px 8px 24px rgba(17, 17, 26, 0.05) inset",
+  "0px 16px 56px rgba(17, 17, 26, 0.05) inset",
+].join(", ");
 
 const FALLBACK_SHADOW = [
-  'inset 0 1px 0 0 light-dark(hsl(0 0% 100% / 0.85), hsl(0 0% 100% / 0.3))',
-  'inset 0 -1px 0 0 light-dark(hsl(0 0% 100% / 0.35), hsl(0 0% 100% / 0.08))',
-  '0 0 2px 1px light-dark(color-mix(in oklch, black, transparent 88%), color-mix(in oklch, white, transparent 72%)) inset',
-  '0 0 12px 3px light-dark(color-mix(in oklch, white, transparent 72%), color-mix(in oklch, white, transparent 90%)) inset',
-  '0px 4px 16px rgba(17, 17, 26, 0.06)',
-  '0px 8px 24px rgba(17, 17, 26, 0.06)',
-  '0px 16px 56px rgba(17, 17, 26, 0.06)'
-].join(', ');
+  "inset 0 1px 0 0 light-dark(hsl(0 0% 100% / 0.85), hsl(0 0% 100% / 0.3))",
+  "inset 0 -1px 0 0 light-dark(hsl(0 0% 100% / 0.35), hsl(0 0% 100% / 0.08))",
+  "0 0 2px 1px light-dark(color-mix(in oklch, black, transparent 88%), color-mix(in oklch, white, transparent 72%)) inset",
+  "0 0 12px 3px light-dark(color-mix(in oklch, white, transparent 72%), color-mix(in oklch, white, transparent 90%)) inset",
+  "0px 4px 16px rgba(17, 17, 26, 0.06)",
+  "0px 8px 24px rgba(17, 17, 26, 0.06)",
+  "0px 16px 56px rgba(17, 17, 26, 0.06)",
+].join(", ");
 
 const SHEEN =
-  'linear-gradient(135deg, light-dark(hsl(0 0% 100% / 0.42), hsl(0 0% 100% / 0.14)) 0%, transparent 42%, transparent 64%, light-dark(hsl(0 0% 100% / 0.18), hsl(0 0% 100% / 0.05)) 100%)';
+  "linear-gradient(135deg, light-dark(hsl(0 0% 100% / 0.42), hsl(0 0% 100% / 0.14)) 0%, transparent 42%, transparent 64%, light-dark(hsl(0 0% 100% / 0.18), hsl(0 0% 100% / 0.05)) 100%)";
 
 const RIM =
-  'linear-gradient(150deg, light-dark(hsl(0 0% 100% / 0.7), hsl(0 0% 100% / 0.34)), light-dark(hsl(0 0% 100% / 0.1), hsl(0 0% 100% / 0.03)) 45%, light-dark(hsl(0 0% 100% / 0.08), hsl(0 0% 100% / 0.02)) 60%, light-dark(hsl(0 0% 100% / 0.42), hsl(0 0% 100% / 0.18)))';
+  "linear-gradient(150deg, light-dark(hsl(0 0% 100% / 0.7), hsl(0 0% 100% / 0.34)), light-dark(hsl(0 0% 100% / 0.1), hsl(0 0% 100% / 0.03)) 45%, light-dark(hsl(0 0% 100% / 0.08), hsl(0 0% 100% / 0.02)) 60%, light-dark(hsl(0 0% 100% / 0.42), hsl(0 0% 100% / 0.18)))";
 
-const RING = 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)';
+const RING = "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)";
 
 const GlassSurface = ({
   children,
@@ -419,17 +484,17 @@ const GlassSurface = ({
   redOffset = 0,
   greenOffset = 10,
   blueOffset = 20,
-  xChannel = 'R',
-  yChannel = 'G',
-  mixBlendMode = 'difference',
+  xChannel = "R",
+  yChannel = "G",
+  mixBlendMode = "difference",
   refraction = true,
-  renderer = 'auto',
+  renderer = "auto",
   backdrop,
   shape,
-  className = '',
-  style = {}
+  className = "",
+  style = {},
 }: GlassSurfaceProps) => {
-  const uniqueId = useId().replace(/:/g, '-');
+  const uniqueId = useId().replace(/:/g, "-");
   const filterId = `glass-filter-${uniqueId}`;
   const redGradId = `red-grad-${uniqueId}`;
   const blueGradId = `blue-grad-${uniqueId}`;
@@ -439,8 +504,11 @@ const GlassSurface = ({
   const [blurSupported, setBlurSupported] = useState<boolean>(true);
   const [checked, setChecked] = useState(false);
   const [webglFailed, setWebglFailed] = useState(false);
-  const [boxSize, setBoxSize] = useState<string>('');
-  const [loaded, setLoaded] = useState<{ src: string; image: HTMLImageElement | null }>({ src: '', image: null });
+  const [boxSize, setBoxSize] = useState<string>("");
+  const [loaded, setLoaded] = useState<{ src: string; image: HTMLImageElement | null }>({
+    src: "",
+    image: null,
+  });
   const [art, setArt] = useState<ShapeArt | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -450,8 +518,8 @@ const GlassSurface = ({
   const blueChannelRef = useRef<SVGFEDisplacementMapElement>(null);
   const gaussianBlurRef = useRef<SVGFEGaussianBlurElement>(null);
   const traceRef = useRef<CachedTrace | null>(null);
-  const shapeMapRef = useRef<string>('');
-  const mapUrlRef = useRef('');
+  const shapeMapRef = useRef<string>("");
+  const mapUrlRef = useRef("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const settingsRef = useRef<GlassSettings | null>(null);
   settingsRef.current = {
@@ -463,7 +531,7 @@ const GlassSurface = ({
     greenOffset,
     blueOffset,
     xChannel,
-    yChannel
+    yChannel,
   };
 
   const generateDisplacementMap = () => {
@@ -499,7 +567,7 @@ const GlassSurface = ({
 
   const updateDisplacementMap = () => {
     mapUrlRef.current = shapeMapRef.current || generateDisplacementMap();
-    feImageRef.current?.setAttribute('href', mapUrlRef.current);
+    feImageRef.current?.setAttribute("href", mapUrlRef.current);
   };
 
   useEffect(() => {
@@ -507,16 +575,16 @@ const GlassSurface = ({
     [
       { ref: redChannelRef, offset: redOffset },
       { ref: greenChannelRef, offset: greenOffset },
-      { ref: blueChannelRef, offset: blueOffset }
+      { ref: blueChannelRef, offset: blueOffset },
     ].forEach(({ ref, offset }) => {
       if (ref.current) {
-        ref.current.setAttribute('scale', (distortionScale + offset).toString());
-        ref.current.setAttribute('xChannelSelector', xChannel);
-        ref.current.setAttribute('yChannelSelector', yChannel);
+        ref.current.setAttribute("scale", (distortionScale + offset).toString());
+        ref.current.setAttribute("xChannelSelector", xChannel);
+        ref.current.setAttribute("yChannelSelector", yChannel);
       }
     });
 
-    gaussianBlurRef.current?.setAttribute('stdDeviation', displace.toString());
+    gaussianBlurRef.current?.setAttribute("stdDeviation", displace.toString());
   }, [
     boxSize,
     width,
@@ -533,7 +601,7 @@ const GlassSurface = ({
     blueOffset,
     xChannel,
     yChannel,
-    mixBlendMode
+    mixBlendMode,
   ]);
 
   useEffect(() => {
@@ -555,8 +623,8 @@ const GlassSurface = ({
     if (!shape) return undefined;
     let alive = true;
     const image = new Image();
-    image.crossOrigin = 'anonymous';
-    image.decoding = 'async';
+    image.crossOrigin = "anonymous";
+    image.decoding = "async";
     image.onload = () => alive && setLoaded({ src: shape, image });
     image.onerror = () => alive && setLoaded({ src: shape, image: null });
     image.src = shape;
@@ -571,17 +639,38 @@ const GlassSurface = ({
     const element = containerRef.current;
     const w = element?.offsetWidth || 0;
     const h = element?.offsetHeight || 0;
-    let map = '';
+    let map = "";
     let trace: CachedTrace | null = null;
     if (shapeImage && w && h) {
-      const ratio = Math.min(2, window.devicePixelRatio || 1, Math.sqrt(400000 / (w * h)));
+      const ratio = Math.min(
+        2,
+        window.devicePixelRatio || 1,
+        Math.sqrt(400000 / (w * h))
+      );
       trace = traceRef.current;
       try {
-        if (!trace || trace.image !== shapeImage || trace.width !== w || trace.height !== h || trace.ratio !== ratio) {
-          trace = { image: shapeImage, width: w, height: h, ...traceShape(shapeImage, w, h, ratio) };
+        if (
+          !trace ||
+          trace.image !== shapeImage ||
+          trace.width !== w ||
+          trace.height !== h ||
+          trace.ratio !== ratio
+        ) {
+          trace = {
+            image: shapeImage,
+            width: w,
+            height: h,
+            ...traceShape(shapeImage, w, h, ratio),
+          };
           traceRef.current = trace;
         }
-        map = bendShape(trace, Math.min(w, h) * borderWidth * 0.5, Math.max(blur, 0.5), opacity, brightness / 100);
+        map = bendShape(
+          trace,
+          Math.min(w, h) * borderWidth * 0.5,
+          Math.max(blur, 0.5),
+          opacity,
+          brightness / 100
+        );
       } catch {
         trace = null;
         traceRef.current = null;
@@ -589,14 +678,16 @@ const GlassSurface = ({
     }
     shapeMapRef.current = map;
     updateDisplacementMap();
-    if (shape && trace) setArt({ src: shape, box: trace.box, line: trace.line, glow: trace.glow });
+    if (shape && trace)
+      setArt({ src: shape, box: trace.box, line: trace.line, glow: trace.glow });
     else if (shape && loaded.src === shape) setArt({ src: shape, failed: true });
   }, [shape, loaded, boxSize, borderWidth, blur, opacity, brightness]);
 
   useEffect(() => {
     setSvgSupported(supportsSVGFilters());
     setBlurSupported(
-      CSS.supports('backdrop-filter', 'blur(1px)') || CSS.supports('-webkit-backdrop-filter', 'blur(1px)')
+      CSS.supports("backdrop-filter", "blur(1px)") ||
+        CSS.supports("-webkit-backdrop-filter", "blur(1px)")
     );
     setChecked(true);
   }, []);
@@ -606,7 +697,7 @@ const GlassSurface = ({
     refraction &&
     Boolean(backdrop) &&
     !webglFailed &&
-    (renderer === 'webgl' || (renderer === 'auto' && !svgSupported));
+    (renderer === "webgl" || (renderer === "auto" && !svgSupported));
   const refractive = !webgl && svgSupported && refraction;
   const frosted = !webgl && !refractive;
 
@@ -614,12 +705,12 @@ const GlassSurface = ({
     if (!webgl) return undefined;
     const canvas = canvasRef.current;
     const element = containerRef.current;
-    const gl = canvas?.getContext('webgl2', {
+    const gl = canvas?.getContext("webgl2", {
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
       depth: false,
-      stencil: false
+      stencil: false,
     });
     const program = gl ? compileGlass(gl) : null;
     if (!canvas || !element || !gl || !program) {
@@ -629,25 +720,29 @@ const GlassSurface = ({
 
     const uniforms: Record<string, WebGLUniformLocation | null> = {};
     [
-      'uBackdrop',
-      'uMap',
-      'uCanvas',
-      'uSize',
-      'uOrigin',
-      'uStep',
-      'uScale',
-      'uChannel',
-      'uSpread',
-      'uLod',
-      'uSaturation'
-    ].forEach(name => {
+      "uBackdrop",
+      "uMap",
+      "uCanvas",
+      "uSize",
+      "uOrigin",
+      "uStep",
+      "uScale",
+      "uChannel",
+      "uSpread",
+      "uLod",
+      "uSaturation",
+    ].forEach((name) => {
       uniforms[name] = gl.getUniformLocation(program, name);
     });
     const vao = gl.createVertexArray();
     const buffer = gl.createBuffer();
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 3, -1, -1, 3]),
+      gl.STATIC_DRAW
+    );
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -663,20 +758,20 @@ const GlassSurface = ({
     };
     const backdropTexture = makeTexture();
     const mapTexture = makeTexture();
-    const mapCanvas = document.createElement('canvas');
-    const mapContext = mapCanvas.getContext('2d');
+    const mapCanvas = document.createElement("canvas");
+    const mapContext = mapCanvas.getContext("2d");
     const picture = {
       node: null as GlassSurfaceBackdrop | null,
-      key: '',
+      key: "",
       width: 0,
       height: 0,
       mipmapped: false,
-      ready: false
+      ready: false,
     };
-    const map = { url: '', ready: false };
+    const map = { url: "", ready: false };
     let frame = 0;
     let visible = true;
-    let drawn = '';
+    let drawn = "";
 
     const loadMap = (url: string) => {
       map.url = url;
@@ -691,7 +786,7 @@ const GlassSurface = ({
         gl.bindTexture(gl.TEXTURE_2D, mapTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, mapCanvas);
         map.ready = true;
-        drawn = '';
+        drawn = "";
       };
       image.src = url;
     };
@@ -701,7 +796,11 @@ const GlassSurface = ({
       gl.bindTexture(gl.TEXTURE_2D, backdropTexture);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, node);
       if (still) gl.generateMipmap(gl.TEXTURE_2D);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, still ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+      gl.texParameteri(
+        gl.TEXTURE_2D,
+        gl.TEXTURE_MIN_FILTER,
+        still ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR
+      );
       [picture.width, picture.height] = sourceSize(node);
       picture.mipmapped = still;
       picture.ready = true;
@@ -716,10 +815,11 @@ const GlassSurface = ({
       if (mapUrlRef.current && mapUrlRef.current !== map.url) loadMap(mapUrlRef.current);
       const node = resolveBackdrop(s.backdrop);
       if (!node) return;
-      let key = '';
-      if (node instanceof HTMLImageElement) key = node.complete && node.naturalWidth ? node.currentSrc || node.src : '';
+      let key = "";
+      if (node instanceof HTMLImageElement)
+        key = node.complete && node.naturalWidth ? node.currentSrc || node.src : "";
       else if (node instanceof HTMLVideoElement)
-        key = node.readyState >= 2 ? `${node.currentSrc}|${node.currentTime}` : '';
+        key = node.readyState >= 2 ? `${node.currentSrc}|${node.currentTime}` : "";
       else key = `${node.width}x${node.height}|${performance.now()}`;
       if (key && (node !== picture.node || key !== picture.key)) {
         try {
@@ -730,7 +830,7 @@ const GlassSurface = ({
         }
         picture.node = node;
         picture.key = key;
-        drawn = '';
+        drawn = "";
       }
       if (!picture.ready || !map.ready) return;
 
@@ -763,8 +863,8 @@ const GlassSurface = ({
         s.greenOffset,
         s.blueOffset,
         s.xChannel,
-        s.yChannel
-      ].join('|');
+        s.yChannel,
+      ].join("|");
       if (signature === drawn) return;
       drawn = signature;
 
@@ -775,7 +875,8 @@ const GlassSurface = ({
       const scaleX = box.width / layoutWidth;
       const scaleY = box.height / layoutHeight;
       const texelsPerPixel = (picture.width / content.width) * (scaleX / ratio);
-      const spreadTexels = (picture.width / content.width) * scaleX * Math.max(0, s.displace);
+      const spreadTexels =
+        (picture.width / content.width) * scaleX * Math.max(0, s.displace);
       const lod = picture.mipmapped
         ? Math.max(0, Math.log2(Math.max(texelsPerPixel, spreadTexels * 0.5, 0.000001)))
         : 0;
@@ -790,7 +891,11 @@ const GlassSurface = ({
       gl.uniform1i(uniforms.uMap, 1);
       gl.uniform2f(uniforms.uCanvas, width, height);
       gl.uniform2f(uniforms.uSize, layoutWidth, layoutHeight);
-      gl.uniform2f(uniforms.uOrigin, (box.left - content.x) / content.width, (box.top - content.y) / content.height);
+      gl.uniform2f(
+        uniforms.uOrigin,
+        (box.left - content.x) / content.width,
+        (box.top - content.y) / content.height
+      );
       gl.uniform2f(uniforms.uStep, scaleX / content.width, scaleY / content.height);
       gl.uniform3f(
         uniforms.uScale,
@@ -798,7 +903,11 @@ const GlassSurface = ({
         s.distortionScale + s.greenOffset,
         s.distortionScale + s.blueOffset
       );
-      gl.uniform2i(uniforms.uChannel, CHANNELS[s.xChannel] ?? 0, CHANNELS[s.yChannel] ?? 1);
+      gl.uniform2i(
+        uniforms.uChannel,
+        CHANNELS[s.xChannel] ?? 0,
+        CHANNELS[s.yChannel] ?? 1
+      );
       gl.uniform1f(uniforms.uSpread, Math.max(0, s.displace));
       gl.uniform1f(uniforms.uLod, lod);
       gl.uniform1f(uniforms.uSaturation, s.saturation);
@@ -812,20 +921,20 @@ const GlassSurface = ({
       event.preventDefault();
       setWebglFailed(true);
     };
-    const intersection = new IntersectionObserver(entries => {
-      visible = entries.some(entry => entry.isIntersecting);
+    const intersection = new IntersectionObserver((entries) => {
+      visible = entries.some((entry) => entry.isIntersecting);
       wake();
     });
     intersection.observe(element);
-    document.addEventListener('visibilitychange', wake);
-    canvas.addEventListener('webglcontextlost', onLost);
+    document.addEventListener("visibilitychange", wake);
+    canvas.addEventListener("webglcontextlost", onLost);
     wake();
 
     return () => {
       cancelAnimationFrame(frame);
       intersection.disconnect();
-      document.removeEventListener('visibilitychange', wake);
-      canvas.removeEventListener('webglcontextlost', onLost);
+      document.removeEventListener("visibilitychange", wake);
+      canvas.removeEventListener("webglcontextlost", onLost);
       gl.deleteTexture(backdropTexture);
       gl.deleteTexture(mapTexture);
       gl.deleteBuffer(buffer);
@@ -835,37 +944,45 @@ const GlassSurface = ({
   }, [webgl]);
 
   const supportsSVGFilters = () => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
+    if (typeof window === "undefined" || typeof document === "undefined") {
       return false;
     }
 
-    const isWebkit = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    const isWebkit =
+      /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
     const isFirefox = /Firefox/.test(navigator.userAgent);
 
     if (isWebkit || isFirefox) {
       return false;
     }
 
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.style.backdropFilter = `url(#${filterId})`;
 
-    return div.style.backdropFilter !== '';
+    return div.style.backdropFilter !== "";
   };
 
   const outline = shape && art?.src === shape && !art.failed ? art : null;
-  const maskUrl = outline ? `url("${outline.src.replace(/"/g, '%22').replace(/[\n\r]+/g, ' ')}")` : '';
+  const maskUrl = outline
+    ? `url("${outline.src.replace(/"/g, "%22").replace(/[\n\r]+/g, " ")}")`
+    : "";
   const maskPlace = outline
     ? `${outline.box.x}px ${outline.box.y}px / ${outline.box.width}px ${outline.box.height}px no-repeat`
-    : '';
+    : "";
   const shapeStyle: CSSProperties = outline
-    ? { borderRadius: 0, boxShadow: 'none', WebkitMask: `${maskUrl} ${maskPlace}`, mask: `${maskUrl} ${maskPlace}` }
+    ? {
+        borderRadius: 0,
+        boxShadow: "none",
+        WebkitMask: `${maskUrl} ${maskPlace}`,
+        mask: `${maskUrl} ${maskPlace}`,
+      }
     : shape && art?.src !== shape
-      ? { opacity: 0, transition: 'none' }
+      ? { opacity: 0, transition: "none" }
       : {};
 
   const frost = blurSupported
     ? `light-dark(hsl(0 0% 100% / ${0.12 + backgroundOpacity * 0.5}), hsl(0 0% 100% / ${0.04 + backgroundOpacity * 0.3}))`
-    : 'light-dark(hsl(0 0% 100% / 0.72), hsl(0 0% 12% / 0.72))';
+    : "light-dark(hsl(0 0% 100% / 0.72), hsl(0 0% 12% / 0.72))";
   const fallbackFilter = `blur(12px) saturate(${saturation * 1.4}) brightness(1.04)`;
 
   const modeStyle: CSSProperties = webgl
@@ -874,22 +991,22 @@ const GlassSurface = ({
       ? {
           background: `light-dark(hsl(0 0% 100% / ${backgroundOpacity}), hsl(0 0% 0% / ${backgroundOpacity}))`,
           backdropFilter: `url(#${filterId}) saturate(${saturation})`,
-          boxShadow: SVG_SHADOW
+          boxShadow: SVG_SHADOW,
         }
       : {
           background: frost,
           WebkitBackdropFilter: fallbackFilter,
           backdropFilter: fallbackFilter,
-          boxShadow: FALLBACK_SHADOW
+          boxShadow: FALLBACK_SHADOW,
         };
 
   const containerStyle = {
     ...style,
-    width: typeof width === 'number' ? `${width}px` : width,
-    height: typeof height === 'number' ? `${height}px` : height,
+    width: typeof width === "number" ? `${width}px` : width,
+    height: typeof height === "number" ? `${height}px` : height,
     borderRadius: `${borderRadius}px`,
     ...modeStyle,
-    ...shapeStyle
+    ...shapeStyle,
   } as CSSProperties;
 
   return (
@@ -903,10 +1020,31 @@ const GlassSurface = ({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <filter id={filterId} colorInterpolationFilters="sRGB" x="0%" y="0%" width="100%" height="100%">
-            <feImage ref={feImageRef} x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="map" />
+          <filter
+            id={filterId}
+            colorInterpolationFilters="sRGB"
+            x="0%"
+            y="0%"
+            width="100%"
+            height="100%"
+          >
+            <feImage
+              ref={feImageRef}
+              x="0"
+              y="0"
+              width="100%"
+              height="100%"
+              preserveAspectRatio="none"
+              result="map"
+            />
 
-            <feDisplacementMap ref={redChannelRef} in="SourceGraphic" in2="map" id="redchannel" result="dispRed" />
+            <feDisplacementMap
+              ref={redChannelRef}
+              in="SourceGraphic"
+              in2="map"
+              id="redchannel"
+              result="dispRed"
+            />
             <feColorMatrix
               in="dispRed"
               type="matrix"
@@ -934,7 +1072,13 @@ const GlassSurface = ({
               result="green"
             />
 
-            <feDisplacementMap ref={blueChannelRef} in="SourceGraphic" in2="map" id="bluechannel" result="dispBlue" />
+            <feDisplacementMap
+              ref={blueChannelRef}
+              in="SourceGraphic"
+              in2="map"
+              id="bluechannel"
+              result="dispBlue"
+            />
             <feColorMatrix
               in="dispBlue"
               type="matrix"
@@ -965,7 +1109,7 @@ const GlassSurface = ({
           className="pointer-events-none absolute inset-0 rounded-[inherit]"
           style={{
             background: `light-dark(hsl(0 0% 100% / ${backgroundOpacity}), hsl(0 0% 0% / ${backgroundOpacity}))`,
-            boxShadow: outline ? 'none' : FRAME_SHADOW
+            boxShadow: outline ? "none" : FRAME_SHADOW,
           }}
         />
       )}
@@ -983,9 +1127,9 @@ const GlassSurface = ({
           style={{
             background: RIM,
             WebkitMask: RING,
-            WebkitMaskComposite: 'xor',
+            WebkitMaskComposite: "xor",
             mask: RING,
-            maskComposite: 'exclude'
+            maskComposite: "exclude",
           }}
         />
       )}
@@ -997,8 +1141,8 @@ const GlassSurface = ({
             background: frosted ? GLOW.fallback : GLOW.svg,
             WebkitMaskImage: `url(${outline.glow})`,
             maskImage: `url(${outline.glow})`,
-            WebkitMaskSize: '100% 100%',
-            maskSize: '100% 100%'
+            WebkitMaskSize: "100% 100%",
+            maskSize: "100% 100%",
           }}
         />
       )}
@@ -1010,8 +1154,8 @@ const GlassSurface = ({
             background: frosted ? LINE.fallback : LINE.svg,
             WebkitMaskImage: `url(${outline.line})`,
             maskImage: `url(${outline.line})`,
-            WebkitMaskSize: '100% 100%',
-            maskSize: '100% 100%'
+            WebkitMaskSize: "100% 100%",
+            maskSize: "100% 100%",
           }}
         />
       )}

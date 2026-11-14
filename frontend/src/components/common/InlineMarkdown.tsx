@@ -10,7 +10,8 @@ const CODE = "rounded bg-surface-100 px-1 font-mono text-[0.85em]";
 
 function inline(text: string): React.ReactNode[] {
   return text.split(TOKEN).map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) return <strong key={i}>{part.slice(2, -2)}</strong>;
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4)
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
     if (part.startsWith("`") && part.endsWith("`") && part.length > 2)
       return (
         <code key={i} className={CODE}>
@@ -23,7 +24,8 @@ function inline(text: string): React.ReactNode[] {
           {part.slice(1, -1).replace(/\\(?=[A-Za-z{])/g, "")}
         </code>
       );
-    if (part.startsWith("*") && part.endsWith("*") && part.length > 2) return <em key={i}>{part.slice(1, -1)}</em>;
+    if (part.startsWith("*") && part.endsWith("*") && part.length > 2)
+      return <em key={i}>{part.slice(1, -1)}</em>;
     return part;
   });
 }
@@ -32,7 +34,10 @@ const BULLET = /^\s*[-*•]\s+(.*)$/;
 const NUMBERED = /^\s*\d{1,2}[.)]\s+(.*)$/;
 const HEADING = /^\s{0,3}#{1,6}\s+(.*)$/;
 
-type Block = { kind: "p"; lines: string[] } | { kind: "ul" | "ol"; items: string[] } | { kind: "h"; text: string };
+type Block =
+  | { kind: "p"; lines: string[] }
+  | { kind: "ul" | "ol"; items: string[] }
+  | { kind: "h"; text: string };
 
 function parse(text: string): Block[] {
   const blocks: Block[] = [];
@@ -58,7 +63,10 @@ function parse(text: string): Block[] {
   return blocks.filter((x) => x.kind !== "p" || x.lines.length > 0);
 }
 
-export const InlineMarkdown: React.FC<{ text: string; className?: string }> = ({ text, className }) => (
+export const InlineMarkdown: React.FC<{ text: string; className?: string }> = ({
+  text,
+  className,
+}) => (
   <div className={className}>
     {parse(text).map((blk, i) => {
       if (blk.kind === "h")
@@ -70,7 +78,10 @@ export const InlineMarkdown: React.FC<{ text: string; className?: string }> = ({
       if (blk.kind === "ul" || blk.kind === "ol") {
         const List = blk.kind === "ul" ? "ul" : "ol";
         return (
-          <List key={i} className={`mb-2 pl-5 ${blk.kind === "ul" ? "list-disc" : "list-decimal"}`}>
+          <List
+            key={i}
+            className={`mb-2 pl-5 ${blk.kind === "ul" ? "list-disc" : "list-decimal"}`}
+          >
             {blk.items.map((it, j) => (
               <li key={j}>{inline(it)}</li>
             ))}

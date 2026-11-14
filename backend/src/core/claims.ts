@@ -28,7 +28,8 @@ export function normalizeResume(text: string): string {
     .join("\n");
 }
 
-const SKILLS_HEADING = /^(?:(?:technical|core|key|programming)\s+)?(?:skills?|technologies|tech(?:nical)? stack|tools|languages|frameworks|libraries)(?:\s*(?:&|and)\s*\w+)?\s*[:\-–—]\s*(.+)$/i;
+const SKILLS_HEADING =
+  /^(?:(?:technical|core|key|programming)\s+)?(?:skills?|technologies|tech(?:nical)? stack|tools|languages|frameworks|libraries)(?:\s*(?:&|and)\s*\w+)?\s*[:\-–—]\s*(.+)$/i;
 
 /**
  * True for a bare keyword list such as "Skills: Node.js, PostgreSQL, Redis". It lists names, not something an
@@ -38,8 +39,14 @@ const SKILLS_HEADING = /^(?:(?:technical|core|key|programming)\s+)?(?:skills?|te
 export function isSkillsListLine(line: string): boolean {
   const m = SKILLS_HEADING.exec(line.trim());
   if (!m) return false;
-  const items = m[1]!.split(/[,;|•·/]|\s{2,}/).map((s) => s.trim()).filter(Boolean);
-  return items.length >= 2 && items.every((i) => i.split(/\s+/).length <= 4 && !/\d+\s*(%|x|ms|k|m)\b/i.test(i));
+  const items = m[1]!
+    .split(/[,;|•·/]|\s{2,}/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return (
+    items.length >= 2 &&
+    items.every((i) => i.split(/\s+/).length <= 4 && !/\d+\s*(%|x|ms|k|m)\b/i.test(i))
+  );
 }
 
 export function claimId(seq: number): string {
@@ -48,7 +55,12 @@ export function claimId(seq: number): string {
 
 export function newClaim(
   id: string,
-  fields: { text: string; resume_line: string | null; skill_id: string | null; source: ClaimSource },
+  fields: {
+    text: string;
+    resume_line: string | null;
+    skill_id: string | null;
+    source: ClaimSource;
+  },
 ): Claim {
   return {
     id,

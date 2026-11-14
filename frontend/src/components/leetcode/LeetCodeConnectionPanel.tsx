@@ -91,7 +91,9 @@ export const LeetCodeConnectionPanel: React.FC<LeetCodeConnectionPanelProps> = (
         setConn(r.connection);
         setNote(
           `${prefix}${r.status === "imported" ? "Saved" : "Already up to date:"} ${s.solved} solved` +
-            (s.easy !== null ? ` (easy ${s.easy}, medium ${s.medium}, hard ${s.hard})` : "") +
+            (s.easy !== null
+              ? ` (easy ${s.easy}, medium ${s.medium}, hard ${s.hard})`
+              : "") +
             ", looked up from your public LeetCode profile. It is not verified as yours."
         );
         return r.connection;
@@ -170,10 +172,7 @@ export const LeetCodeConnectionPanel: React.FC<LeetCodeConnectionPanelProps> = (
 
   const imp = conn.imported;
   return (
-    <section
-      aria-labelledby="leetcode-conn-heading"
-      className={cn(GLASS, "p-5 sm:p-7")}
-    >
+    <section aria-labelledby="leetcode-conn-heading" className={cn(GLASS, "p-5 sm:p-7")}>
       <CardHead
         icon={Link2}
         id="leetcode-conn-heading"
@@ -184,15 +183,17 @@ export const LeetCodeConnectionPanel: React.FC<LeetCodeConnectionPanelProps> = (
       {lookupAvailable ? (
         <p className="mt-2 text-sm text-ink-primary">
           <strong>This is not an official connection.</strong> LeetCode has no official
-          sign-in or API for apps like this. Type your public username and UNBLUFF looks up
-          your solved counts from LeetCode&apos;s public profile data when you ask. Nothing
-          proves the profile is yours, and you can still type your own numbers instead.
+          sign-in or API for apps like this. Type your public username and UNBLUFF looks
+          up your solved counts from LeetCode&apos;s public profile data when you ask.
+          Nothing proves the profile is yours, and you can still type your own numbers
+          instead.
         </p>
       ) : (
         <p className="mt-2 text-sm text-ink-primary">
           <strong>This is not a live connection.</strong> LeetCode has no official sign-in
-          or API for apps like this and its terms forbid scraping, so UNBLUFF never contacts
-          LeetCode. You link your public username and import numbers you supply yourself.
+          or API for apps like this and its terms forbid scraping, so UNBLUFF never
+          contacts LeetCode. You link your public username and import numbers you supply
+          yourself.
         </p>
       )}
 
@@ -331,7 +332,12 @@ export const LeetCodeConnectionPanel: React.FC<LeetCodeConnectionPanelProps> = (
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {lookupAvailable && conn.linked && !confirming && (
-          <Button size="sm" className="rounded-full" onClick={() => void refresh()} disabled={busy !== null}>
+          <Button
+            size="sm"
+            className="rounded-full"
+            onClick={() => void refresh()}
+            disabled={busy !== null}
+          >
             {busy === "lookup" ? "Fetching…" : "Fetch my numbers from LeetCode"}
           </Button>
         )}
@@ -368,14 +374,24 @@ export const LeetCodeConnectionPanel: React.FC<LeetCodeConnectionPanelProps> = (
                 Keep my imported numbers
               </Button>
             )}
-            <Button size="sm" className="rounded-full" onClick={() => void unlink("all")} disabled={busy !== null}>
+            <Button
+              size="sm"
+              className="rounded-full"
+              onClick={() => void unlink("all")}
+              disabled={busy !== null}
+            >
               {busy === "unlink"
                 ? "Removing…"
                 : conn.linked
                   ? "Delete them too"
                   : "Yes, delete them"}
             </Button>
-            <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setConfirming(false)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => setConfirming(false)}
+            >
               Cancel
             </Button>
           </span>

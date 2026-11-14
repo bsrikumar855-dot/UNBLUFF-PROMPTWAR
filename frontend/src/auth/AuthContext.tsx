@@ -5,7 +5,10 @@ import { MOCK_AUTH_ENABLED, mockAuthClient } from "./mockClient";
 import { AuthContext, type AuthContextValue } from "./context";
 import { AuthError, type AuthClient, type AuthStatus, type AuthUser } from "./types";
 
-const UNSUPPORTED = new AuthError("This isn't available for this sign-in method.", "app/unsupported");
+const UNSUPPORTED = new AuthError(
+  "This isn't available for this sign-in method.",
+  "app/unsupported"
+);
 
 export const AuthProvider: React.FC<{
   client?: AuthClient;
@@ -32,7 +35,9 @@ export const AuthProvider: React.FC<{
   useEffect(() => {
     setAuthHooks({
       getToken: () => client.getIdToken(),
-      getAppCheckToken: client.getAppCheckToken ? () => client.getAppCheckToken!() : undefined,
+      getAppCheckToken: client.getAppCheckToken
+        ? () => client.getAppCheckToken!()
+        : undefined,
       onUnauthorized: () => {
         // Only a request that carried a token can mean "expired"; a signed-out 401 is just "sign in".
         if (!signedIn.current) return;
@@ -53,7 +58,9 @@ export const AuthProvider: React.FC<{
       signIn: (e, p, remember) => client.signIn(e, p, remember),
       signUp: (e, p, remember) => client.signUp(e, p, remember),
       sendVerificationEmail: () =>
-        client.sendVerificationEmail ? client.sendVerificationEmail() : Promise.reject(UNSUPPORTED),
+        client.sendVerificationEmail
+          ? client.sendVerificationEmail()
+          : Promise.reject(UNSUPPORTED),
       refreshUser: () => (client.refreshUser ? client.refreshUser() : Promise.resolve()),
       signOut: () => {
         setSignedOutOnPurpose(true);
@@ -61,10 +68,15 @@ export const AuthProvider: React.FC<{
       },
       sendPasswordReset: (e) => client.sendPasswordReset(e),
       changePassword: (current, next) =>
-        client.changePassword ? client.changePassword(current, next) : Promise.reject(UNSUPPORTED),
+        client.changePassword
+          ? client.changePassword(current, next)
+          : Promise.reject(UNSUPPORTED),
       verifyPassword: (password) =>
-        client.verifyPassword ? client.verifyPassword(password) : Promise.reject(UNSUPPORTED),
-      deleteAccount: () => (client.deleteAccount ? client.deleteAccount() : Promise.reject(UNSUPPORTED)),
+        client.verifyPassword
+          ? client.verifyPassword(password)
+          : Promise.reject(UNSUPPORTED),
+      deleteAccount: () =>
+        client.deleteAccount ? client.deleteAccount() : Promise.reject(UNSUPPORTED),
       clearSessionExpired: () => setSessionExpired(false),
     }),
     [client, status, user, sessionExpired, signedOutOnPurpose]

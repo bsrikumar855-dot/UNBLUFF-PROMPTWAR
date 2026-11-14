@@ -8,7 +8,13 @@ import type { MemoryRecord, StoredMessage } from "./store.js";
  * anything that could pose as one of our delimiters removed. Memory text is JSON-encoded so it cannot break out.
  */
 
-export const CONTEXT_LIMITS = { message: 2000, recentChars: 6000, recentTurns: 8, memoryChars: 3000, activityChars: 2800 } as const;
+export const CONTEXT_LIMITS = {
+  message: 2000,
+  recentChars: 6000,
+  recentTurns: 8,
+  memoryChars: 3000,
+  activityChars: 2800,
+} as const;
 
 const MODE_FOCUS: Record<MentorMode, string> = {
   dsa_coach:
@@ -49,7 +55,18 @@ export function planSystemPrompt(): string {
   ].join("\n");
 }
 
-export function systemPrompt(mode: MentorMode, opts: { hintLevel: number; solutionAllowed: boolean; github?: boolean; career?: boolean; leetcode?: boolean; resume?: boolean; problem?: boolean }): string {
+export function systemPrompt(
+  mode: MentorMode,
+  opts: {
+    hintLevel: number;
+    solutionAllowed: boolean;
+    github?: boolean;
+    career?: boolean;
+    leetcode?: boolean;
+    resume?: boolean;
+    problem?: boolean;
+  },
+): string {
   return [
     "You are the AI Placement Mentor inside UNBLUFF, a campus-placement preparation application.",
     MODE_FOCUS[mode],
@@ -141,7 +158,10 @@ export const SUMMARY_SYSTEM = [
 
 /** Removes anything that could imitate one of our delimiter tags. */
 function defang(s: string): string {
-  return s.replace(/<\/?\s*(?:verified_activity|student_profile|student_memories|recent_conversation|github_activity|career_jobs|leetcode_import|resume_ats|pasted_problem|placement_plan|student_message|conversation|system)[^>]*>/gi, "[tag removed]");
+  return s.replace(
+    /<\/?\s*(?:verified_activity|student_profile|student_memories|recent_conversation|github_activity|career_jobs|leetcode_import|resume_ats|pasted_problem|placement_plan|student_message|conversation|system)[^>]*>/gi,
+    "[tag removed]",
+  );
 }
 
 function block(tag: string, body: string): string {
@@ -165,14 +185,36 @@ export function memoryBlock(memories: MemoryRecord[]): string {
   if (memories.length === 0) return "(nothing saved yet)";
   // One JSON object per line: memory text can never break out of its string.
   return memories
-    .map((m) => JSON.stringify({ type: m.type, source: m.provenance, topic: m.topic, text: cleanText(m.content, 600) }))
+    .map((m) =>
+      JSON.stringify({
+        type: m.type,
+        source: m.provenance,
+        topic: m.topic,
+        text: cleanText(m.content, 600),
+      }),
+    )
     .join("\n")
     .slice(0, CONTEXT_LIMITS.memoryChars);
 }
 
-export function chatPrompt(input: { activity: string; profile: string; memories: MemoryRecord[]; recent: StoredMessage[]; message: string; github?: string; career?: string; leetcode?: string; resume?: string; plan?: string; problem?: string }): string {
+export function chatPrompt(input: {
+  activity: string;
+  profile: string;
+  memories: MemoryRecord[];
+  recent: StoredMessage[];
+  message: string;
+  github?: string;
+  career?: string;
+  leetcode?: string;
+  resume?: string;
+  plan?: string;
+  problem?: string;
+}): string {
   return [
-    block("verified_activity", input.activity.slice(0, CONTEXT_LIMITS.activityChars) || "(no activity data available)"),
+    block(
+      "verified_activity",
+      input.activity.slice(0, CONTEXT_LIMITS.activityChars) || "(no activity data available)",
+    ),
     block("student_profile", input.profile || "(not set)"),
     block("student_memories", memoryBlock(input.memories)),
     block("recent_conversation", recentTranscript(input.recent) || "(this is the first message)"),

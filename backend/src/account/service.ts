@@ -21,7 +21,12 @@ import type { PlacementStore } from "../placement/store.js";
 import type { ResumeStore } from "../resume/store.js";
 import type { RoleRegistry } from "../services/roles.js";
 import type { SessionStore } from "../store/SessionStore.js";
-import type { AccountDeleteResponse, AccountExport, AccountProfile, AccountProfileResponse } from "../types.js";
+import type {
+  AccountDeleteResponse,
+  AccountExport,
+  AccountProfile,
+  AccountProfileResponse,
+} from "../types.js";
 import { audit } from "../security/audit.js";
 import type { AccountStore } from "./store.js";
 
@@ -40,10 +45,19 @@ export const AccountProfileInput = z.strictObject({
   display_name: optionalText(60),
   college: optionalText(120),
   graduation_year: z.number().int().min(1990).max(2100).nullable(),
-  target_role_id: z.string().regex(/^[a-z0-9_]{1,60}$/, "invalid role id").nullable(),
+  target_role_id: z
+    .string()
+    .regex(/^[a-z0-9_]{1,60}$/, "invalid role id")
+    .nullable(),
 });
 
-const EMPTY: AccountProfile = { display_name: null, college: null, graduation_year: null, target_role_id: null, updated_at: null };
+const EMPTY: AccountProfile = {
+  display_name: null,
+  college: null,
+  graduation_year: null,
+  target_role_id: null,
+  updated_at: null,
+};
 
 export interface AccountDeps {
   profiles: AccountStore;
@@ -106,7 +120,8 @@ export class AccountService {
   }
 
   async revokeSessions(uid: string): Promise<void> {
-    if (!this.deps.revokeSessions) throw new ApiError("INTERNAL", "Signing out of all devices isn't available right now.");
+    if (!this.deps.revokeSessions)
+      throw new ApiError("INTERNAL", "Signing out of all devices isn't available right now.");
     await this.deps.revokeSessions(uid);
     audit(this.deps.logger, "account.sessions_revoked", uid);
   }
@@ -114,24 +129,34 @@ export class AccountService {
   /** Everything stored for this student, as stored. GitHub credentials (encrypted tokens) are deliberately left out. */
   async exportData(uid: string): Promise<AccountExport> {
     const d = this.deps;
-    const [profile, sessions, progress, submissions, stats, revisions, conversations, memories] = await Promise.all([
-      this.getProfile(uid),
-      d.sessions.listByOwner(uid),
-      d.progress.listByOwner(uid),
-      d.submissions.listByOwner(uid),
-      d.stats.listByOwner(uid, SCAN),
-      d.revisions.listByOwner(uid, SCAN),
-      d.mentorStore.listConversations(uid, SCAN),
-      d.mentorStore.listMemories(uid, SCAN),
-    ]);
-    const [githubConnection, githubInsights, placementProfile, placementPlan, placementTasks] = await Promise.all([
-      d.githubStore.getConnection(uid),
-      d.githubStore.getInsights(uid),
-      d.placementStore.getProfile(uid),
-      d.placementStore.getPlan(uid),
-      d.placementStore.listTasks(uid, SCAN),
-    ]);
-    const [careerPrefs, careerResume, careerTracked, leetcodeConnection, leetcodeSnapshots, resume, learn] = await Promise.all([
+    const [profile, sessions, progress, submissions, stats, revisions, conversations, memories] =
+      await Promise.all([
+        this.getProfile(uid),
+        d.sessions.listByOwner(uid),
+        d.progress.listByOwner(uid),
+        d.submissions.listByOwner(uid),
+        d.stats.listByOwner(uid, SCAN),
+        d.revisions.listByOwner(uid, SCAN),
+        d.mentorStore.listConversations(uid, SCAN),
+        d.mentorStore.listMemories(uid, SCAN),
+      ]);
+    const [githubConnection, githubInsights, placementProfile, placementPlan, placementTasks] =
+      await Promise.all([
+        d.githubStore.getConnection(uid),
+        d.githubStore.getInsights(uid),
+        d.placementStore.getProfile(uid),
+        d.placementStore.getPlan(uid),
+        d.placementStore.listTasks(uid, SCAN),
+      ]);
+    const [
+      careerPrefs,
+      careerResume,
+      careerTracked,
+      leetcodeConnection,
+      leetcodeSnapshots,
+      resume,
+      learn,
+    ] = await Promise.all([
       d.careerStore.getPrefs(uid),
       d.careerStore.getResume(uid),
       d.careerStore.listTracked(uid, SCAN),
@@ -198,10 +223,23 @@ export class AccountService {
       for (const r of owned) await d.submissions.delete(r.id);
       return owned.length;
     });
-    await step("dsa_stats", () => drain((n) => d.stats.listByOwner(uid, n), (r) => d.stats.delete(uid, r.question_id)));
-    await step("dsa_revision", () => drain((n) => d.revisions.listByOwner(uid, n), (r) => d.revisions.delete(uid, r.question_id)));
+    await step("dsa_stats", () =>
+      drain(
+        (n) => d.stats.listByOwner(uid, n),
+        (r) => d.stats.delete(uid, r.question_id),
+      ),
+    );
+    await step("dsa_revision", () =>
+      drain(
+        (n) => d.revisions.listByOwner(uid, n),
+        (r) => d.revisions.delete(uid, r.question_id),
+      ),
+    );
     await step("mentor", async () => {
-      const [c, m] = await Promise.all([d.mentorStore.listConversations(uid, SCAN), d.mentorStore.listMemories(uid, SCAN)]);
+      const [c, m] = await Promise.all([
+        d.mentorStore.listConversations(uid, SCAN),
+        d.mentorStore.listMemories(uid, SCAN),
+      ]);
       await d.mentor.clearMemories(uid, true);
       return c.length + m.length;
     });
@@ -243,7 +281,10 @@ export class AccountService {
     });
 
     if (failed.length > 0) {
-      throw new ApiError("INTERNAL", `Some data could not be deleted (${failed.join(", ")}). Please try again.`);
+      throw new ApiError(
+        "INTERNAL",
+        `Some data could not be deleted (${failed.join(", ")}). Please try again.`,
+      );
     }
     d.logger.info({ removed }, "account data deleted");
     audit(d.logger, "account.deleted", uid, { removed });
@@ -252,7 +293,10 @@ export class AccountService {
 }
 
 /** Deletes page by page until a listing comes back empty (for stores that only list with a limit). */
-async function drain<T>(list: (limit: number) => Promise<T[]>, remove: (r: T) => Promise<void>): Promise<number> {
+async function drain<T>(
+  list: (limit: number) => Promise<T[]>,
+  remove: (r: T) => Promise<void>,
+): Promise<number> {
   let total = 0;
   for (;;) {
     const page = await list(SCAN);

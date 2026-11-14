@@ -8,7 +8,12 @@ import { role, silentLogger } from "../helpers.js";
 interface Call {
   model: string;
   contents: string;
-  config: { temperature?: number; responseMimeType?: string; responseJsonSchema?: unknown; abortSignal?: AbortSignal };
+  config: {
+    temperature?: number;
+    responseMimeType?: string;
+    responseJsonSchema?: unknown;
+    abortSignal?: AbortSignal;
+  };
 }
 type Reply = string | Error | "hang";
 
@@ -22,7 +27,9 @@ function fakeClient(replies: Reply[]) {
         const next = replies.shift() ?? "{}";
         if (next === "hang") {
           return new Promise<never>((_, reject) => {
-            req.config.abortSignal?.addEventListener("abort", () => reject(new Error("This operation was aborted")));
+            req.config.abortSignal?.addEventListener("abort", () =>
+              reject(new Error("This operation was aborted")),
+            );
           });
         }
         if (next instanceof Error) throw next;
@@ -30,16 +37,32 @@ function fakeClient(replies: Reply[]) {
       },
     },
   };
-  return { client: client as unknown as ConstructorParameters<typeof GeminiProvider>[0]["client"], calls };
+  return {
+    client: client as unknown as ConstructorParameters<typeof GeminiProvider>[0]["client"],
+    calls,
+  };
 }
 
 const skill = role.skills[1]!;
-const claim = newClaim("CL-001", { text: "Built a dashboard", resume_line: null, skill_id: skill.id, source: "declared" });
+const claim = newClaim("CL-001", {
+  text: "Built a dashboard",
+  resume_line: null,
+  skill_id: skill.id,
+  source: "declared",
+});
 const ctx = { role, skill, claim, level: 1 as const, history: [] };
 
-function provider(replies: Reply[], extra: Partial<ConstructorParameters<typeof GeminiProvider>[0]> = {}) {
+function provider(
+  replies: Reply[],
+  extra: Partial<ConstructorParameters<typeof GeminiProvider>[0]> = {},
+) {
   const fake = fakeClient(replies);
-  const p = new GeminiProvider({ model: "primary", logger: silentLogger, client: fake.client, ...extra });
+  const p = new GeminiProvider({
+    model: "primary",
+    logger: silentLogger,
+    client: fake.client,
+    ...extra,
+  });
   return { p, calls: fake.calls };
 }
 
@@ -48,14 +71,27 @@ describe("GeminiProvider", () => {
     const { p, calls } = provider(['{"question":"What did you build?"}']);
     expect(await p.question(ctx)).toBe("What did you build?");
     expect(calls[0]?.config.responseMimeType).toBe("application/json");
-    expect(calls[0]?.config.responseJsonSchema).toMatchObject({ type: "object", required: ["question"] });
+    expect(calls[0]?.config.responseJsonSchema).toMatchObject({
+      type: "object",
+      required: ["question"],
+    });
     expect(calls[0]?.config.temperature).toBe(0.7);
     expect(calls[0]?.model).toBe("primary");
   });
 
   it("uses temperature 0.2 for grading", async () => {
     const criterion = { passed: false, evidence_quote: null, missing_concept: "x" };
-    const grade = { criteria: { accuracy: criterion, specificity: criterion, mechanism: criterion, ownership: criterion, tradeoff: criterion }, admits_gap: false, needs_clarification: false };
+    const grade = {
+      criteria: {
+        accuracy: criterion,
+        specificity: criterion,
+        mechanism: criterion,
+        ownership: criterion,
+        tradeoff: criterion,
+      },
+      admits_gap: false,
+      needs_clarification: false,
+    };
     const { p, calls } = provider([JSON.stringify(grade)]);
     await p.grade({ ...ctx, question: "q", answer: "a" });
     expect(calls[0]?.config.temperature).toBe(0.2);
@@ -65,7 +101,9 @@ describe("GeminiProvider", () => {
     const { p, calls } = provider(["not json", '{"question":"Second try?"}']);
     expect(await p.question(ctx)).toBe("Second try?");
     expect(calls).toHaveLength(2);
-    expect(calls[1]?.contents).toContain("Your previous output was invalid JSON for the schema. Return only valid JSON.");
+    expect(calls[1]?.contents).toContain(
+      "Your previous output was invalid JSON for the schema. Return only valid JSON.",
+    );
   });
 
   it("throws LLM_INVALID_OUTPUT after a second schema failure", async () => {
@@ -75,8 +113,14 @@ describe("GeminiProvider", () => {
   });
 
   it("on 429 retries on the fallback model and skips the primary during the cooldown", async () => {
-    const quota = new GenAiApiError({ message: "Quota exceeded. Please retry in 30.5s.", status: 429 });
-    const { p, calls } = provider([quota, '{"question":"From fallback"}', '{"question":"Still fallback"}'], { fallbackModel: "fallback" });
+    const quota = new GenAiApiError({
+      message: "Quota exceeded. Please retry in 30.5s.",
+      status: 429,
+    });
+    const { p, calls } = provider(
+      [quota, '{"question":"From fallback"}', '{"question":"Still fallback"}'],
+      { fallbackModel: "fallback" },
+    );
     expect(await p.question(ctx)).toBe("From fallback");
     expect(await p.question(ctx)).toBe("Still fallback");
     expect(calls.map((c) => c.model)).toEqual(["primary", "fallback", "fallback"]);

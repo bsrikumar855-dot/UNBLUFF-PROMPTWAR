@@ -80,10 +80,7 @@ export const VerdictBadge: React.FC<VerdictBadgeProps> = ({ verdict, className }
   return <StatusChip {...config} className={className} />;
 };
 
-export const SkillStateBadge: React.FC<SkillStateBadgeProps> = ({
-  state,
-  className,
-}) => {
+export const SkillStateBadge: React.FC<SkillStateBadgeProps> = ({ state, className }) => {
   const config = SKILL_STATE_CONFIG[state];
   return <StatusChip {...config} className={className} />;
 };

@@ -1,4 +1,13 @@
-import type { DsaDifficulty, RevisionActionRequest, RevisionEvent, RevisionEventKind, RevisionItem, RevisionReason, RevisionStatus, SubmissionVerdict } from "../types.js";
+import type {
+  DsaDifficulty,
+  RevisionActionRequest,
+  RevisionEvent,
+  RevisionEventKind,
+  RevisionItem,
+  RevisionReason,
+  RevisionStatus,
+  SubmissionVerdict,
+} from "../types.js";
 import type { RevisionConfig } from "./config.js";
 import type { CountedVerdict, StatsEvent, StatsRecord } from "./stats.js";
 
@@ -40,10 +49,13 @@ export interface RevisionRecord {
 export class RevisionActionError extends Error {}
 
 const DAY_MS = 86_400_000;
-export const addDaysIso = (iso: string, days: number): string => new Date(Date.parse(iso) + days * DAY_MS).toISOString();
-const interval = (cfg: RevisionConfig, stage: number) => cfg.intervalsDays[Math.min(stage, cfg.intervalsDays.length - 1)]!;
+export const addDaysIso = (iso: string, days: number): string =>
+  new Date(Date.parse(iso) + days * DAY_MS).toISOString();
+const interval = (cfg: RevisionConfig, stage: number) =>
+  cfg.intervalsDays[Math.min(stage, cfg.intervalsDays.length - 1)]!;
 
-export const isDue = (r: RevisionRecord, now: Date): boolean => Date.parse(r.due_at) <= now.getTime();
+export const isDue = (r: RevisionRecord, now: Date): boolean =>
+  Date.parse(r.due_at) <= now.getTime();
 
 export function priorityOf(r: RevisionRecord, now: Date): 1 | 2 | 3 | 4 | 5 {
   if (r.reason === "repeated_failure") return 1;
@@ -52,12 +64,22 @@ export function priorityOf(r: RevisionRecord, now: Date): 1 | 2 | 3 | 4 | 5 {
   return 5;
 }
 
-function push(history: RevisionEvent[], at: string, event: RevisionEventKind, detail: string | null, max: number): RevisionEvent[] {
+function push(
+  history: RevisionEvent[],
+  at: string,
+  event: RevisionEventKind,
+  detail: string | null,
+  max: number,
+): RevisionEvent[] {
   return [...history, { at, event, detail }].slice(-max);
 }
 
 export function contextFrom(stats: StatsRecord): RevisionContext {
-  const failures = stats.failures.wrong_answer + stats.failures.time_limit_exceeded + stats.failures.compile_error + stats.failures.runtime_error;
+  const failures =
+    stats.failures.wrong_answer +
+    stats.failures.time_limit_exceeded +
+    stats.failures.compile_error +
+    stats.failures.runtime_error;
   return {
     attempts: stats.attempts,
     failures,
@@ -105,7 +127,8 @@ export function onSubmission(
     };
   }
 
-  const reason: RevisionReason = stats.consecutive_failures >= repeatedThreshold ? "repeated_failure" : "unsolved_attempted";
+  const reason: RevisionReason =
+    stats.consecutive_failures >= repeatedThreshold ? "repeated_failure" : "unsolved_attempted";
   if (!rec) {
     if (itemCount >= cfg.maxItemsPerStudent) return null; // never an unbounded queue
     return {
@@ -136,7 +159,13 @@ export function onSubmission(
 }
 
 /** A weak-topic suggestion the student chose to add: lowest tier, due now. */
-export function createSuggested(uid: string, questionId: string, context: RevisionContext, now: Date, cfg: RevisionConfig): RevisionRecord {
+export function createSuggested(
+  uid: string,
+  questionId: string,
+  context: RevisionContext,
+  now: Date,
+  cfg: RevisionConfig,
+): RevisionRecord {
   const at = now.toISOString();
   return {
     owner_uid: uid,
@@ -155,19 +184,37 @@ export function createSuggested(uid: string, questionId: string, context: Revisi
 }
 
 /** Student actions. Invalid transitions throw RevisionActionError (a 400 for the caller). */
-export function applyAction(rec: RevisionRecord, req: RevisionActionRequest, now: Date, cfg: RevisionConfig): RevisionRecord {
+export function applyAction(
+  rec: RevisionRecord,
+  req: RevisionActionRequest,
+  now: Date,
+  cfg: RevisionConfig,
+): RevisionRecord {
   const at = now.toISOString();
   const keep = cfg.maxHistoryEvents;
 
   switch (req.action) {
     case "start": {
-      if (rec.status === "in_progress") throw new RevisionActionError("This review is already in progress.");
-      return { ...rec, status: "in_progress", updated_at: at, history: push(rec.history, at, "started", null, keep) };
+      if (rec.status === "in_progress")
+        throw new RevisionActionError("This review is already in progress.");
+      return {
+        ...rec,
+        status: "in_progress",
+        updated_at: at,
+        history: push(rec.history, at, "started", null, keep),
+      };
     }
     case "complete": {
-      if (rec.status !== "pending" && rec.status !== "in_progress") throw new RevisionActionError("Only a review that is due or in progress can be completed. Use revisit to review it early.");
-      if (req.outcome !== "remembered" && req.outcome !== "struggled") throw new RevisionActionError('Say how it went: outcome must be "remembered" or "struggled".');
-      const stage = req.outcome === "remembered" ? Math.min(rec.stage + 1, cfg.intervalsDays.length - 1) : 0;
+      if (rec.status !== "pending" && rec.status !== "in_progress")
+        throw new RevisionActionError(
+          "Only a review that is due or in progress can be completed. Use revisit to review it early.",
+        );
+      if (req.outcome !== "remembered" && req.outcome !== "struggled")
+        throw new RevisionActionError(
+          'Say how it went: outcome must be "remembered" or "struggled".',
+        );
+      const stage =
+        req.outcome === "remembered" ? Math.min(rec.stage + 1, cfg.intervalsDays.length - 1) : 0;
       const settled = rec.context.solved && rec.context.consecutive_failures === 0;
       return {
         ...rec,
@@ -182,7 +229,8 @@ export function applyAction(rec: RevisionRecord, req: RevisionActionRequest, now
     }
     case "postpone": {
       const days = req.days ?? cfg.postponeDays;
-      if (!Number.isInteger(days) || days < 1 || days > cfg.maxPostponeDays) throw new RevisionActionError(`Postpone by 1 to ${cfg.maxPostponeDays} days.`);
+      if (!Number.isInteger(days) || days < 1 || days > cfg.maxPostponeDays)
+        throw new RevisionActionError(`Postpone by 1 to ${cfg.maxPostponeDays} days.`);
       const from = Math.max(now.getTime(), Date.parse(rec.due_at));
       return {
         ...rec,
@@ -194,17 +242,28 @@ export function applyAction(rec: RevisionRecord, req: RevisionActionRequest, now
       };
     }
     case "revisit": {
-      if (rec.status !== "scheduled" && rec.status !== "postponed") throw new RevisionActionError("This item is already due.");
-      return { ...rec, status: "pending", due_at: at, updated_at: at, history: push(rec.history, at, "revisited", null, keep) };
+      if (rec.status !== "scheduled" && rec.status !== "postponed")
+        throw new RevisionActionError("This item is already due.");
+      return {
+        ...rec,
+        status: "pending",
+        due_at: at,
+        updated_at: at,
+        history: push(rec.history, at, "revisited", null, keep),
+      };
     }
   }
 }
 
 const REASON_TEXT: Record<RevisionReason, (c: RevisionContext) => string> = {
-  repeated_failure: (c) => `Failed ${c.consecutive_failures} times in a row (last result: ${verdictText(c.last_verdict)}).`,
-  unsolved_attempted: (c) => `Attempted ${c.attempts} time${c.attempts === 1 ? "" : "s"} and not solved yet (last result: ${verdictText(c.last_verdict)}).`,
-  spaced_review: (c) => `Solved after ${c.failures} failed attempt${c.failures === 1 ? "" : "s"}; scheduled for spaced review so it sticks.`,
-  topic_weakness: (c) => `Added to practise a weak topic (${c.topics.slice(0, 2).join(", ") || "unknown"}).`,
+  repeated_failure: (c) =>
+    `Failed ${c.consecutive_failures} times in a row (last result: ${verdictText(c.last_verdict)}).`,
+  unsolved_attempted: (c) =>
+    `Attempted ${c.attempts} time${c.attempts === 1 ? "" : "s"} and not solved yet (last result: ${verdictText(c.last_verdict)}).`,
+  spaced_review: (c) =>
+    `Solved after ${c.failures} failed attempt${c.failures === 1 ? "" : "s"}; scheduled for spaced review so it sticks.`,
+  topic_weakness: (c) =>
+    `Added to practise a weak topic (${c.topics.slice(0, 2).join(", ") || "unknown"}).`,
 };
 
 const verdictText = (v: SubmissionVerdict | null) => (v ? v.replace(/_/g, " ") : "none");

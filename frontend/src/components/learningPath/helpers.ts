@@ -14,6 +14,8 @@ export const AGENT_LABEL: Record<AgentName, string> = {
 
 /** True when the latest assessment came from a simulation (so the UI can say so). */
 export function lastAssessmentWasSimulation(view: LearningPathView): boolean {
-  const last = [...view.agent_log].reverse().find((e) => e.action === "ingest_assessment");
+  const last = [...view.agent_log]
+    .reverse()
+    .find((e) => e.action === "ingest_assessment");
   return last?.summary.includes("a simulation") ?? false;
 }

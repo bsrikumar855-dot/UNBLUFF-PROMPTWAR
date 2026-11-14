@@ -2,7 +2,14 @@
  * Progress Evaluator agent. Applies one assessment result to the roadmap through adaptOnAssessment in core/adapt.ts: below 60 adds a remedial step and pauses dependents, 60-84 schedules review, 85+ marks the step done. Deterministic: the bands are constants, not model judgement.
  */
 import { adaptOnAssessment } from "../core/adapt.js";
-import { progressSummary, topicName, type AssessmentResult, type LearningPath, type PathChange, type ProgressSummary } from "../core/path.js";
+import {
+  progressSummary,
+  topicName,
+  type AssessmentResult,
+  type LearningPath,
+  type PathChange,
+  type ProgressSummary,
+} from "../core/path.js";
 import type { Role } from "../types.js";
 import type { Agent } from "./types.js";
 
@@ -28,7 +35,9 @@ export const progressEvaluatorAgent: Agent<EvaluatorInput, EvaluatorOutput> = {
     const remedial_added = out.change.added.length > 0;
     return {
       output: { path: out.path, change: out.change, summary, remedial_added },
-      handoff: remedial_added ? "1 remedial step added, dependent steps paused" : `progress ${summary.percent_complete}%`,
+      handoff: remedial_added
+        ? "1 remedial step added, dependent steps paused"
+        : `progress ${summary.percent_complete}%`,
       log: [
         {
           agent: "progress_evaluator",

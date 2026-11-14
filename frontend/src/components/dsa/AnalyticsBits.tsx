@@ -131,8 +131,17 @@ export const WeeklyChart: React.FC<{ weeks: WeeklyBucket[] }> = ({ weeks }) => {
             key={w.week_start}
             className="flex min-w-0 flex-1 flex-col items-center gap-1 text-xs text-ink-muted"
           >
-            <div className="flex h-24 w-full items-end overflow-hidden rounded-xl bg-surface-100" aria-hidden="true">
-              <GrowBar axis="y" value={w.attempts / max} delay={wi * 0.04} className="h-full w-full" barClassName="relative bg-redline/70">
+            <div
+              className="flex h-24 w-full items-end overflow-hidden rounded-xl bg-surface-100"
+              aria-hidden="true"
+            >
+              <GrowBar
+                axis="y"
+                value={w.attempts / max}
+                delay={wi * 0.04}
+                className="h-full w-full"
+                barClassName="relative bg-redline/70"
+              >
                 <div
                   className="absolute inset-x-0 bottom-0 bg-verified"
                   style={{

@@ -29,13 +29,41 @@ Optimized page load time by 40% using lazy loading and code splitting
 Organised the college coding club hackathon for 200 students`;
 
 const CLAIMS: ExtractedClaim[] = [
-  { text: "Built a React e-commerce dashboard with Redux handling 10k+ products", resume_line: "Built a React e-commerce dashboard with Redux handling 10k+ products", skill_id: "react_state" },
-  { text: "Implemented REST API integration with Axios and JWT auth", resume_line: "Implemented REST API integration with Axios and JWT auth", skill_id: "rest_apis" },
-  { text: "Made the site fully responsive using CSS Grid and Flexbox", resume_line: "Made the site fully responsive using CSS Grid and Flexbox", skill_id: "responsive_css" },
-  { text: "Wrote unit tests with Jest achieving 80% coverage", resume_line: "Wrote unit tests with Jest achieving 80% coverage", skill_id: "testing" },
-  { text: "Used Git and GitHub for version control in a 4-member team", resume_line: "Used Git and GitHub for version control in a 4-member team", skill_id: "git" },
-  { text: "Optimized page load time by 40% using lazy loading and code splitting", resume_line: "Optimized page load time by 40% using lazy loading and code splitting", skill_id: "js_fundamentals" },
-  { text: "Organised the college coding club hackathon for 200 students", resume_line: "Organised the college coding club hackathon for 200 students", skill_id: null },
+  {
+    text: "Built a React e-commerce dashboard with Redux handling 10k+ products",
+    resume_line: "Built a React e-commerce dashboard with Redux handling 10k+ products",
+    skill_id: "react_state",
+  },
+  {
+    text: "Implemented REST API integration with Axios and JWT auth",
+    resume_line: "Implemented REST API integration with Axios and JWT auth",
+    skill_id: "rest_apis",
+  },
+  {
+    text: "Made the site fully responsive using CSS Grid and Flexbox",
+    resume_line: "Made the site fully responsive using CSS Grid and Flexbox",
+    skill_id: "responsive_css",
+  },
+  {
+    text: "Wrote unit tests with Jest achieving 80% coverage",
+    resume_line: "Wrote unit tests with Jest achieving 80% coverage",
+    skill_id: "testing",
+  },
+  {
+    text: "Used Git and GitHub for version control in a 4-member team",
+    resume_line: "Used Git and GitHub for version control in a 4-member team",
+    skill_id: "git",
+  },
+  {
+    text: "Optimized page load time by 40% using lazy loading and code splitting",
+    resume_line: "Optimized page load time by 40% using lazy loading and code splitting",
+    skill_id: "js_fundamentals",
+  },
+  {
+    text: "Organised the college coding club hackathon for 200 students",
+    resume_line: "Organised the college coding club hackathon for 200 students",
+    skill_id: null,
+  },
 ];
 
 interface Step {
@@ -53,8 +81,10 @@ interface Step {
 const SCRIPT: Record<string, Step[]> = {
   [CLAIMS[0]!.text]: [
     {
-      question: "In the dashboard, which Redux slices and React components did you personally write, and what data did each hold?",
-      answer: "I wrote the products slice and the cart slice with Redux Toolkit, and the ProductTable and FilterBar components. The products slice held the paginated list of 10k items and the active filters.",
+      question:
+        "In the dashboard, which Redux slices and React components did you personally write, and what data did each hold?",
+      answer:
+        "I wrote the products slice and the cart slice with Redux Toolkit, and the ProductTable and FilterBar components. The products slice held the paginated list of 10k items and the active filters.",
       quotes: {
         accuracy: "I wrote the products slice and the cart slice with Redux Toolkit",
         specificity: "the ProductTable and FilterBar components",
@@ -64,8 +94,10 @@ const SCRIPT: Record<string, Step[]> = {
       },
     },
     {
-      question: "When a user changes a filter in FilterBar, walk me through what happens from the dispatch to the table re-rendering.",
-      answer: "React re-renders because hooks make the app faster and the virtual DOM caches everything, so only the changed rows update automatically.",
+      question:
+        "When a user changes a filter in FilterBar, walk me through what happens from the dispatch to the table re-rendering.",
+      answer:
+        "React re-renders because hooks make the app faster and the virtual DOM caches everything, so only the changed rows update automatically.",
       pass: ["specificity", "ownership"],
       quotes: {
         accuracy: "hooks make the app faster and the virtual DOM caches everything",
@@ -73,16 +105,20 @@ const SCRIPT: Record<string, Step[]> = {
         ownership: "React re-renders because hooks make the app faster",
       },
       missing: {
-        accuracy: "Reconciliation: the new element tree is diffed against the previous one; the virtual DOM is not a cache",
-        mechanism: "How useSelector subscribes to the store and triggers a re-render when the selected value changes",
+        accuracy:
+          "Reconciliation: the new element tree is diffed against the previous one; the virtual DOM is not a cache",
+        mechanism:
+          "How useSelector subscribes to the store and triggers a re-render when the selected value changes",
       },
       rootCause: "Reconciliation",
     },
   ],
   [CLAIMS[1]!.text]: [
     {
-      question: "Which endpoints did you call with Axios, and what exactly did you implement for JWT auth?",
-      answer: "I called GET /products, POST /cart and POST /auth/login. I wrote an Axios instance with a request interceptor that adds the Authorization Bearer token from memory.",
+      question:
+        "Which endpoints did you call with Axios, and what exactly did you implement for JWT auth?",
+      answer:
+        "I called GET /products, POST /cart and POST /auth/login. I wrote an Axios instance with a request interceptor that adds the Authorization Bearer token from memory.",
       quotes: {
         accuracy: "a request interceptor that adds the Authorization Bearer token",
         specificity: "GET /products, POST /cart and POST /auth/login",
@@ -92,8 +128,10 @@ const SCRIPT: Record<string, Step[]> = {
       },
     },
     {
-      question: "What happens in your client when a request comes back 401 because the token expired?",
-      answer: "The response interceptor catches the 401, calls POST /auth/refresh once, stores the new token, and replays the original request. If refresh also fails it clears the token and redirects to login.",
+      question:
+        "What happens in your client when a request comes back 401 because the token expired?",
+      answer:
+        "The response interceptor catches the 401, calls POST /auth/refresh once, stores the new token, and replays the original request. If refresh also fails it clears the token and redirects to login.",
       quotes: {
         accuracy: "catches the 401, calls POST /auth/refresh once",
         specificity: "calls POST /auth/refresh once, stores the new token",
@@ -103,36 +141,45 @@ const SCRIPT: Record<string, Step[]> = {
       },
     },
     {
-      question: "Why keep the token in memory instead of localStorage, and what did that choice cost you?",
-      answer: "localStorage is readable by any injected script, so an XSS bug would leak the token. Keeping it in memory with an httpOnly refresh cookie is safer, but the user is logged out on a hard refresh until the refresh call runs, which added a loading flash we had to handle.",
+      question:
+        "Why keep the token in memory instead of localStorage, and what did that choice cost you?",
+      answer:
+        "localStorage is readable by any injected script, so an XSS bug would leak the token. Keeping it in memory with an httpOnly refresh cookie is safer, but the user is logged out on a hard refresh until the refresh call runs, which added a loading flash we had to handle.",
       quotes: {
-        accuracy: "localStorage is readable by any injected script, so an XSS bug would leak the token",
+        accuracy:
+          "localStorage is readable by any injected script, so an XSS bug would leak the token",
         specificity: "Keeping it in memory with an httpOnly refresh cookie is safer",
         mechanism: "logged out on a hard refresh until the refresh call runs",
         ownership: "which added a loading flash we had to handle",
-        tradeoff: "Keeping it in memory with an httpOnly refresh cookie is safer, but the user is logged out on a hard refresh",
+        tradeoff:
+          "Keeping it in memory with an httpOnly refresh cookie is safer, but the user is logged out on a hard refresh",
       },
     },
   ],
   [CLAIMS[2]!.text]: [
     {
       question: "Which pages did you make responsive, and where did you use Grid versus Flexbox?",
-      answer: "I did the product listing and checkout pages. The listing uses CSS Grid with repeat(auto-fill, minmax(220px, 1fr)) for the cards, and the header and checkout form rows use Flexbox.",
+      answer:
+        "I did the product listing and checkout pages. The listing uses CSS Grid with repeat(auto-fill, minmax(220px, 1fr)) for the cards, and the header and checkout form rows use Flexbox.",
       quotes: {
         accuracy: "repeat(auto-fill, minmax(220px, 1fr)) for the cards",
         specificity: "CSS Grid with repeat(auto-fill, minmax(220px, 1fr))",
-        mechanism: "The listing uses CSS Grid with repeat(auto-fill, minmax(220px, 1fr)) for the cards",
+        mechanism:
+          "The listing uses CSS Grid with repeat(auto-fill, minmax(220px, 1fr)) for the cards",
         ownership: "I did the product listing and checkout pages",
         tradeoff: "the header and checkout form rows use Flexbox",
       },
     },
     {
-      question: "How does repeat(auto-fill, minmax(220px, 1fr)) decide how many columns to render at a given width?",
-      answer: "The browser fits as many 220px tracks as the container allows, then the 1fr max shares the leftover space equally, so columns grow until another 220px track fits and the count jumps.",
+      question:
+        "How does repeat(auto-fill, minmax(220px, 1fr)) decide how many columns to render at a given width?",
+      answer:
+        "The browser fits as many 220px tracks as the container allows, then the 1fr max shares the leftover space equally, so columns grow until another 220px track fits and the count jumps.",
       quotes: {
         accuracy: "fits as many 220px tracks as the container allows",
         specificity: "the 1fr max shares the leftover space equally",
-        mechanism: "fits as many 220px tracks as the container allows, then the 1fr max shares the leftover space equally",
+        mechanism:
+          "fits as many 220px tracks as the container allows, then the 1fr max shares the leftover space equally",
         ownership: "The browser fits as many 220px tracks",
         tradeoff: "columns grow until another 220px track fits",
       },
@@ -141,20 +188,29 @@ const SCRIPT: Record<string, Step[]> = {
       question: "Why Grid for the card list instead of a Flexbox wrap layout, and what broke?",
       answer: "Grid was just easier I think, it looks better on mobile.",
       pass: ["specificity", "ownership"],
-      quotes: { specificity: "it looks better on mobile", ownership: "Grid was just easier I think" },
+      quotes: {
+        specificity: "it looks better on mobile",
+        ownership: "Grid was just easier I think",
+      },
       missing: {
         accuracy: "Grid aligns items in two dimensions; flex-wrap leaves an uneven last row",
-        tradeoff: "Concrete trade-off between Grid and flex-wrap for card lists, and a real layout bug",
+        tradeoff:
+          "Concrete trade-off between Grid and flex-wrap for card lists, and a real layout bug",
       },
       rootCause: "CSS Grid tracks & fr",
     },
   ],
   [CLAIMS[3]!.text]: [
     {
-      question: "Which components or functions did you write Jest tests for, and what did the 80% coverage number measure?",
-      answer: "The project template came with tests and a coverage report, and our coverage was 80% overall. I mostly ran npm test before pushing.",
+      question:
+        "Which components or functions did you write Jest tests for, and what did the 80% coverage number measure?",
+      answer:
+        "The project template came with tests and a coverage report, and our coverage was 80% overall. I mostly ran npm test before pushing.",
       pass: ["specificity"],
-      quotes: { specificity: "our coverage was 80% overall", accuracy: "The project template came with tests" },
+      quotes: {
+        specificity: "our coverage was 80% overall",
+        accuracy: "The project template came with tests",
+      },
       missing: {
         accuracy: "What line/branch coverage measures and what it doesn't",
         ownership: "Tests you personally wrote and what they asserted",
@@ -165,7 +221,8 @@ const SCRIPT: Record<string, Step[]> = {
   [CLAIMS[4]!.text]: [
     {
       question: "What was your team's Git workflow, and what did you personally do in it?",
-      answer: "Each of us worked on a feature branch and opened a pull request to main. I reviewed PRs for the frontend folder and resolved conflicts in package.json twice.",
+      answer:
+        "Each of us worked on a feature branch and opened a pull request to main. I reviewed PRs for the frontend folder and resolved conflicts in package.json twice.",
       quotes: {
         accuracy: "worked on a feature branch and opened a pull request to main",
         specificity: "resolved conflicts in package.json twice",
@@ -175,8 +232,10 @@ const SCRIPT: Record<string, Step[]> = {
       },
     },
     {
-      question: "When you resolved that package.json conflict, what did Git actually have to compare to decide it was a conflict?",
-      answer: "Honestly I don't know how Git decides that internally, I just fixed the lines it marked.",
+      question:
+        "When you resolved that package.json conflict, what did Git actually have to compare to decide it was a conflict?",
+      answer:
+        "Honestly I don't know how Git decides that internally, I just fixed the lines it marked.",
       gap: true,
       pass: [],
       quotes: {},
@@ -195,8 +254,10 @@ const SCRIPT: Record<string, Step[]> = {
       },
     },
     {
-      question: "Which routes or components did you split out, and what were the before and after numbers?",
-      answer: "I wrapped the Reports and Admin routes in React.lazy with Suspense and moved the chart library into that chunk. Lighthouse showed the main bundle going from 1.1 MB to 640 kB and LCP from 4.2s to 2.5s, about 40%.",
+      question:
+        "Which routes or components did you split out, and what were the before and after numbers?",
+      answer:
+        "I wrapped the Reports and Admin routes in React.lazy with Suspense and moved the chart library into that chunk. Lighthouse showed the main bundle going from 1.1 MB to 640 kB and LCP from 4.2s to 2.5s, about 40%.",
       quotes: {
         accuracy: "wrapped the Reports and Admin routes in React.lazy with Suspense",
         specificity: "main bundle going from 1.1 MB to 640 kB and LCP from 4.2s to 2.5s",
@@ -206,24 +267,31 @@ const SCRIPT: Record<string, Step[]> = {
       },
     },
     {
-      question: "What happens at runtime between a user clicking the Reports link and the lazy component rendering?",
-      answer: "React.lazy calls the dynamic import(), which makes the browser fetch the Reports chunk over the network. Until the promise resolves, the Suspense boundary shows the fallback spinner, then React renders the real component.",
+      question:
+        "What happens at runtime between a user clicking the Reports link and the lazy component rendering?",
+      answer:
+        "React.lazy calls the dynamic import(), which makes the browser fetch the Reports chunk over the network. Until the promise resolves, the Suspense boundary shows the fallback spinner, then React renders the real component.",
       quotes: {
-        accuracy: "React.lazy calls the dynamic import(), which makes the browser fetch the Reports chunk",
+        accuracy:
+          "React.lazy calls the dynamic import(), which makes the browser fetch the Reports chunk",
         specificity: "the Suspense boundary shows the fallback spinner",
-        mechanism: "Until the promise resolves, the Suspense boundary shows the fallback spinner, then React renders the real component",
+        mechanism:
+          "Until the promise resolves, the Suspense boundary shows the fallback spinner, then React renders the real component",
         ownership: "React.lazy calls the dynamic import()",
         tradeoff: "fetch the Reports chunk over the network",
       },
     },
     {
-      question: "Why split by route rather than by component, and what went wrong after you shipped it?",
-      answer: "Route splitting was what the tutorial did so I followed it. Nothing really went wrong.",
+      question:
+        "Why split by route rather than by component, and what went wrong after you shipped it?",
+      answer:
+        "Route splitting was what the tutorial did so I followed it. Nothing really went wrong.",
       pass: ["ownership"],
       quotes: { ownership: "Route splitting was what the tutorial did so I followed it" },
       missing: {
         accuracy: "Route vs component splitting: chunk count, waterfalls and cache reuse",
-        tradeoff: "A real cost of code splitting, such as loading waterfalls or a spinner flash on navigation",
+        tradeoff:
+          "A real cost of code splitting, such as loading waterfalls or a spinner flash on navigation",
       },
       rootCause: "ES modules & dynamic import",
     },
@@ -232,14 +300,18 @@ const SCRIPT: Record<string, Step[]> = {
 
 /** Retest (fresh scenario) for the CSS claim, starting at the failed level 3. */
 const RETEST: Step = {
-  question: "A product manager asks for the card list to keep a perfectly aligned last row even with 7 items, and the design must also work in a 280px sidebar. Would you keep Grid or switch to flex-wrap, and what breaks with the other one?",
-  answer: "Keep Grid. With flex-wrap and flex: 1 1 220px the last row of 7 items stretches its orphan cards wider than the rest, while Grid keeps every track the same width. In a 280px sidebar minmax(220px, 1fr) still fits one column, but I'd use minmax(min(220px, 100%), 1fr) so it never overflows below 220px.",
+  question:
+    "A product manager asks for the card list to keep a perfectly aligned last row even with 7 items, and the design must also work in a 280px sidebar. Would you keep Grid or switch to flex-wrap, and what breaks with the other one?",
+  answer:
+    "Keep Grid. With flex-wrap and flex: 1 1 220px the last row of 7 items stretches its orphan cards wider than the rest, while Grid keeps every track the same width. In a 280px sidebar minmax(220px, 1fr) still fits one column, but I'd use minmax(min(220px, 100%), 1fr) so it never overflows below 220px.",
   quotes: {
-    accuracy: "the last row of 7 items stretches its orphan cards wider than the rest, while Grid keeps every track the same width",
+    accuracy:
+      "the last row of 7 items stretches its orphan cards wider than the rest, while Grid keeps every track the same width",
     specificity: "minmax(min(220px, 100%), 1fr)",
     mechanism: "Grid keeps every track the same width",
     ownership: "Keep Grid.",
-    tradeoff: "With flex-wrap and flex: 1 1 220px the last row of 7 items stretches its orphan cards wider than the rest",
+    tradeoff:
+      "With flex-wrap and flex: 1 1 220px the last row of 7 items stretches its orphan cards wider than the rest",
   },
 };
 
@@ -254,7 +326,7 @@ const FIX: Record<string, { explanation: string; exercise: string }> = {
     explanation:
       "The virtual DOM is **not a cache**. On `dispatch`, Redux runs the reducer and notifies subscribers; each `useSelector` re-runs its selector and compares the result with `===`. If it changed, that component **re-renders**: React calls it again, builds a new element tree, **diffs** it against the previous one (reconciliation, matching list rows by `key`) and **commits** only the changed DOM nodes. Hooks don't make anything faster; they're how components subscribe.",
     exercise:
-      "Build a 50-row product table with a Redux filter. Add `console.count` in each row and use React DevTools \"Highlight updates\". Change the filter and explain which components re-rendered and why. Then memoize the row and select only what it needs.\n\n**Done when** changing the filter re-renders only the table and the rows whose data changed.",
+      'Build a 50-row product table with a Redux filter. Add `console.count` in each row and use React DevTools "Highlight updates". Change the filter and explain which components re-rendered and why. Then memoize the row and select only what it needs.\n\n**Done when** changing the filter re-renders only the table and the rows whose data changed.',
   },
   testing: {
     explanation:
@@ -277,10 +349,13 @@ const FIX: Record<string, { explanation: string; exercise: string }> = {
 };
 
 const REWRITES: Record<string, string> = {
-  react_state: "Built React + Redux Toolkit product and cart slices for a 10k-item dashboard (learning render/reconciliation internals)",
-  testing: "Ran and maintained an existing Jest test suite (80% template coverage); writing my own component tests",
+  react_state:
+    "Built React + Redux Toolkit product and cart slices for a 10k-item dashboard (learning render/reconciliation internals)",
+  testing:
+    "Ran and maintained an existing Jest test suite (80% template coverage); writing my own component tests",
   git: "Used feature branches and pull requests in a 4-person team; reviewed PRs and resolved merge conflicts",
-  js_fundamentals: "Cut main bundle from 1.1 MB to 640 kB with route-level React.lazy code splitting (LCP 4.2s → 2.5s)",
+  js_fundamentals:
+    "Cut main bundle from 1.1 MB to 640 kB with route-level React.lazy code splitting (LCP 4.2s → 2.5s)",
 };
 
 function grade(step: Step): RawGrade {
@@ -288,10 +363,19 @@ function grade(step: Step): RawGrade {
   const criteria = Object.fromEntries(
     CRITERIA.map((n): [Criterion, CriterionResult] => [
       n,
-      { passed: pass.includes(n), evidence_quote: step.quotes[n] ?? null, missing_concept: pass.includes(n) ? null : (step.missing?.[n] ?? null) },
+      {
+        passed: pass.includes(n),
+        evidence_quote: step.quotes[n] ?? null,
+        missing_concept: pass.includes(n) ? null : (step.missing?.[n] ?? null),
+      },
     ]),
   ) as Record<Criterion, CriterionResult>;
-  return { criteria, admits_gap: step.gap ?? false, needs_clarification: step.vague ?? false, root_cause: step.rootCause ?? null };
+  return {
+    criteria,
+    admits_gap: step.gap ?? false,
+    needs_clarification: step.vague ?? false,
+    root_cause: step.rootCause ?? null,
+  };
 }
 
 /** Language layer that replays the script. All decisions still happen in core. */
@@ -354,7 +438,11 @@ export async function buildDemoReport() {
     let res = await svc.interrogate(UID, { session_id: sid, claim_id: claim.id });
     for (const step of SCRIPT[claim.text] ?? []) {
       if (res.turn === "done") break;
-      res = await svc.interrogate(UID, { session_id: sid, claim_id: claim.id, answer: step.answer });
+      res = await svc.interrogate(UID, {
+        session_id: sid,
+        claim_id: claim.id,
+        answer: step.answer,
+      });
     }
     // Prepare mode: teach_now after the CSS claim ends shaky, so the student opens its fix task.
     if (claim.id === css.id && res.teach_now) await svc.fixTask(UID, sid, css.id);

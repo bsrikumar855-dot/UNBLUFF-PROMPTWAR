@@ -5,7 +5,13 @@ import { describe, expect, it } from "vitest";
 import { DBMS_TOPICS, PATTERNS } from "../../src/learn/content/index.js";
 
 const root = join(import.meta.dirname, "..", "..");
-const practice = new Set((JSON.parse(readFileSync(join(root, "data", "dsa", "practice-pack.json"), "utf8")) as { questions: { id: string }[] }).questions.map((q) => q.id));
+const practice = new Set(
+  (
+    JSON.parse(readFileSync(join(root, "data", "dsa", "practice-pack.json"), "utf8")) as {
+      questions: { id: string }[];
+    }
+  ).questions.map((q) => q.id),
+);
 const python = spawnSync("python3", ["--version"]).status === 0;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -43,7 +49,10 @@ describe("DSA pattern content", () => {
       for (const q of p.problems) {
         expect(q.slug !== null || q.practice_id !== null, `${p.id}/${q.title}`).toBe(true);
         if (q.slug !== null) expect(q.slug, `${p.id}/${q.title}`).toMatch(SLUG);
-        if (q.practice_id !== null) expect(practice.has(q.practice_id), `${p.id}: unknown practice id ${q.practice_id}`).toBe(true);
+        if (q.practice_id !== null)
+          expect(practice.has(q.practice_id), `${p.id}: unknown practice id ${q.practice_id}`).toBe(
+            true,
+          );
         expect(["easy", "medium", "hard"]).toContain(q.difficulty);
         expect(q.note.length, `${p.id}/${q.title}`).toBeGreaterThan(10);
         const key = q.slug ?? q.practice_id!;
@@ -53,11 +62,17 @@ describe("DSA pattern content", () => {
     }
   });
 
-  it.skipIf(!python).each(PATTERNS.map((p) => [p.id, p] as const))("%s: its Python template passes its own assertions", (_id, p) => {
-    const r = spawnSync("python3", ["-I", "-c", `${p.template}\n\n${p.check}\nprint("ok")`], { encoding: "utf8", timeout: 15_000 });
-    expect(r.stderr, `${p.id}\n${r.stderr}`).toBe("");
-    expect(r.stdout.trim()).toBe("ok");
-  });
+  it.skipIf(!python).each(PATTERNS.map((p) => [p.id, p] as const))(
+    "%s: its Python template passes its own assertions",
+    (_id, p) => {
+      const r = spawnSync("python3", ["-I", "-c", `${p.template}\n\n${p.check}\nprint("ok")`], {
+        encoding: "utf8",
+        timeout: 15_000,
+      });
+      expect(r.stderr, `${p.id}\n${r.stderr}`).toBe("");
+      expect(r.stdout.trim()).toBe("ok");
+    },
+  );
 });
 
 /** Runs an example's setup and query on SQLite (through Python's sqlite3) and returns what the query produced. */
@@ -75,7 +90,11 @@ print(json.dumps({"columns": cols, "rows": rows}))
 `;
 
 function runExample(setup: string, query: string): { columns: string[]; rows: unknown[][] } {
-  const r = spawnSync("python3", ["-I", "-c", RUN_SQL], { input: JSON.stringify({ setup, query }), encoding: "utf8", timeout: 15_000 });
+  const r = spawnSync("python3", ["-I", "-c", RUN_SQL], {
+    input: JSON.stringify({ setup, query }),
+    encoding: "utf8",
+    timeout: 15_000,
+  });
   if (r.status !== 0) throw new Error(r.stderr);
   return JSON.parse(r.stdout) as { columns: string[]; rows: unknown[][] };
 }
@@ -115,7 +134,10 @@ describe("DBMS topic content", () => {
         seen.add(q.id);
         expect(q.options.length, q.id).toBe(4);
         expect(new Set(q.options).size, `${q.id}: duplicate options`).toBe(4);
-        expect(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, q.id).toBe(true);
+        expect(
+          Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length,
+          q.id,
+        ).toBe(true);
         expect(q.why.length, q.id).toBeGreaterThan(20);
       }
     }
@@ -127,14 +149,30 @@ describe("DBMS topic content", () => {
     for (const c of counts) expect(c).toBeGreaterThanOrEqual(3);
   });
 
-  it.skipIf(!python).each(DBMS_TOPICS.filter((t) => t.example !== null).map((t) => [t.id, t.example!] as const))("%s: its SQL example produces exactly the rows shown", (_id, ex) => {
-    const got = runExample(ex.setup, ex.query);
-    expect(got.columns).toEqual(ex.columns);
-    expect(got.rows.map((r) => r.map(plan))).toEqual(ex.rows);
-  });
+  it
+    .skipIf(!python)
+    .each(DBMS_TOPICS.filter((t) => t.example !== null).map((t) => [t.id, t.example!] as const))(
+    "%s: its SQL example produces exactly the rows shown",
+    (_id, ex) => {
+      const got = runExample(ex.setup, ex.query);
+      expect(got.columns).toEqual(ex.columns);
+      expect(got.rows.map((r) => r.map(plan))).toEqual(ex.rows);
+    },
+  );
 
   it("shows an example for the topics where one teaches something (design, SQL, normalization, transactions, indexing)", () => {
     const withExample = DBMS_TOPICS.filter((t) => t.example).map((t) => t.id);
-    for (const id of ["er-model", "keys-constraints", "sql-basics", "joins", "group-by-window", "subqueries-cte", "normalization", "transactions-acid", "indexing"]) expect(withExample).toContain(id);
+    for (const id of [
+      "er-model",
+      "keys-constraints",
+      "sql-basics",
+      "joins",
+      "group-by-window",
+      "subqueries-cte",
+      "normalization",
+      "transactions-acid",
+      "indexing",
+    ])
+      expect(withExample).toContain(id);
   });
 });

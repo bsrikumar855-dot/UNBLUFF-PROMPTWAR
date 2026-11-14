@@ -12,14 +12,23 @@ import { buttonClasses } from "@/lib/buttonClasses";
 import { cn } from "@/lib/cn";
 import { routes } from "@/lib/routes";
 
-const STAGE: Record<SessionStage, { label: string; action: string; to: (id: string) => string }> = {
+const STAGE: Record<
+  SessionStage,
+  { label: string; action: string; to: (id: string) => string }
+> = {
   review: { label: "Claims to review", action: "Review claims", to: routes.ledgerFor },
-  interrogate: { label: "In progress", action: "Continue interview", to: (id) => routes.workspace(id) },
+  interrogate: {
+    label: "In progress",
+    action: "Continue interview",
+    to: (id) => routes.workspace(id),
+  },
   complete: { label: "Complete", action: "Open report", to: routes.report },
 };
 
-const roleName = (id: string) => id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-const modeName = (mode: SessionSummary["mode"]) => (mode === "prepare" ? "Teach me" : "Interview defense");
+const roleName = (id: string) =>
+  id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+const modeName = (mode: SessionSummary["mode"]) =>
+  mode === "prepare" ? "Teach me" : "Interview defense";
 
 /** The signed-in student's past sessions: pick one up where it was left, open its report, or delete it. */
 const SessionsPage: React.FC = () => {
@@ -70,7 +79,11 @@ const SessionsPage: React.FC = () => {
         id="sessions"
         icon={History}
         title="Your sessions"
-        sub={sessions ? `${sessions.length} session${sessions.length === 1 ? "" : "s"}` : undefined}
+        sub={
+          sessions
+            ? `${sessions.length} session${sessions.length === 1 ? "" : "s"}`
+            : undefined
+        }
       >
         {error !== null && <ErrorState error={error} onRetry={load} />}
         {error === null && sessions === null && (
@@ -93,7 +106,10 @@ const SessionsPage: React.FC = () => {
             {sessions.map((s) => (
               <li
                 key={s.session_id}
-                className={cn(TILE, "flex flex-wrap items-center justify-between gap-3 px-4 py-3.5")}
+                className={cn(
+                  TILE,
+                  "flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+                )}
               >
                 <div className="text-sm">
                   <p className="font-medium text-ink-primary">
@@ -117,7 +133,11 @@ const SessionsPage: React.FC = () => {
                   {s.stage !== "complete" && s.claims_done > 0 && (
                     <Link
                       to={routes.report(s.session_id)}
-                      className={buttonClasses("secondary", "sm", "rounded-full bg-white/70")}
+                      className={buttonClasses(
+                        "secondary",
+                        "sm",
+                        "rounded-full bg-white/70"
+                      )}
                     >
                       Report so far
                     </Link>
@@ -125,7 +145,11 @@ const SessionsPage: React.FC = () => {
                   {s.stage === "complete" && (
                     <Link
                       to={routes.workspace(s.session_id)}
-                      className={buttonClasses("secondary", "sm", "rounded-full bg-white/70")}
+                      className={buttonClasses(
+                        "secondary",
+                        "sm",
+                        "rounded-full bg-white/70"
+                      )}
                     >
                       Workspace
                     </Link>

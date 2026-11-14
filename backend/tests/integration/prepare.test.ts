@@ -1,10 +1,15 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import type { TurnResponse } from "../../src/types.js";
-import { ClaimsResponseSchema, ReportSchema, TurnResponseSchema } from "../fixtures/contractSchemas.js";
+import {
+  ClaimsResponseSchema,
+  ReportSchema,
+  TurnResponseSchema,
+} from "../fixtures/contractSchemas.js";
 import { testApp } from "./app.js";
 
-const GOOD = "I personally built it: the component keeps state in useReducer and each update re-renders and diffs the tree";
+const GOOD =
+  "I personally built it: the component keeps state in useReducer and each update re-renders and diffs the tree";
 
 describe("prepare mode learning loop (mock mode, HTTP)", () => {
   it("teach_now → fix task schedules retest → blocked until 2 other concepts → due retest first → retest verifies the gap", async () => {
@@ -21,10 +26,15 @@ describe("prepare mode learning loop (mock mode, HTTP)", () => {
     const sid = extracted.session_id;
 
     const runAssess = async (id: string, answers: string[]): Promise<TurnResponse> => {
-      let res = TurnResponseSchema.parse((await post("/api/interrogate", { session_id: sid, claim_id: id }).expect(200)).body);
+      let res = TurnResponseSchema.parse(
+        (await post("/api/interrogate", { session_id: sid, claim_id: id }).expect(200)).body,
+      );
       for (const answer of answers) {
         if (res.turn === "done") break;
-        res = TurnResponseSchema.parse((await post("/api/interrogate", { session_id: sid, claim_id: id, answer }).expect(200)).body);
+        res = TurnResponseSchema.parse(
+          (await post("/api/interrogate", { session_id: sid, claim_id: id, answer }).expect(200))
+            .body,
+        );
       }
       return res;
     };
@@ -32,7 +42,11 @@ describe("prepare mode learning loop (mock mode, HTTP)", () => {
     // 1. React claim fails L1 (short answer) → bluff with a root cause, and prepare mode says teach now.
     const r1 = await runAssess("CL-001", ["We used hooks."]);
     expect(r1).toMatchObject({ turn: "done", teach_now: true, next_mode: "assess" });
-    expect(r1.claim).toMatchObject({ verdict: "bluff", root_cause: "JS closures & references", retest_status: "none" });
+    expect(r1.claim).toMatchObject({
+      verdict: "bluff",
+      root_cause: "JS closures & references",
+      retest_status: "none",
+    });
 
     // 2. Opening the fix task targets the root cause and schedules the retest.
     const fix = await post("/api/fix-task", { session_id: sid, claim_id: "CL-001" }).expect(200);
@@ -40,14 +54,25 @@ describe("prepare mode learning loop (mock mode, HTTP)", () => {
     expect(fix.body.explanation).toContain("JS closures & references");
 
     // 3. Retest is locked until 2 other concepts are completed.
-    const locked = await post("/api/interrogate", { session_id: sid, claim_id: "CL-001", mode: "retest" }).expect(400);
-    expect(locked.body.error).toEqual({ code: "BAD_REQUEST", message: "Retest unlocks after 2 more concepts" });
+    const locked = await post("/api/interrogate", {
+      session_id: sid,
+      claim_id: "CL-001",
+      mode: "retest",
+    }).expect(400);
+    expect(locked.body.error).toEqual({
+      code: "BAD_REQUEST",
+      message: "Retest unlocks after 2 more concepts",
+    });
 
     // 4. Interleave: two other claims (a defended one does NOT set teach_now).
     const r2 = await runAssess("CL-002", [GOOD, GOOD, GOOD]);
     expect(r2).toMatchObject({ teach_now: false });
     expect(r2.claim.verdict).toBe("defended");
-    const afterOne = await post("/api/interrogate", { session_id: sid, claim_id: "CL-001", mode: "retest" }).expect(400);
+    const afterOne = await post("/api/interrogate", {
+      session_id: sid,
+      claim_id: "CL-001",
+      mode: "retest",
+    }).expect(400);
     expect(afterOne.body.error.message).toBe("Retest unlocks after 1 more concept");
 
     const r3 = await runAssess("CL-003", [GOOD, GOOD, GOOD]);
@@ -57,7 +82,13 @@ describe("prepare mode learning loop (mock mode, HTTP)", () => {
 
     // 6. Retest: fresh scenario on the root cause, never a repeat of earlier questions.
     const start = TurnResponseSchema.parse(
-      (await post("/api/interrogate", { session_id: sid, claim_id: "CL-001", mode: "retest" }).expect(200)).body,
+      (
+        await post("/api/interrogate", {
+          session_id: sid,
+          claim_id: "CL-001",
+          mode: "retest",
+        }).expect(200)
+      ).body,
     );
     expect(start).toMatchObject({ mode: "retest", level: 1, turn: "question" });
     expect(start.question).toContain("JS closures & references");
@@ -66,7 +97,15 @@ describe("prepare mode learning loop (mock mode, HTTP)", () => {
 
     let res = start;
     while (res.turn !== "done") {
-      res = TurnResponseSchema.parse((await post("/api/interrogate", { session_id: sid, claim_id: "CL-001", answer: GOOD }).expect(200)).body);
+      res = TurnResponseSchema.parse(
+        (
+          await post("/api/interrogate", {
+            session_id: sid,
+            claim_id: "CL-001",
+            answer: GOOD,
+          }).expect(200)
+        ).body,
+      );
     }
     // 7. The retest verifies the gap: passed, with the REAL interleaving recorded.
     expect(res.claim).toMatchObject({
@@ -80,22 +119,36 @@ describe("prepare mode learning loop (mock mode, HTTP)", () => {
     expect(res.teach_now).toBe(false);
     expect(res.progress).toMatchObject({ next_claim_id: "CL-004", next_mode: "assess" });
 
-    const report = ReportSchema.parse((await request(app).get(`/api/report/${sid}`).expect(200)).body);
+    const report = ReportSchema.parse(
+      (await request(app).get(`/api/report/${sid}`).expect(200)).body,
+    );
     expect(report.mode).toBe("prepare");
-    expect(report.skills.find((s) => s.skill_id === "react_state")?.history.map((h) => h.mode)).toEqual(["assess", "retest"]);
+    expect(
+      report.skills.find((s) => s.skill_id === "react_state")?.history.map((h) => h.mode),
+    ).toEqual(["assess", "retest"]);
   });
 
   it("defense mode never sets teach_now but still schedules retests", async () => {
     const app = testApp();
-    const { body } = await request(app).post("/api/claims/extract").send({ role_id: "frontend_developer", declared_skills: ["React", "Git"] });
+    const { body } = await request(app)
+      .post("/api/claims/extract")
+      .send({ role_id: "frontend_developer", declared_skills: ["React", "Git"] });
     expect(body.mode).toBe("defense");
     const sid = body.session_id;
     await request(app).post("/api/interrogate").send({ session_id: sid, claim_id: "CL-001" });
-    const done = await request(app).post("/api/interrogate").send({ session_id: sid, claim_id: "CL-001", answer: "no idea, I don't know" });
+    const done = await request(app)
+      .post("/api/interrogate")
+      .send({ session_id: sid, claim_id: "CL-001", answer: "no idea, I don't know" });
     expect(done.body).toMatchObject({ teach_now: false });
     expect(done.body.claim.verdict).toBe("honest_gap");
-    await request(app).post("/api/fix-task").send({ session_id: sid, claim_id: "CL-001" }).expect(200);
-    const locked = await request(app).post("/api/interrogate").send({ session_id: sid, claim_id: "CL-001", mode: "retest" }).expect(400);
+    await request(app)
+      .post("/api/fix-task")
+      .send({ session_id: sid, claim_id: "CL-001" })
+      .expect(200);
+    const locked = await request(app)
+      .post("/api/interrogate")
+      .send({ session_id: sid, claim_id: "CL-001", mode: "retest" })
+      .expect(400);
     expect(locked.body.error.message).toBe("Retest unlocks after 2 more concepts");
   });
 });

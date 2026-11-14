@@ -187,11 +187,13 @@ export const ImportPanel: React.FC<ImportPanelProps> = ({ connection, onImported
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <section
-      aria-labelledby={`${id}-h`}
-      className={cn(GLASS, "p-5 sm:p-7")}
-    >
-      <CardHead icon={FileUp} id={`${id}-h`} title="Import your own numbers" className="mb-3" />
+    <section aria-labelledby={`${id}-h`} className={cn(GLASS, "p-5 sm:p-7")}>
+      <CardHead
+        icon={FileUp}
+        id={`${id}-h`}
+        title="Import your own numbers"
+        className="mb-3"
+      />
       <p className="text-sm text-ink-secondary">
         Supply progress you have the right to use, from your own LeetCode profile or
         records. UNBLUFF checks it, shows it back, and stores it only after you confirm.
@@ -400,7 +402,12 @@ export const ImportPanel: React.FC<ImportPanelProps> = ({ connection, onImported
               />
             </label>
             <div className="sm:col-span-4">
-              <Button type="submit" variant="outline" className="rounded-full bg-white/70" disabled={busy !== null}>
+              <Button
+                type="submit"
+                variant="outline"
+                className="rounded-full bg-white/70"
+                disabled={busy !== null}
+              >
                 {busy === "preview" ? "Checking…" : "Check these numbers"}
               </Button>
             </div>
@@ -463,10 +470,19 @@ export const ImportPanel: React.FC<ImportPanelProps> = ({ connection, onImported
             </p>
           ) : (
             <div className="mt-4 flex flex-wrap gap-2">
-              <Button className="rounded-full" onClick={() => void confirm()} disabled={busy !== null}>
+              <Button
+                className="rounded-full"
+                onClick={() => void confirm()}
+                disabled={busy !== null}
+              >
                 {busy === "confirm" ? "Importing…" : "Import these numbers"}
               </Button>
-              <Button variant="ghost" className="rounded-full" onClick={reset} disabled={busy !== null}>
+              <Button
+                variant="ghost"
+                className="rounded-full"
+                onClick={reset}
+                disabled={busy !== null}
+              >
                 Discard
               </Button>
             </div>

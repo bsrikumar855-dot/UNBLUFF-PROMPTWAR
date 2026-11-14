@@ -254,7 +254,10 @@ const DsaAnalyticsPage: React.FC = () => {
                     : data.comparison.note}
                 </p>
                 {data.recent.length > 0 && (
-                  <ul aria-label="Latest submissions" className="mt-4 flex flex-col gap-2 text-sm">
+                  <ul
+                    aria-label="Latest submissions"
+                    className="mt-4 flex flex-col gap-2 text-sm"
+                  >
                     {data.recent.map((r) => (
                       <li key={r.submission_id} className={row}>
                         <Link

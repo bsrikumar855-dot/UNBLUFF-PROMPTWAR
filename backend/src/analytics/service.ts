@@ -3,11 +3,39 @@ import type { Logger } from "../logger.js";
 import type { SubmissionRecord, SubmissionStore } from "../code/submissionStore.js";
 import type { Catalogue } from "../dsa/catalogue.js";
 import type { DsaProgressService } from "../dsa/progressService.js";
-import type { AnalyticsHistoryResponse, DsaAnalyticsResponse, RevisionActionRequest, RevisionItem, RevisionQueueResponse, RevisionSuggestion } from "../types.js";
+import type {
+  AnalyticsHistoryResponse,
+  DsaAnalyticsResponse,
+  RevisionActionRequest,
+  RevisionItem,
+  RevisionQueueResponse,
+  RevisionSuggestion,
+} from "../types.js";
 import { isCountable } from "./eligibility.js";
 import { DEFAULT_ANALYTICS_CONFIG, type AnalyticsConfig } from "./config.js";
-import { compare, difficultyBreakdown, firstAttemptSuccess, rate, recentActivity, repeatedFailures, topicBreakdown, totals, weeklyBuckets } from "./metrics.js";
-import { applyAction, byPriority, contextFrom, createSuggested, isDue, onSubmission, RevisionActionError, toItem, type RevisionContext, type RevisionRecord } from "./revision.js";
+import {
+  compare,
+  difficultyBreakdown,
+  firstAttemptSuccess,
+  rate,
+  recentActivity,
+  repeatedFailures,
+  topicBreakdown,
+  totals,
+  weeklyBuckets,
+} from "./metrics.js";
+import {
+  applyAction,
+  byPriority,
+  contextFrom,
+  createSuggested,
+  isDue,
+  onSubmission,
+  RevisionActionError,
+  toItem,
+  type RevisionContext,
+  type RevisionRecord,
+} from "./revision.js";
 import { applyEvent, type CountedVerdict, type StatsEvent, type StatsRecord } from "./stats.js";
 import type { RevisionStore, StatsStore } from "./stores.js";
 import { detectWeaknesses } from "./weakness.js";
@@ -66,15 +94,37 @@ export class AnalyticsService {
       const q = this.deps.catalogue().summary(rec.question_id);
       const verdict = rec.verdict as CountedVerdict;
       const event: StatsEvent = { id: rec.id, at: rec.created_at, verdict };
-      const meta = { owner_uid: uid, question_id: rec.question_id, topics: q?.topics ?? [], difficulty: q?.difficulty ?? null };
+      const meta = {
+        owner_uid: uid,
+        question_id: rec.question_id,
+        topics: q?.topics ?? [],
+        difficulty: q?.difficulty ?? null,
+      };
 
       const prev = await this.deps.stats.get(uid, rec.question_id);
-      const { record: stats, applied } = applyEvent(prev, event, meta, this.cfg.metrics.maxEventsPerQuestion, this.now().toISOString());
+      const { record: stats, applied } = applyEvent(
+        prev,
+        event,
+        meta,
+        this.cfg.metrics.maxEventsPerQuestion,
+        this.now().toISOString(),
+      );
       if (applied) await this.deps.stats.put(stats);
 
       const existing = await this.deps.revisions.get(uid, rec.question_id);
-      const count = existing ? 0 : (await this.deps.revisions.listByOwner(uid, this.cfg.revision.maxItemsPerStudent)).length;
-      const next = onSubmission(existing, stats, event, verdict, this.now(), this.cfg.revision, this.cfg.weakness.repeatedFailureThreshold, count);
+      const count = existing
+        ? 0
+        : (await this.deps.revisions.listByOwner(uid, this.cfg.revision.maxItemsPerStudent)).length;
+      const next = onSubmission(
+        existing,
+        stats,
+        event,
+        verdict,
+        this.now(),
+        this.cfg.revision,
+        this.cfg.weakness.repeatedFailureThreshold,
+        count,
+      );
       if (next && next !== existing) await this.deps.revisions.put(next);
     });
   }
@@ -97,14 +147,23 @@ export class AnalyticsService {
       generated_at: now.toISOString(),
       totals: t,
       first_attempt_success: firstAttemptSuccess(records, m),
-      submission_success: rate(t.accepted_attempts, t.eligible_attempts, m.minRateSample, "judged submissions"),
+      submission_success: rate(
+        t.accepted_attempts,
+        t.eligible_attempts,
+        m.minRateSample,
+        "judged submissions",
+      ),
       topics: topicBreakdown(records, m),
       difficulties: difficultyBreakdown(records, m),
       weaknesses: detectWeaknesses(records, now, this.cfg.weakness),
       untouched_topics: cat.allTopics().filter((x) => !attemptedTopics.has(x)),
       weekly: weeklyBuckets(records, new Date(now.getTime() - (weeks - 1) * 7 * DAY_MS), now),
       recent: recentActivity(records, titleOf, m.recentActivityLimit),
-      repeated_failures: repeatedFailures(records, this.cfg.weakness.repeatedFailureThreshold, titleOf),
+      repeated_failures: repeatedFailures(
+        records,
+        this.cfg.weakness.repeatedFailureThreshold,
+        titleOf,
+      ),
       comparison: compare(records, now, m),
       self_reported: {
         solved: progress.filter((p) => p.status === "solved").length,
@@ -139,35 +198,65 @@ export class AnalyticsService {
   async history(uid: string, from: Date, to: Date): Promise<AnalyticsHistoryResponse> {
     const records = await this.deps.stats.listByOwner(uid, MAX_STATS);
     const end = new Date(to.getTime() + DAY_MS - 1);
-    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10), weekly: weeklyBuckets(records, from, end) };
+    return {
+      from: from.toISOString().slice(0, 10),
+      to: to.toISOString().slice(0, 10),
+      weekly: weeklyBuckets(records, from, end),
+    };
   }
 
   /** Rebuilds the student's statistics from their stored counted submissions and fills in any missing revision items. */
   refresh(uid: string): Promise<DsaAnalyticsResponse> {
     return this.serialize(uid, async () => {
-      const counted = (await this.deps.submissions.listCountedByOwner(uid, MAX_STATS)).filter(isCountable);
+      const counted = (await this.deps.submissions.listCountedByOwner(uid, MAX_STATS)).filter(
+        isCountable,
+      );
       counted.sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
       const cat = this.deps.catalogue();
       const fresh = new Map<string, StatsRecord>();
       const nowIso = this.now().toISOString();
       for (const s of counted) {
         const q = cat.summary(s.question_id);
-        const meta = { owner_uid: uid, question_id: s.question_id, topics: q?.topics ?? [], difficulty: q?.difficulty ?? null };
-        const { record } = applyEvent(fresh.get(s.question_id) ?? null, { id: s.id, at: s.created_at, verdict: s.verdict as CountedVerdict }, meta, this.cfg.metrics.maxEventsPerQuestion, nowIso);
+        const meta = {
+          owner_uid: uid,
+          question_id: s.question_id,
+          topics: q?.topics ?? [],
+          difficulty: q?.difficulty ?? null,
+        };
+        const { record } = applyEvent(
+          fresh.get(s.question_id) ?? null,
+          { id: s.id, at: s.created_at, verdict: s.verdict as CountedVerdict },
+          meta,
+          this.cfg.metrics.maxEventsPerQuestion,
+          nowIso,
+        );
         fresh.set(s.question_id, record);
       }
       const old = await this.deps.stats.listByOwner(uid, MAX_STATS);
       for (const r of fresh.values()) await this.deps.stats.put(r);
-      for (const r of old) if (!fresh.has(r.question_id)) await this.deps.stats.delete(uid, r.question_id);
+      for (const r of old)
+        if (!fresh.has(r.question_id)) await this.deps.stats.delete(uid, r.question_id);
 
       // Create (never modify) revision items for questions that are failing but have none.
-      const items = await this.deps.revisions.listByOwner(uid, this.cfg.revision.maxItemsPerStudent);
+      const items = await this.deps.revisions.listByOwner(
+        uid,
+        this.cfg.revision.maxItemsPerStudent,
+      );
       let count = items.length;
       const have = new Set(items.map((i) => i.question_id));
       for (const r of fresh.values()) {
         const last = r.events.at(-1);
         if (r.consecutive_failures === 0 || have.has(r.question_id) || !last) continue;
-        const made = onSubmission(null, r, last, last.verdict, this.now(), this.cfg.revision, this.cfg.weakness.repeatedFailureThreshold, count);
+        const made = onSubmission(
+          null,
+          r,
+          last,
+          last.verdict,
+          this.now(),
+          this.cfg.revision,
+          this.cfg.weakness.repeatedFailureThreshold,
+          count,
+        );
         if (made) {
           await this.deps.revisions.put(made);
           count += 1;
@@ -178,20 +267,32 @@ export class AnalyticsService {
 
   // ---------- revision ----------
 
-  async queue(uid: string, view: "due" | "upcoming" | "all", page: number, pageSize: number): Promise<RevisionQueueResponse> {
+  async queue(
+    uid: string,
+    view: "due" | "upcoming" | "all",
+    page: number,
+    pageSize: number,
+  ): Promise<RevisionQueueResponse> {
     const now = this.now();
     const all = (await this.deps.revisions.listByOwner(uid, MAX_REVISIONS)).sort(byPriority(now));
     const active = (r: RevisionRecord) => isDue(r, now) || r.status === "in_progress";
-    const shown = view === "all" ? all : view === "due" ? all.filter(active) : all.filter((r) => !active(r));
+    const shown =
+      view === "all" ? all : view === "due" ? all.filter(active) : all.filter((r) => !active(r));
     const start = (page - 1) * pageSize;
     const titleOf = (id: string) => this.deps.catalogue().summary(id)?.title ?? null;
     return {
-      items: shown.slice(start, start + pageSize).map((r) => toItem(r, titleOf(r.question_id), now)),
+      items: shown
+        .slice(start, start + pageSize)
+        .map((r) => toItem(r, titleOf(r.question_id), now)),
       page,
       page_size: pageSize,
       total: shown.length,
       total_pages: Math.max(1, Math.ceil(shown.length / pageSize)),
-      counts: { due: all.filter(active).length, upcoming: all.filter((r) => !active(r)).length, total: all.length },
+      counts: {
+        due: all.filter(active).length,
+        upcoming: all.filter((r) => !active(r)).length,
+        total: all.length,
+      },
       suggestions: await this.suggestions(uid, all),
     };
   }
@@ -208,13 +309,27 @@ export class AnalyticsService {
       if (!q) throw new ApiError("QUESTION_NOT_FOUND", `Question ${questionId} not found`);
       const existing = await this.deps.revisions.get(uid, questionId);
       if (existing) return toItem(existing, q.title, this.now());
-      if ((await this.deps.revisions.listByOwner(uid, this.cfg.revision.maxItemsPerStudent)).length >= this.cfg.revision.maxItemsPerStudent) {
-        throw new ApiError("BAD_REQUEST", "Your revision queue is full. Finish or postpone some items first.");
+      if (
+        (await this.deps.revisions.listByOwner(uid, this.cfg.revision.maxItemsPerStudent)).length >=
+        this.cfg.revision.maxItemsPerStudent
+      ) {
+        throw new ApiError(
+          "BAD_REQUEST",
+          "Your revision queue is full. Finish or postpone some items first.",
+        );
       }
       const stats = await this.deps.stats.get(uid, questionId);
       const context: RevisionContext = stats
         ? contextFrom(stats)
-        : { attempts: 0, failures: 0, consecutive_failures: 0, last_verdict: null, topics: q.topics, difficulty: q.difficulty, solved: false };
+        : {
+            attempts: 0,
+            failures: 0,
+            consecutive_failures: 0,
+            last_verdict: null,
+            topics: q.topics,
+            difficulty: q.difficulty,
+            solved: false,
+          };
       const rec = createSuggested(uid, questionId, context, this.now(), this.cfg.revision);
       await this.deps.revisions.put(rec);
       return toItem(rec, q.title, this.now());
@@ -250,7 +365,16 @@ export class AnalyticsService {
 
   /** Submissions that do not count, by reason, over the student's latest 200. Unavailable if the query is (e.g. missing index). */
   private async exclusions(uid: string): Promise<DsaAnalyticsResponse["exclusions"]> {
-    const out = { available: true, sampled_submissions: 0, demonstration: 0, ineligible_suite: 0, unverified_provider: 0, mock_execution: 0, judge_error: 0, unknown_provenance: 0 };
+    const out = {
+      available: true,
+      sampled_submissions: 0,
+      demonstration: 0,
+      ineligible_suite: 0,
+      unverified_provider: 0,
+      mock_execution: 0,
+      judge_error: 0,
+      unknown_provenance: 0,
+    };
     try {
       const recent = await this.deps.submissions.listRecentByOwner(uid, EXCLUSION_SAMPLE);
       out.sampled_submissions = recent.length;
@@ -264,7 +388,10 @@ export class AnalyticsService {
         else if (!isCountable(r)) out.unknown_provenance += 1; // missing, unrecognized, or marked counted without the evidence
       }
     } catch (err) {
-      this.deps.logger.warn({ err: (err as Error).message }, "analytics: exclusion counts unavailable");
+      this.deps.logger.warn(
+        { err: (err as Error).message },
+        "analytics: exclusion counts unavailable",
+      );
       out.available = false;
     }
     return out;
@@ -272,7 +399,9 @@ export class AnalyticsService {
 
   private async suggestions(uid: string, items: RevisionRecord[]): Promise<RevisionSuggestion[]> {
     const records = await this.deps.stats.listByOwner(uid, MAX_STATS);
-    const weak = detectWeaknesses(records, this.now(), this.cfg.weakness).filter((w) => w.status === "weak");
+    const weak = detectWeaknesses(records, this.now(), this.cfg.weakness).filter(
+      (w) => w.status === "weak",
+    );
     if (weak.length === 0) return [];
     const cat = this.deps.catalogue();
     const solved = new Set(records.filter((r) => r.accepted > 0).map((r) => r.question_id));
@@ -282,11 +411,21 @@ export class AnalyticsService {
       const candidates = cat
         .topicQuestions(w.topic)
         .filter((q) => !solved.has(q.id) && !queued.has(q.id))
-        .sort((a, b) => DIFFICULTY_RANK[a.difficulty] - DIFFICULTY_RANK[b.difficulty] || a.id.localeCompare(b.id));
+        .sort(
+          (a, b) =>
+            DIFFICULTY_RANK[a.difficulty] - DIFFICULTY_RANK[b.difficulty] ||
+            a.id.localeCompare(b.id),
+        );
       for (const q of candidates) {
         if (out.length >= this.cfg.revision.suggestionLimit) return out;
         if (out.some((o) => o.question_id === q.id)) continue;
-        out.push({ question_id: q.id, title: q.title, topic: w.topic, difficulty: q.difficulty, reason: `You have ${w.evidence.algorithmic_failures} wrong-answer or time-limit failures in ${w.topic}; this unsolved question is a gentle way to practise it.` });
+        out.push({
+          question_id: q.id,
+          title: q.title,
+          topic: w.topic,
+          difficulty: q.difficulty,
+          reason: `You have ${w.evidence.algorithmic_failures} wrong-answer or time-limit failures in ${w.topic}; this unsolved question is a gentle way to practise it.`,
+        });
         break; // one per weak topic first, so topics are covered evenly
       }
     }

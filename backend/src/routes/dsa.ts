@@ -1,6 +1,12 @@
 import { Router } from "express";
 import { z } from "zod";
-import { DEFAULT_PAGE_SIZE, DIFFICULTIES, MAX_PAGE_SIZE, type Catalogue, type QuestionQuery } from "../dsa/catalogue.js";
+import {
+  DEFAULT_PAGE_SIZE,
+  DIFFICULTIES,
+  MAX_PAGE_SIZE,
+  type Catalogue,
+  type QuestionQuery,
+} from "../dsa/catalogue.js";
 import { ApiError } from "../errors.js";
 import { formatIssues } from "../middleware/validate.js";
 import type { DsaProgressService } from "../dsa/progressService.js";
@@ -42,7 +48,8 @@ function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
   return r.data;
 }
 
-const cleaned = <T extends object>(q: T) => Object.fromEntries(Object.entries(q).filter(([, v]) => v !== undefined && v !== "")) as T;
+const cleaned = <T extends object>(q: T) =>
+  Object.fromEntries(Object.entries(q).filter(([, v]) => v !== undefined && v !== "")) as T;
 
 /** Public, read-only catalogue endpoints. Filtering, sorting and pagination happen here, not in the browser. */
 export function dsaCatalogueRouter(catalogue: () => Catalogue): Router {
@@ -61,14 +68,16 @@ export function dsaCatalogueRouter(catalogue: () => Catalogue): Router {
 
   router.get("/companies/:companyId/questions", (req, res) => {
     const company = parse(idParam, req.params.companyId);
-    if (!catalogue().hasCompany(company)) throw new ApiError("COMPANY_NOT_FOUND", `Company ${company} not found`);
+    if (!catalogue().hasCompany(company))
+      throw new ApiError("COMPANY_NOT_FOUND", `Company ${company} not found`);
     const q: QuestionQuery = { ...cleaned(parse(CompanyQuestionsQuery, req.query)), company };
     res.json(catalogue().queryQuestions(q));
   });
 
   router.get("/questions", (req, res) => {
     const q: QuestionQuery = cleaned(parse(QuestionsQuery, req.query));
-    if (q.company && !catalogue().hasCompany(q.company)) throw new ApiError("COMPANY_NOT_FOUND", `Company ${q.company} not found`);
+    if (q.company && !catalogue().hasCompany(q.company))
+      throw new ApiError("COMPANY_NOT_FOUND", `Company ${q.company} not found`);
     res.json(catalogue().queryQuestions(q));
   });
 

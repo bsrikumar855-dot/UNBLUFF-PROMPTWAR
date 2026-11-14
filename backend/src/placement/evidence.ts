@@ -9,7 +9,13 @@ import type { Logger } from "../logger.js";
 import type { MentorService } from "../mentor/service.js";
 import type { RoleRegistry } from "../services/roles.js";
 import type { SessionStore } from "../store/SessionStore.js";
-import type { DsaAnalyticsResponse, MentorProfile, QuestionSummary, RevisionItem, SkillState } from "../types.js";
+import type {
+  DsaAnalyticsResponse,
+  MentorProfile,
+  QuestionSummary,
+  RevisionItem,
+  SkillState,
+} from "../types.js";
 
 /**
  * Collects what the other modules already know about a student. Nothing is recomputed here: DSA numbers come from the
@@ -77,7 +83,8 @@ export interface DbmsEvidence {
 }
 
 export interface GithubEvidence {
-  status: "not_configured" | "not_connected" | "needs_reconnect" | "connected_no_data" | "available";
+  status:
+    "not_configured" | "not_connected" | "needs_reconnect" | "connected_no_data" | "available";
   stale: boolean;
   syncedAt: string | null;
   totalPublic: number | null;
@@ -129,8 +136,25 @@ export class EvidenceService {
   }
 
   async collect(uid: string): Promise<EvidenceBundle> {
-    const [dsa, interview, dbms, github, leetcode, memory, conversations] = await Promise.all([this.dsa(uid), this.interview(uid), this.dbmsEvidence(uid), this.githubEvidence(uid), this.leetcodeEvidence(uid), this.memory(uid), this.conversations(uid)]);
-    return { generatedAt: this.now().toISOString(), dsa, interview, dbms, github, leetcode, memory, conversations };
+    const [dsa, interview, dbms, github, leetcode, memory, conversations] = await Promise.all([
+      this.dsa(uid),
+      this.interview(uid),
+      this.dbmsEvidence(uid),
+      this.githubEvidence(uid),
+      this.leetcodeEvidence(uid),
+      this.memory(uid),
+      this.conversations(uid),
+    ]);
+    return {
+      generatedAt: this.now().toISOString(),
+      dsa,
+      interview,
+      dbms,
+      github,
+      leetcode,
+      memory,
+      conversations,
+    };
   }
 
   /** Questions a student can actually be judged on: they exist in the catalogue and have a hidden-test suite. */
@@ -151,12 +175,27 @@ export class EvidenceService {
   private async dsa(uid: string): Promise<DsaEvidence> {
     const gradable = this.gradableQuestions();
     const topicsInScope = [...new Set(gradable.flatMap((g) => g.summary.topics))].sort();
-    const base: DsaEvidence = { overview: null, outcomes: [], revision: [], gradable, topicsInScope, execution: this.deps.execution, readFailed: false };
+    const base: DsaEvidence = {
+      overview: null,
+      outcomes: [],
+      revision: [],
+      gradable,
+      topicsInScope,
+      execution: this.deps.execution,
+      readFailed: false,
+    };
     try {
-      const [overview, outcomes, queue] = await Promise.all([this.deps.analytics.overview(uid), this.deps.analytics.questionOutcomes(uid), this.deps.analytics.queue(uid, "all", 1, 50)]);
+      const [overview, outcomes, queue] = await Promise.all([
+        this.deps.analytics.overview(uid),
+        this.deps.analytics.questionOutcomes(uid),
+        this.deps.analytics.queue(uid, "all", 1, 50),
+      ]);
       return { ...base, overview, outcomes, revision: queue.items };
     } catch (err) {
-      this.deps.logger.warn({ err: (err as Error).message }, "placement: DSA evidence could not be read");
+      this.deps.logger.warn(
+        { err: (err as Error).message },
+        "placement: DSA evidence could not be read",
+      );
       return { ...base, readFailed: true };
     }
   }
@@ -164,13 +203,26 @@ export class EvidenceService {
   private async interview(uid: string): Promise<InterviewEvidence> {
     const demonstration = this.deps.llmMode === "mock";
     try {
-      const owned = (await this.deps.sessions.listByOwner(uid)).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, MAX_SESSIONS);
+      const owned = (await this.deps.sessions.listByOwner(uid))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, MAX_SESSIONS);
       const latest = new Map<string, InterviewSkill>();
       const sessions: InterviewSession[] = [];
       for (const s of owned) {
         const role = this.deps.roles.get(s.role_id);
         if (!role) continue;
-        sessions.push({ id: s.id, role_id: s.role_id, created_at: s.created_at, assessed_skill_ids: [...new Set(s.claims.filter((c) => c.skill_id !== null && c.verdict !== "pending").map((c) => c.skill_id as string))] });
+        sessions.push({
+          id: s.id,
+          role_id: s.role_id,
+          created_at: s.created_at,
+          assessed_skill_ids: [
+            ...new Set(
+              s.claims
+                .filter((c) => c.skill_id !== null && c.verdict !== "pending")
+                .map((c) => c.skill_id as string),
+            ),
+          ],
+        });
         const report = buildReport({ ...s, session_id: s.id }, role, this.now().toISOString());
         for (const sk of report.skills) {
           const key = `${s.role_id}:${sk.skill_id}`;
@@ -191,7 +243,10 @@ export class EvidenceService {
       }
       return { skills: [...latest.values()], sessions, demonstration, readFailed: false };
     } catch (err) {
-      this.deps.logger.warn({ err: (err as Error).message }, "placement: interview evidence could not be read");
+      this.deps.logger.warn(
+        { err: (err as Error).message },
+        "placement: interview evidence could not be read",
+      );
       return { skills: [], sessions: [], demonstration, readFailed: true };
     }
   }
@@ -200,23 +255,49 @@ export class EvidenceService {
     try {
       return { topics: await this.deps.learn.dbmsEvidence(uid), readFailed: false };
     } catch (err) {
-      this.deps.logger.warn({ err: (err as Error).message }, "placement: DBMS quiz evidence could not be read");
+      this.deps.logger.warn(
+        { err: (err as Error).message },
+        "placement: DBMS quiz evidence could not be read",
+      );
       return { topics: [], readFailed: true };
     }
   }
 
   private async githubEvidence(uid: string): Promise<GithubEvidence> {
-    const none: GithubEvidence = { status: "not_connected", stale: false, syncedAt: null, totalPublic: null, gaps: [], readFailed: false };
+    const none: GithubEvidence = {
+      status: "not_connected",
+      stale: false,
+      syncedAt: null,
+      totalPublic: null,
+      gaps: [],
+      readFailed: false,
+    };
     try {
       const c = await this.deps.github.connection(uid);
       if (c.status === "not_configured") return { ...none, status: "not_configured" };
       if (c.status === "disconnected") return none;
       const cached = await this.deps.github.cachedForMentor(uid);
-      if (!cached) return { ...none, status: c.status === "reauthorization_required" ? "needs_reconnect" : "connected_no_data" };
-      const gaps = (cached.repositories?.checklist ?? []).filter((i) => i.status === "fail").map((i) => ({ repository: i.repository, check: i.check, label: i.label }));
-      return { status: c.status === "reauthorization_required" ? "needs_reconnect" : "available", stale: cached.stale, syncedAt: cached.syncedAt, totalPublic: cached.repositories?.total_public ?? null, gaps, readFailed: false };
+      if (!cached)
+        return {
+          ...none,
+          status: c.status === "reauthorization_required" ? "needs_reconnect" : "connected_no_data",
+        };
+      const gaps = (cached.repositories?.checklist ?? [])
+        .filter((i) => i.status === "fail")
+        .map((i) => ({ repository: i.repository, check: i.check, label: i.label }));
+      return {
+        status: c.status === "reauthorization_required" ? "needs_reconnect" : "available",
+        stale: cached.stale,
+        syncedAt: cached.syncedAt,
+        totalPublic: cached.repositories?.total_public ?? null,
+        gaps,
+        readFailed: false,
+      };
     } catch (err) {
-      this.deps.logger.warn({ err: (err as Error).message }, "placement: GitHub evidence could not be read");
+      this.deps.logger.warn(
+        { err: (err as Error).message },
+        "placement: GitHub evidence could not be read",
+      );
       return { ...none, readFailed: true };
     }
   }
@@ -226,17 +307,30 @@ export class EvidenceService {
     try {
       return await this.deps.leetcode.evidence(uid);
     } catch (err) {
-      this.deps.logger.warn({ err: (err as Error).message }, "placement: imported LeetCode data could not be read");
+      this.deps.logger.warn(
+        { err: (err as Error).message },
+        "placement: imported LeetCode data could not be read",
+      );
       return NONE_EVIDENCE;
     }
   }
 
   private async memory(uid: string): Promise<MemoryEvidence> {
     try {
-      const [profile, goals] = await Promise.all([this.deps.mentor.getProfile(uid), this.deps.mentor.listMemories(uid, "goal", 1, 20)]);
-      return { profile: profile.profile, goals: goals.memories.filter((m) => m.status === "active").map((m) => m.content), readFailed: false };
+      const [profile, goals] = await Promise.all([
+        this.deps.mentor.getProfile(uid),
+        this.deps.mentor.listMemories(uid, "goal", 1, 20),
+      ]);
+      return {
+        profile: profile.profile,
+        goals: goals.memories.filter((m) => m.status === "active").map((m) => m.content),
+        readFailed: false,
+      };
     } catch (err) {
-      this.deps.logger.warn({ err: (err as Error).message }, "placement: mentor memory could not be read");
+      this.deps.logger.warn(
+        { err: (err as Error).message },
+        "placement: mentor memory could not be read",
+      );
       return { profile: null, goals: [], readFailed: true };
     }
   }
@@ -245,7 +339,12 @@ export class EvidenceService {
   private async conversations(uid: string): Promise<EvidenceBundle["conversations"]> {
     try {
       const r = await this.deps.mentor.listConversations(uid, 1, 20);
-      return r.conversations.map((c) => ({ id: c.id, mode: c.mode, messages: c.message_count, updated_at: c.updated_at }));
+      return r.conversations.map((c) => ({
+        id: c.id,
+        mode: c.mode,
+        messages: c.message_count,
+        updated_at: c.updated_at,
+      }));
     } catch {
       return [];
     }

@@ -32,8 +32,13 @@ const mockRoles: RoleSummary[] = [
 ];
 
 const mockClaimsResponse: ClaimsResponse = makeClaimsResponse(
-  [makeClaim({ text: "Built a React dashboard", resume_line: "Built a React dashboard" })],
-  { session_id: "s_test_456", blind_spots: [] },
+  [
+    makeClaim({
+      text: "Built a React dashboard",
+      resume_line: "Built a React dashboard",
+    }),
+  ],
+  { session_id: "s_test_456", blind_spots: [] }
 );
 
 function renderSetup() {
@@ -143,7 +148,10 @@ describe("SetupPage — validation and submission", () => {
       mode: "prepare",
       resume_text: "I built a React dashboard.",
     });
-    const payload = vi.mocked(api.extractClaims).mock.calls[0]?.[0] as unknown as Record<string, unknown>;
+    const payload = vi.mocked(api.extractClaims).mock.calls[0]?.[0] as unknown as Record<
+      string,
+      unknown
+    >;
     expect(payload).not.toHaveProperty("prep_mode");
   });
 

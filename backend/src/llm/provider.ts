@@ -25,7 +25,11 @@ export interface LLMProvider {
   question(input: QuestionContext): Promise<string>;
   clarify(input: QuestionContext & { vaguePoints: string[] }): Promise<string>;
   retestQuestion(
-    input: QuestionContext & { missingConcepts: string[]; rootCause: string | null; previousQuestions: string[] },
+    input: QuestionContext & {
+      missingConcepts: string[];
+      rootCause: string | null;
+      previousQuestions: string[];
+    },
   ): Promise<string>;
   grade(input: QuestionContext & { question: string; answer: string }): Promise<RawGrade>;
   fixTask(input: {

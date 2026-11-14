@@ -44,7 +44,8 @@ function parseArgs(argv: string[]): Map<string, string | true> {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
-  const str = (k: string) => (typeof args.get(k) === "string" ? (args.get(k) as string) : undefined);
+  const str = (k: string) =>
+    typeof args.get(k) === "string" ? (args.get(k) as string) : undefined;
   const required = (k: string) => {
     const v = str(k);
     if (!v) throw new Error(`--${k} is required`);
@@ -54,23 +55,33 @@ function main(): void {
   const input = resolve(required("input"));
   const out = resolve(str("out") ?? "data/dsa/catalogue.json");
   const status = required("license-status") as ImportLicenseStatus;
-  if (!IMPORT_LICENSE_STATUSES.includes(status)) throw new Error(`--license-status must be one of ${IMPORT_LICENSE_STATUSES.join(", ")}`);
+  if (!IMPORT_LICENSE_STATUSES.includes(status))
+    throw new Error(`--license-status must be one of ${IMPORT_LICENSE_STATUSES.join(", ")}`);
   const ext = extname(input).toLowerCase();
   const format = ext === ".csv" ? "csv" : ext === ".json" ? "json" : null;
   if (!format) throw new Error("input must be a .csv or .json file");
 
-  const existing: CatalogueFile | null = existsSync(out) ? parseCatalogueFile(JSON.parse(readFileSync(out, "utf8"))) : null;
-  const { file, report } = buildCatalogue(parseRecords(readFileSync(input, "utf8"), format), existing, {
-    source: {
-      name: required("source-name"),
-      license_status: status,
-      license_note: required("license-note"),
-      url: str("source-url") ?? null,
-      source_updated_at: str("source-updated-at") ?? null,
+  const existing: CatalogueFile | null = existsSync(out)
+    ? parseCatalogueFile(JSON.parse(readFileSync(out, "utf8")))
+    : null;
+  const { file, report } = buildCatalogue(
+    parseRecords(readFileSync(input, "utf8"), format),
+    existing,
+    {
+      source: {
+        name: required("source-name"),
+        license_status: status,
+        license_note: required("license-note"),
+        url: str("source-url") ?? null,
+        source_updated_at: str("source-updated-at") ?? null,
+      },
+      allowedHosts: str("allowed-hosts")
+        ?.split(",")
+        .map((h) => h.trim().toLowerCase())
+        .filter(Boolean),
+      replace: args.get("replace") === true,
     },
-    allowedHosts: str("allowed-hosts")?.split(",").map((h) => h.trim().toLowerCase()).filter(Boolean),
-    replace: args.get("replace") === true,
-  });
+  );
 
   console.log(
     `${report.rows} rows -> ${report.companies} companies, ${report.questions} questions, ${report.associations} associations ` +

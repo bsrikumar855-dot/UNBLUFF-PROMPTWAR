@@ -23,7 +23,13 @@ import { PlacementService } from "../../src/placement/service.js";
 import { MemoryPlacementStore, type PlacementStore } from "../../src/placement/store.js";
 import type { Session } from "../../src/store/SessionStore.js";
 import { MemoryStore } from "../../src/store/memoryStore.js";
-import type { Claim, PlacementDashboard, PlacementProfile, SubmissionVerdict, Verdict } from "../../src/types.js";
+import type {
+  Claim,
+  PlacementDashboard,
+  PlacementProfile,
+  SubmissionVerdict,
+  Verdict,
+} from "../../src/types.js";
 import { bearer, fixtureCatalogue, testApp } from "../integration/app.js";
 import { roles, silentLogger } from "../helpers.js";
 
@@ -31,7 +37,10 @@ export const A = "student-a";
 export const B = "student-b";
 export const START = new Date("2026-06-15T09:00:00.000Z"); // a Monday
 
-export const QUESTION_IDS = Array.from({ length: 12 }, (_v, i) => `q_fixture_${String(i + 1).padStart(2, "0")}`);
+export const QUESTION_IDS = Array.from(
+  { length: 12 },
+  (_v, i) => `q_fixture_${String(i + 1).padStart(2, "0")}`,
+);
 
 export function suitesFor(ids: string[], eligible: boolean): SuiteRegistry {
   return new SuiteRegistry(
@@ -42,12 +51,22 @@ export function suitesFor(ids: string[], eligible: boolean): SuiteRegistry {
         revision: "t1",
         is_demonstration: !eligible,
         statement: null,
-        source: { name: "test suite", license_status: eligible ? "own_work" : "development_fixture", license_note: "written for tests" },
+        source: {
+          name: "test suite",
+          license_status: eligible ? "own_work" : "development_fixture",
+          license_note: "written for tests",
+        },
         samples: [{ input: "s\n", expected_output: "s\n" }],
-        tests: ["1", "2", "3", "4", "5"].map((n) => ({ input: `${n}\n`, expected_output: `${n}\n` })),
+        tests: ["1", "2", "3", "4", "5"].map((n) => ({
+          input: `${n}\n`,
+          expected_output: `${n}\n`,
+        })),
         limits: { cpu_time_seconds: 2, memory_mb: 128 },
         starter_code: {},
-        eligibility: { analytics_eligible: eligible, reason: eligible ? "test suite declared eligible" : "demonstration suite" },
+        eligibility: {
+          analytics_eligible: eligible,
+          reason: eligible ? "test suite declared eligible" : "demonstration suite",
+        },
       })),
     }),
   );
@@ -73,7 +92,13 @@ export function fakeGithub(f: GithubFake): GithubService {
           total_public: 3,
           truncated: false,
           repositories: [],
-          checklist: (f.cached.gaps ?? []).map((g) => ({ repository: g.repository, check: g.check, status: "fail", label: g.label, evidence: "observed" })),
+          checklist: (f.cached.gaps ?? []).map((g) => ({
+            repository: g.repository,
+            check: g.check,
+            status: "fail",
+            label: g.label,
+            evidence: "observed",
+          })),
         },
       };
     },
@@ -121,14 +146,47 @@ export function harness(opts: HarnessOptions = {}) {
   const sessionStore = new MemoryStore();
   const dsaProgress = new DsaProgressService(new MemoryProgressStore(), () => catalogue);
   const submissionStore = new MemorySubmissionStore();
-  const analytics = new AnalyticsService({ stats: statsStore, revisions: revisionStore, submissions: submissionStore, progress: dsaProgress, catalogue: () => catalogue, logger: silentLogger, now });
-  const mentor = new MentorService({ store: new MemoryMentorStore(), llm, stats: statsStore, revisions: revisionStore, analytics, progress: dsaProgress, catalogue: () => catalogue, sessions: sessionStore, roles, logger: silentLogger, now });
+  const analytics = new AnalyticsService({
+    stats: statsStore,
+    revisions: revisionStore,
+    submissions: submissionStore,
+    progress: dsaProgress,
+    catalogue: () => catalogue,
+    logger: silentLogger,
+    now,
+  });
+  const mentor = new MentorService({
+    store: new MemoryMentorStore(),
+    llm,
+    stats: statsStore,
+    revisions: revisionStore,
+    analytics,
+    progress: dsaProgress,
+    catalogue: () => catalogue,
+    sessions: sessionStore,
+    roles,
+    logger: silentLogger,
+    now,
+  });
   const learn = new LearnService({ store: new MemoryLearnStore(), now });
   const github = fakeGithub(opts.github ?? { status: "disconnected", cached: null });
   const store = opts.placementStore ?? new MemoryPlacementStore();
   const placement = new PlacementService({
     store,
-    evidence: new EvidenceService({ analytics, sessions: sessionStore, roles, learn, github, mentor, catalogue: () => catalogue, suites, execution, llmMode: opts.llmMode ?? "live", logger: silentLogger, now }),
+    evidence: new EvidenceService({
+      analytics,
+      sessions: sessionStore,
+      roles,
+      learn,
+      github,
+      mentor,
+      catalogue: () => catalogue,
+      suites,
+      execution,
+      llmMode: opts.llmMode ?? "live",
+      logger: silentLogger,
+      now,
+    }),
     roles,
     topics: () => catalogue.allTopics(),
     mentor,
@@ -136,7 +194,10 @@ export function harness(opts: HarnessOptions = {}) {
     now,
     suggestions: async (uid) => {
       const p = (await mentor.getProfile(uid)).profile;
-      return { preferred_language: p.preferred_languages[0] ?? null, daily_minutes: p.daily_study_minutes };
+      return {
+        preferred_language: p.preferred_languages[0] ?? null,
+        daily_minutes: p.daily_study_minutes,
+      };
     },
   });
   const code = opts.code
@@ -153,18 +214,45 @@ export function harness(opts: HarnessOptions = {}) {
         now,
       })
     : undefined;
-  const app: Express = testApp({ autoAuth: false, llm, analytics, statsStore, revisionStore, store: sessionStore, learn, mentor, github, placement, catalogue, submissionStore, progressStore: undefined, ...(code ? { code } : {}) });
+  const app: Express = testApp({
+    autoAuth: false,
+    llm,
+    analytics,
+    statsStore,
+    revisionStore,
+    store: sessionStore,
+    learn,
+    mentor,
+    github,
+    placement,
+    catalogue,
+    submissionStore,
+    progressStore: undefined,
+    ...(code ? { code } : {}),
+  });
   const auth = (uid: string) => ({ Authorization: bearer(uid) });
 
   const api = {
     get: (path: string, uid = A) => request(app).get(`/api/placement${path}`).set(auth(uid)),
-    post: (path: string, body: object = {}, uid = A) => request(app).post(`/api/placement${path}`).set(auth(uid)).send(body),
-    put: (path: string, body: object, uid = A) => request(app).put(`/api/placement${path}`).set(auth(uid)).send(body),
+    post: (path: string, body: object = {}, uid = A) =>
+      request(app).post(`/api/placement${path}`).set(auth(uid)).send(body),
+    put: (path: string, body: object, uid = A) =>
+      request(app).put(`/api/placement${path}`).set(auth(uid)).send(body),
     del: (path: string, uid = A) => request(app).delete(`/api/placement${path}`).set(auth(uid)),
   };
 
   /** Judged results as the analytics engine stores them (counted submissions only). */
-  async function setStats(uid: string, questionId: string, o: { attempts: number; accepted: number; at?: string; consecutive?: number; failuresAfterSolved?: number }) {
+  async function setStats(
+    uid: string,
+    questionId: string,
+    o: {
+      attempts: number;
+      accepted: number;
+      at?: string;
+      consecutive?: number;
+      failuresAfterSolved?: number;
+    },
+  ) {
     const q = catalogue.summary(questionId)!;
     const verdict: SubmissionVerdict = o.accepted > 0 ? "accepted" : "wrong_answer";
     const at = o.at ?? clock.now.toISOString();
@@ -182,16 +270,39 @@ export function harness(opts: HarnessOptions = {}) {
       failures: { ...emptyFailures(), wrong_answer: o.attempts - o.accepted },
       consecutive_failures: o.consecutive ?? (o.accepted > 0 ? 0 : o.attempts),
       failures_after_solved: o.failuresAfterSolved ?? 0,
-      events: Array.from({ length: Math.min(o.attempts, 5) }, (_v, i) => ({ id: `${uid}-${questionId}-${i}`, at, verdict: i < o.attempts - o.accepted ? ("wrong_answer" as const) : ("accepted" as const) })),
+      events: Array.from({ length: Math.min(o.attempts, 5) }, (_v, i) => ({
+        id: `${uid}-${questionId}-${i}`,
+        at,
+        verdict: i < o.attempts - o.accepted ? ("wrong_answer" as const) : ("accepted" as const),
+      })),
       updated_at: at,
     };
     await statsStore.put(rec);
   }
 
   /** An interview session as the interview module stores it. */
-  async function addSession(uid: string, o: { id: string; role_id?: string; at?: string; claims: { skill_id: string; verdict: Verdict; proficiency: number; missing?: string[] }[] }) {
+  async function addSession(
+    uid: string,
+    o: {
+      id: string;
+      role_id?: string;
+      at?: string;
+      claims: { skill_id: string; verdict: Verdict; proficiency: number; missing?: string[] }[];
+    },
+  ) {
     const created = o.at ?? clock.now.toISOString();
-    const claims: Claim[] = o.claims.map((c, i) => ({ ...newClaim(`CL-00${i + 1}`, { text: `claim ${i}`, resume_line: null, skill_id: c.skill_id, source: "declared" }), verdict: c.verdict, proficiency: c.proficiency, missing_concepts: c.missing ?? [], levels_passed: c.verdict === "defended" ? 3 : 1 }));
+    const claims: Claim[] = o.claims.map((c, i) => ({
+      ...newClaim(`CL-00${i + 1}`, {
+        text: `claim ${i}`,
+        resume_line: null,
+        skill_id: c.skill_id,
+        source: "declared",
+      }),
+      verdict: c.verdict,
+      proficiency: c.proficiency,
+      missing_concepts: c.missing ?? [],
+      levels_passed: c.verdict === "defended" ? 3 : 1,
+    }));
     const session: Session = {
       id: o.id,
       owner_uid: uid,
@@ -203,7 +314,13 @@ export function harness(opts: HarnessOptions = {}) {
       claims,
       next_seq: claims.length + 1,
       cursors: {},
-      history: claims.map((c) => ({ at: created, mode: "assess" as const, claim_id: c.id, proficiency: c.proficiency, skill_id: c.skill_id! })),
+      history: claims.map((c) => ({
+        at: created,
+        mode: "assess" as const,
+        claim_id: c.id,
+        proficiency: c.proficiency,
+        skill_id: c.skill_id!,
+      })),
       guard_flips: 0,
       completions: 1,
       schedule: {},
@@ -217,12 +334,33 @@ export function harness(opts: HarnessOptions = {}) {
     clock.now = t;
   };
 
-  return { app, api, clock, advance, analytics, learn, mentor, placement, store, statsStore, revisionStore, sessionStore, catalogue, auth, setStats, addSession };
+  return {
+    app,
+    api,
+    clock,
+    advance,
+    analytics,
+    learn,
+    mentor,
+    placement,
+    store,
+    statsStore,
+    revisionStore,
+    sessionStore,
+    catalogue,
+    auth,
+    setStats,
+    addSession,
+  };
 }
 
 export type Harness = ReturnType<typeof harness>;
 
-export async function ready(h: Harness, profile: Partial<PlacementProfile> = {}, uid = A): Promise<PlacementDashboard> {
+export async function ready(
+  h: Harness,
+  profile: Partial<PlacementProfile> = {},
+  uid = A,
+): Promise<PlacementDashboard> {
   const r = await h.api.put("/profile", standardProfile(profile), uid);
   if (r.status !== 200) throw new Error(`profile failed: ${JSON.stringify(r.body)}`);
   const g = await h.api.post("/plan/generate", {}, uid);

@@ -71,6 +71,17 @@ const COMPACT = String.raw`\documentclass[10pt,a4paper]{article}
 ${BODY}`;
 
 export const RESUME_TEMPLATES: ResumeTemplate[] = [
-  { id: "classic", name: "Classic, single column", description: "Roomy and easy to read. The safest starting point for ATS parsing.", latex: CLASSIC },
-  { id: "compact", name: "Compact, one page", description: "Smaller margins and type so more fits on one page. Still one column, still plain text.", latex: COMPACT },
+  {
+    id: "classic",
+    name: "Classic, single column",
+    description: "Roomy and easy to read. The safest starting point for ATS parsing.",
+    latex: CLASSIC,
+  },
+  {
+    id: "compact",
+    name: "Compact, one page",
+    description:
+      "Smaller margins and type so more fits on one page. Still one column, still plain text.",
+    latex: COMPACT,
+  },
 ];

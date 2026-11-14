@@ -68,7 +68,10 @@ describe("FirestoreStore on the Firestore emulator", () => {
 
   it("stores ownership both inside the JSON and as a top-level field, and a new client sees it (restart)", async () => {
     await store.save(session("s_owner", "alice"));
-    const raw = (await db.collection(collection).doc("s_owner").get()).data() as { owner_uid: string; json: string };
+    const raw = (await db.collection(collection).doc("s_owner").get()).data() as {
+      owner_uid: string;
+      json: string;
+    };
     expect(raw.owner_uid).toBe("alice");
     expect((JSON.parse(raw.json) as Session).owner_uid).toBe("alice");
 
@@ -82,14 +85,20 @@ describe("FirestoreStore on the Firestore emulator", () => {
     await store.save(session("s_a1", "owner-list-a"));
     await store.save(session("s_a2", "owner-list-a"));
     await store.save(session("s_b1", "owner-list-b"));
-    expect((await store.listByOwner("owner-list-a")).map((s) => s.id).sort()).toEqual(["s_a1", "s_a2"]);
+    expect((await store.listByOwner("owner-list-a")).map((s) => s.id).sort()).toEqual([
+      "s_a1",
+      "s_a2",
+    ]);
     expect((await store.listByOwner("owner-list-b")).map((s) => s.id)).toEqual(["s_b1"]);
     expect(await store.listByOwner("nobody")).toEqual([]);
   });
 
   it("a legacy document without an owner is never listed", async () => {
     await store.save(session("s_legacy", undefined));
-    const raw = (await db.collection(collection).doc("s_legacy").get()).data() as Record<string, unknown>;
+    const raw = (await db.collection(collection).doc("s_legacy").get()).data() as Record<
+      string,
+      unknown
+    >;
     expect(raw.owner_uid).toBeUndefined();
     expect(await store.listByOwner("undefined")).toEqual([]);
     expect(await store.listByOwner("")).toEqual([]);
@@ -107,14 +116,29 @@ describe("HTTP API with FirestoreStore on the emulator", () => {
         .expect(200);
 
     const sid = (await extract("http-alice")).body.session_id as string;
-    await request(app).get(`/api/report/${sid}`).set("Authorization", bearer("http-alice")).expect(200);
-    await request(app).get(`/api/report/${sid}`).set("Authorization", bearer("http-bob")).expect(404);
-    await request(app).delete(`/api/sessions/${sid}`).set("Authorization", bearer("http-bob")).expect(404);
+    await request(app)
+      .get(`/api/report/${sid}`)
+      .set("Authorization", bearer("http-alice"))
+      .expect(200);
+    await request(app)
+      .get(`/api/report/${sid}`)
+      .set("Authorization", bearer("http-bob"))
+      .expect(404);
+    await request(app)
+      .delete(`/api/sessions/${sid}`)
+      .set("Authorization", bearer("http-bob"))
+      .expect(404);
 
-    const list = await request(app).get("/api/sessions").set("Authorization", bearer("http-alice")).expect(200);
+    const list = await request(app)
+      .get("/api/sessions")
+      .set("Authorization", bearer("http-alice"))
+      .expect(200);
     expect(list.body.sessions.map((s: { session_id: string }) => s.session_id)).toEqual([sid]);
 
-    await request(app).delete(`/api/sessions/${sid}`).set("Authorization", bearer("http-alice")).expect(204);
+    await request(app)
+      .delete(`/api/sessions/${sid}`)
+      .set("Authorization", bearer("http-alice"))
+      .expect(204);
     expect(await store.get(sid)).toBeNull();
     expect((await db.collection(collection).doc(sid).get()).exists).toBe(false);
   });

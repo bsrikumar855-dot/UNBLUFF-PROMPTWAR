@@ -16,8 +16,10 @@ export const routes = {
   dsaProgress: "/dsa/progress",
   dsaAnalytics: "/dsa/analytics",
   dsaRevision: "/dsa/revision",
-  mentor: (questionId?: string) => (questionId ? `/mentor?question=${encodeURIComponent(questionId)}` : "/mentor"),
-  mentorAsk: (prompt: string) => `/mentor?prompt=${encodeURIComponent(prompt.slice(0, 300))}`,
+  mentor: (questionId?: string) =>
+    questionId ? `/mentor?question=${encodeURIComponent(questionId)}` : "/mentor",
+  mentorAsk: (prompt: string) =>
+    `/mentor?prompt=${encodeURIComponent(prompt.slice(0, 300))}`,
   mentorMemory: "/mentor/memory",
   settings: "/settings",
   learningPath: "/learning-path",
@@ -30,12 +32,14 @@ export const routes = {
   learnPattern: (id: string) => `/learn/patterns/${encodeURIComponent(id)}`,
   learnDbms: "/learn/dbms",
   learnDbmsTopic: (id: string) => `/learn/dbms/${encodeURIComponent(id)}`,
-  dsaCode: (questionId: string) => `/dsa/questions/${encodeURIComponent(questionId)}/code`,
+  dsaCode: (questionId: string) =>
+    `/dsa/questions/${encodeURIComponent(questionId)}/code`,
   dsaCompany: (companyId: string) => `/dsa/companies/${encodeURIComponent(companyId)}`,
   dsaQuestion: (questionId: string) => `/dsa/questions/${encodeURIComponent(questionId)}`,
   report: (sessionId: string) => `/report/${encodeURIComponent(sessionId)}`,
   demoReport: `/report/${DEMO_SESSION}`,
-  roadmap: (sessionId?: string | null) => (sessionId ? `/roadmap?session=${encodeURIComponent(sessionId)}` : "/roadmap"),
+  roadmap: (sessionId?: string | null) =>
+    sessionId ? `/roadmap?session=${encodeURIComponent(sessionId)}` : "/roadmap",
   workspace: (sessionId: string, claimId?: string, mode?: Mode) => {
     const base = `/workspace/${encodeURIComponent(sessionId)}`;
     if (!claimId) return base;

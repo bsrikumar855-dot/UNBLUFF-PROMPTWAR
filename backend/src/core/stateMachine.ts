@@ -1,9 +1,5 @@
 import type { Grade, Level, LevelsPassed, Mode, RetestResult, Verdict } from "../types.js";
-import {
-  proficiencyForLevels,
-  RETEST_FULL_PROFICIENCY,
-  verdictForLevels,
-} from "./rules.js";
+import { proficiencyForLevels, RETEST_FULL_PROFICIENCY, verdictForLevels } from "./rules.js";
 
 /** Where an in-progress claim is in its level ladder. */
 export interface Cursor {
@@ -16,9 +12,7 @@ export interface Cursor {
 
 /** How a ladder run ended. */
 export type Outcome =
-  | { kind: "gap"; level: Level }
-  | { kind: "failed"; level: Level }
-  | { kind: "passed_all" };
+  { kind: "gap"; level: Level } | { kind: "failed"; level: Level } | { kind: "passed_all" };
 
 export type TurnDecision =
   | { turn: "clarify"; cursor: Cursor }
@@ -26,7 +20,13 @@ export type TurnDecision =
   | { turn: "done"; outcome: Outcome };
 
 export function startCursor(mode: Mode, level: Level, interleavedClaims = 0): Cursor {
-  return { mode, level, start_level: level, clarify_used: false, interleaved_claims: interleavedClaims };
+  return {
+    mode,
+    level,
+    start_level: level,
+    clarify_used: false,
+    interleaved_claims: interleavedClaims,
+  };
 }
 
 /** Deterministic turn transition from a finalized (guarded) grade. */
@@ -58,7 +58,8 @@ export interface ClaimScore {
 
 export function resolveAssess(outcome: Outcome): ClaimScore {
   const levels = levelsImplied(outcome);
-  if (outcome.kind === "gap") return { verdict: "honest_gap", levels_passed: levels, proficiency: 0 };
+  if (outcome.kind === "gap")
+    return { verdict: "honest_gap", levels_passed: levels, proficiency: 0 };
   return {
     verdict: verdictForLevels(levels),
     levels_passed: levels,
@@ -76,17 +77,25 @@ export interface RetestScore extends ClaimScore {
  * Retest result: 1.0 if it passes through L3, otherwise the proficiency implied by levels
  * passed, never lower than before. Verdict becomes `defended` only on a full pass.
  */
-export function resolveRetest(previous: ClaimScore, outcome: Outcome, interleavedClaims = 0): RetestScore {
+export function resolveRetest(
+  previous: ClaimScore,
+  outcome: Outcome,
+  interleavedClaims = 0,
+): RetestScore {
   const before = previous.proficiency;
   const implied = levelsImplied(outcome);
   const full = outcome.kind === "passed_all";
-  const after = full
-    ? RETEST_FULL_PROFICIENCY
-    : Math.max(before, proficiencyForLevels(implied));
+  const after = full ? RETEST_FULL_PROFICIENCY : Math.max(before, proficiencyForLevels(implied));
   return {
     verdict: full ? "defended" : previous.verdict,
     levels_passed: Math.max(previous.levels_passed, implied) as LevelsPassed,
     proficiency: after,
-    retest: { attempted: true, passed: after > before, before, after, interleaved_claims: interleavedClaims },
+    retest: {
+      attempted: true,
+      passed: after > before,
+      before,
+      after,
+      interleaved_claims: interleavedClaims,
+    },
   };
 }

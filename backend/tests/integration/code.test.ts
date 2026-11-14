@@ -23,7 +23,17 @@ const pairSum = (stdin: string): string => {
   return "NO";
 };
 
-function setup(opts: { provider?: FakeProvider; judgeDeadlineMs?: number; rateLimits?: Parameters<typeof testApp>[0] extends infer O ? (O extends { rateLimits?: infer R } ? R : never) : never } = {}) {
+function setup(
+  opts: {
+    provider?: FakeProvider;
+    judgeDeadlineMs?: number;
+    rateLimits?: Parameters<typeof testApp>[0] extends infer O
+      ? O extends { rateLimits?: infer R }
+        ? R
+        : never
+      : never;
+  } = {},
+) {
   const provider = opts.provider ?? new FakeProvider({ solve: pairSum });
   const progressStore = new MemoryProgressStore();
   const submissionStore = new MemorySubmissionStore();
@@ -38,15 +48,31 @@ function setup(opts: { provider?: FakeProvider; judgeDeadlineMs?: number; rateLi
     logger: silentLogger,
     judgeDeadlineMs: opts.judgeDeadlineMs,
   });
-  const app = testApp({ autoAuth: false, code, catalogue, progressStore, rateLimits: opts.rateLimits });
+  const app = testApp({
+    autoAuth: false,
+    code,
+    catalogue,
+    progressStore,
+    rateLimits: opts.rateLimits,
+  });
   return { app, provider, progressStore, submissionStore };
 }
 
 const as = (uid: string) => ({ Authorization: bearer(uid) });
-const run = (app: ReturnType<typeof setup>["app"], uid: string, body: object) => request(app).post("/api/code/run").set(as(uid)).send(body);
-const submit = (app: ReturnType<typeof setup>["app"], uid: string, source: string, language = "python", question_id = Q) =>
-  request(app).post("/api/code/submit").set(as(uid)).send({ question_id, language, source });
-const progressOf = async (app: ReturnType<typeof setup>["app"], uid: string) => (await request(app).get("/api/me/dsa-progress").set(as(uid)).expect(200)).body.progress as { question_id: string; status: string }[];
+const run = (app: ReturnType<typeof setup>["app"], uid: string, body: object) =>
+  request(app).post("/api/code/run").set(as(uid)).send(body);
+const submit = (
+  app: ReturnType<typeof setup>["app"],
+  uid: string,
+  source: string,
+  language = "python",
+  question_id = Q,
+) => request(app).post("/api/code/submit").set(as(uid)).send({ question_id, language, source });
+const progressOf = async (app: ReturnType<typeof setup>["app"], uid: string) =>
+  (await request(app).get("/api/me/dsa-progress").set(as(uid)).expect(200)).body.progress as {
+    question_id: string;
+    status: string;
+  }[];
 
 describe("languages and exercises (public)", () => {
   it("lists exactly the languages the service reports, with its real version names", async () => {
@@ -74,28 +100,44 @@ describe("languages and exercises (public)", () => {
       throw new Error("down");
     };
     const { app } = setup({ provider });
-    expect((await request(app).get("/api/code/languages").expect(200)).body).toEqual({ languages: [], execution_available: false });
+    expect((await request(app).get("/api/code/languages").expect(200)).body).toEqual({
+      languages: [],
+      execution_available: false,
+    });
   });
 
   it("shows samples and a hidden-test count but never the hidden tests", async () => {
     const { app } = setup();
     const res = await request(app).get(`/api/code/exercises/${Q}`).expect(200);
-    expect(res.body).toMatchObject({ gradable: true, is_demonstration: true, hidden_test_count: 8, test_revision: "demo-1" });
+    expect(res.body).toMatchObject({
+      gradable: true,
+      is_demonstration: true,
+      hidden_test_count: 8,
+      test_revision: "demo-1",
+    });
     expect(res.body.samples).toHaveLength(2);
     const suite = fixtureSuites().suite(Q)!;
     const sampleInputs = new Set(suite.samples.map((s) => s.input));
     const body = JSON.stringify(res.body);
     const hiddenInputs = suite.tests.map((t) => t.input).filter((i) => !sampleInputs.has(i));
     expect(hiddenInputs.length).toBeGreaterThan(4);
-    for (const input of hiddenInputs) expect(body).not.toContain(JSON.stringify(input).slice(1, -1));
+    for (const input of hiddenInputs)
+      expect(body).not.toContain(JSON.stringify(input).slice(1, -1));
     expect(res.body).not.toHaveProperty("tests");
   });
 
   it("marks questions without a suite as not gradable and rejects unknown ids", async () => {
     const { app } = setup();
     const res = await request(app).get(`/api/code/exercises/${NO_SUITE}`).expect(200);
-    expect(res.body).toMatchObject({ gradable: false, samples: [], hidden_test_count: 0, statement: null });
-    expect((await request(app).get("/api/code/exercises/q_ghost")).body.error.code).toBe("QUESTION_NOT_FOUND");
+    expect(res.body).toMatchObject({
+      gradable: false,
+      samples: [],
+      hidden_test_count: 0,
+      statement: null,
+    });
+    expect((await request(app).get("/api/code/exercises/q_ghost")).body.error.code).toBe(
+      "QUESTION_NOT_FOUND",
+    );
     expect((await request(app).get("/api/code/exercises/Bad%20Id")).status).toBe(400);
   });
 });
@@ -105,7 +147,9 @@ describe("authentication and validation", () => {
     const { app } = setup();
     for (const res of [
       await request(app).post("/api/code/run").send({ language: "python", source: "x" }),
-      await request(app).post("/api/code/submit").send({ question_id: Q, language: "python", source: "x" }),
+      await request(app)
+        .post("/api/code/submit")
+        .send({ question_id: Q, language: "python", source: "x" }),
       await request(app).get("/api/code/submissions"),
       await request(app).get("/api/code/submissions/sub_x"),
       await request(app).delete("/api/code/submissions/sub_x"),
@@ -158,9 +202,17 @@ describe("authentication and validation", () => {
 describe("run", () => {
   it("returns the program's real output for custom input and passes limits to the service", async () => {
     const { app, provider } = setup();
-    const res = await run(app, "alice", { language: "python", source: "ECHO", stdin: "hello\n" }).expect(200);
+    const res = await run(app, "alice", {
+      language: "python",
+      source: "ECHO",
+      stdin: "hello\n",
+    }).expect(200);
     expect(res.body).toMatchObject({ status: "completed", stdout: "hello\n", sample_passed: null });
-    expect(provider.calls[0]).toMatchObject({ providerLanguageId: 113, stdin: "hello\n", limits: { cpuTimeSeconds: 2, memoryMb: 128 } });
+    expect(provider.calls[0]).toMatchObject({
+      providerLanguageId: 113,
+      stdin: "hello\n",
+      limits: { cpuTimeSeconds: 2, memoryMb: 128 },
+    });
   });
 
   it.each([
@@ -170,7 +222,9 @@ describe("run", () => {
     ["JUDGE", "judge_error"],
   ])("reports %s as %s with diagnostics", async (marker, status) => {
     const { app } = setup();
-    const res = await run(app, "alice", { language: "python", source: marker, stdin: "" }).expect(200);
+    const res = await run(app, "alice", { language: "python", source: marker, stdin: "" }).expect(
+      200,
+    );
     expect(res.body.status).toBe(status);
     if (marker === "COMPILE") expect(res.body.compile_output).toContain("expected ';'");
     if (marker === "RUNTIME") expect(res.body.stderr).toContain("ZeroDivisionError");
@@ -178,9 +232,19 @@ describe("run", () => {
 
   it("runs a visible sample and says whether it matched, without touching progress or history", async () => {
     const { app, submissionStore } = setup();
-    const pass = await run(app, "alice", { language: "python", source: "OK", question_id: Q, sample_index: 0 }).expect(200);
+    const pass = await run(app, "alice", {
+      language: "python",
+      source: "OK",
+      question_id: Q,
+      sample_index: 0,
+    }).expect(200);
     expect(pass.body).toMatchObject({ status: "completed", sample_passed: true });
-    const fail = await run(app, "alice", { language: "python", source: "WRONG", question_id: Q, sample_index: 1 }).expect(200);
+    const fail = await run(app, "alice", {
+      language: "python",
+      source: "WRONG",
+      question_id: Q,
+      sample_index: 1,
+    }).expect(200);
     expect(fail.body).toMatchObject({ status: "completed", sample_passed: false });
     expect(await progressOf(app, "alice")).toEqual([]);
     expect(await submissionStore.listByOwner("alice")).toEqual([]);
@@ -188,7 +252,16 @@ describe("run", () => {
 
   it("rejects a sample for a question that has none", async () => {
     const { app } = setup();
-    expect((await run(app, "alice", { language: "python", source: "OK", question_id: NO_SUITE, sample_index: 0 })).status).toBe(400);
+    expect(
+      (
+        await run(app, "alice", {
+          language: "python",
+          source: "OK",
+          question_id: NO_SUITE,
+          sample_index: 0,
+        })
+      ).status,
+    ).toBe(400);
   });
 
   it("maps provider outages and timeouts to 503 without infrastructure details", async () => {
@@ -211,11 +284,24 @@ describe("run", () => {
     const results = await Promise.all([slow(), slow(), slow()]);
     expect(results.map((r) => r.status).sort()).toEqual([200, 200, 429]);
 
-    const limited = setup({ rateLimits: { globalPerMinute: 1000, llmPerMinute: 1000, codeRunPerMinute: 2, codeSubmitPerMinute: 2 } });
+    const limited = setup({
+      rateLimits: {
+        globalPerMinute: 1000,
+        llmPerMinute: 1000,
+        codeRunPerMinute: 2,
+        codeSubmitPerMinute: 2,
+      },
+    });
     const statuses = [];
-    for (let i = 0; i < 3; i++) statuses.push((await run(limited.app, "alice", { language: "python", source: "ECHO", stdin: "x" })).status);
+    for (let i = 0; i < 3; i++)
+      statuses.push(
+        (await run(limited.app, "alice", { language: "python", source: "ECHO", stdin: "x" }))
+          .status,
+      );
     expect(statuses).toEqual([200, 200, 429]);
-    expect((await run(limited.app, "bob", { language: "python", source: "ECHO", stdin: "x" })).status).toBe(200); // another user is unaffected
+    expect(
+      (await run(limited.app, "bob", { language: "python", source: "ECHO", stdin: "x" })).status,
+    ).toBe(200); // another user is unaffected
   });
 });
 
@@ -224,11 +310,22 @@ describe("submit and grading", () => {
     const { app, submissionStore } = setup();
     expect(await progressOf(app, "alice")).toEqual([]);
     const res = await submit(app, "alice", "OK").expect(200);
-    expect(res.body).toMatchObject({ verdict: "accepted", passed: 8, total: 8, failed_test: null, progress_updated: true, test_revision: "demo-1", question_id: Q, language: "python" });
+    expect(res.body).toMatchObject({
+      verdict: "accepted",
+      passed: 8,
+      total: 8,
+      failed_test: null,
+      progress_updated: true,
+      test_revision: "demo-1",
+      question_id: Q,
+      language: "python",
+    });
     expect(res.body.id).toMatch(/^sub_/);
     expect(res.body.owner_uid).toBeUndefined();
     expect(res.body.source).toBeUndefined();
-    expect(await progressOf(app, "alice")).toEqual([expect.objectContaining({ question_id: Q, status: "solved" })]);
+    expect(await progressOf(app, "alice")).toEqual([
+      expect.objectContaining({ question_id: Q, status: "solved" }),
+    ]);
     const stored = await submissionStore.listByOwner("alice");
     expect(stored).toHaveLength(1);
     expect(stored[0]).toMatchObject({ owner_uid: "alice", source: "OK" });
@@ -238,7 +335,13 @@ describe("submit and grading", () => {
   it("a wrong answer is recorded but never marks the question solved, and reveals only the failing test number", async () => {
     const { app } = setup();
     const res = await submit(app, "alice", "WRONG").expect(200);
-    expect(res.body).toMatchObject({ verdict: "wrong_answer", passed: 0, total: 8, failed_test: 1, progress_updated: false });
+    expect(res.body).toMatchObject({
+      verdict: "wrong_answer",
+      passed: 0,
+      total: 8,
+      failed_test: 1,
+      progress_updated: false,
+    });
     expect(await progressOf(app, "alice")).toEqual([]);
   });
 
@@ -281,7 +384,9 @@ describe("submit and grading", () => {
     expect(provider.calls).toHaveLength(0);
     expect(await submissionStore.listByOwner("alice")).toEqual([]);
     expect(await progressOf(app, "alice")).toEqual([]);
-    expect((await submit(app, "alice", "OK", "python", "q_ghost")).body.error.code).toBe("QUESTION_NOT_FOUND");
+    expect((await submit(app, "alice", "OK", "python", "q_ghost")).body.error.code).toBe(
+      "QUESTION_NOT_FOUND",
+    );
   });
 
   it("a provider failure mid-judging returns 503 and stores nothing", async () => {
@@ -309,7 +414,14 @@ describe("submit and grading", () => {
   });
 
   it("rate limits submissions per user", async () => {
-    const { app } = setup({ rateLimits: { globalPerMinute: 1000, llmPerMinute: 1000, codeRunPerMinute: 20, codeSubmitPerMinute: 2 } });
+    const { app } = setup({
+      rateLimits: {
+        globalPerMinute: 1000,
+        llmPerMinute: 1000,
+        codeRunPerMinute: 20,
+        codeSubmitPerMinute: 2,
+      },
+    });
     const statuses = [];
     for (let i = 0; i < 3; i++) statuses.push((await submit(app, "alice", "OK")).status);
     expect(statuses).toEqual([200, 200, 429]);
@@ -329,24 +441,37 @@ describe("submission history and ownership", () => {
     expect(res.body.submissions.map((s: { id: string }) => s.id)[0]).toBe(second.id);
     expect(res.body.submissions).toHaveLength(2);
     expect(JSON.stringify(res.body)).not.toMatch(/owner_uid|"source"/);
-    const filtered = await request(app).get(`/api/code/submissions?question_id=${NO_SUITE}`).set(as("alice")).expect(200);
+    const filtered = await request(app)
+      .get(`/api/code/submissions?question_id=${NO_SUITE}`)
+      .set(as("alice"))
+      .expect(200);
     expect(filtered.body.submissions).toEqual([]);
-    expect((await request(app).get("/api/code/submissions?bogus=1").set(as("alice"))).status).toBe(400);
+    expect((await request(app).get("/api/code/submissions?bogus=1").set(as("alice"))).status).toBe(
+      400,
+    );
   });
 
   it("returns the source only to the owner; others get the same 404 as for a missing id", async () => {
     const { app } = setup();
-    const id = (await submit(app, "alice", "OK # my secret solution").expect(200)).body.id as string;
+    const id = (await submit(app, "alice", "OK # my secret solution").expect(200)).body
+      .id as string;
     const mine = await request(app).get(`/api/code/submissions/${id}`).set(as("alice")).expect(200);
     expect(mine.body.source).toBe("OK # my secret solution");
     expect(mine.body.owner_uid).toBeUndefined();
 
     const other = await request(app).get(`/api/code/submissions/${id}`).set(as("bob")).expect(404);
-    const missing = await request(app).get("/api/code/submissions/sub_does-not-exist").set(as("bob")).expect(404);
+    const missing = await request(app)
+      .get("/api/code/submissions/sub_does-not-exist")
+      .set(as("bob"))
+      .expect(404);
     expect(other.body.error.code).toBe("SUBMISSION_NOT_FOUND");
     expect(JSON.stringify(other.body)).not.toContain("secret solution");
-    expect(other.body.error.message.replace(id, "X")).toBe(missing.body.error.message.replace("sub_does-not-exist", "X"));
-    expect((await request(app).get("/api/code/submissions/Bad%20Id").set(as("alice"))).status).toBe(400);
+    expect(other.body.error.message.replace(id, "X")).toBe(
+      missing.body.error.message.replace("sub_does-not-exist", "X"),
+    );
+    expect((await request(app).get("/api/code/submissions/Bad%20Id").set(as("alice"))).status).toBe(
+      400,
+    );
   });
 
   it("deletion is owner-only and removes the stored source", async () => {
@@ -376,17 +501,33 @@ describe("hidden test isolation", () => {
     collect(accepted);
     collect(await request(app).get("/api/code/submissions").set(as("alice")));
     collect(await request(app).get(`/api/code/submissions/${accepted.body.id}`).set(as("alice")));
-    collect(await run(app, "alice", { language: "python", source: "WRONG", question_id: Q, sample_index: 0 }));
+    collect(
+      await run(app, "alice", {
+        language: "python",
+        source: "WRONG",
+        question_id: Q,
+        sample_index: 0,
+      }),
+    );
 
-    const sampleInputs = new Set(fixtureSuites().suite(Q)!.samples.map((s) => s.input));
-    const secrets = hidden.flatMap((t) => [t.input, t.expected_output]).filter((s) => s.length > 12 && !sampleInputs.has(s));
+    const sampleInputs = new Set(
+      fixtureSuites()
+        .suite(Q)!
+        .samples.map((s) => s.input),
+    );
+    const secrets = hidden
+      .flatMap((t) => [t.input, t.expected_output])
+      .filter((s) => s.length > 12 && !sampleInputs.has(s));
     expect(secrets.length).toBeGreaterThan(4);
-    for (const text of bodies) for (const s of secrets) expect(text).not.toContain(JSON.stringify(s).slice(1, -1));
+    for (const text of bodies)
+      for (const s of secrets) expect(text).not.toContain(JSON.stringify(s).slice(1, -1));
   });
 
   it("the public question catalogue never references grading data", async () => {
     const { app } = setup();
-    const text = (await request(app).get("/api/questions?page_size=100")).text + (await request(app).get(`/api/questions/${Q}`)).text;
+    const text =
+      (await request(app).get("/api/questions?page_size=100")).text +
+      (await request(app).get(`/api/questions/${Q}`)).text;
     expect(text).not.toMatch(/expected_output|hidden_test|"tests"|test_revision/);
   });
 });

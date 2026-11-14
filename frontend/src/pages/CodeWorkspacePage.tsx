@@ -348,10 +348,7 @@ const CodeWorkspacePage: React.FC = () => {
               className="flex h-full flex-col gap-6 overflow-y-auto px-4 py-5 sm:px-6"
             >
               {exercise.is_demonstration && (
-                <p
-                  role="note"
-                  className={cn(TILE, "px-4 py-3 text-sm text-ink-primary")}
-                >
+                <p role="note" className={cn(TILE, "px-4 py-3 text-sm text-ink-primary")}>
                   Demonstration exercise written for UNBLUFF. It is not a real company
                   interview question.
                 </p>
@@ -419,7 +416,12 @@ const CodeWorkspacePage: React.FC = () => {
                 )}
               </div>
 
-              <p className={cn(TILE, "px-4 py-3 text-sm leading-relaxed text-ink-secondary")}>
+              <p
+                className={cn(
+                  TILE,
+                  "px-4 py-3 text-sm leading-relaxed text-ink-secondary"
+                )}
+              >
                 {exercise.gradable
                   ? `Submitting is judged on ${exercise.hidden_test_count} hidden tests (suite ${exercise.test_revision}).`
                   : "Full judging is not available for this question: it has no test suite. You can run your code, but it can't be submitted for a verdict."}
@@ -602,7 +604,9 @@ const CodeWorkspacePage: React.FC = () => {
                         <Stamp
                           key={`${submission.id}-${submission.verdict}`}
                           label={VERDICT_LABEL[submission.verdict]}
-                          tone={submission.verdict === "accepted" ? "verified" : "redline"}
+                          tone={
+                            submission.verdict === "accepted" ? "verified" : "redline"
+                          }
                           className="absolute right-0 top-0"
                         />
                         <p className="text-base font-semibold text-ink-primary">

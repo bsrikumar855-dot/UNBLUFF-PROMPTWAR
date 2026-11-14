@@ -1,6 +1,13 @@
 import { createHash } from "node:crypto";
 import type { RoleRegistry } from "../services/roles.js";
-import type { PlacementFeasibility, PlacementProfile, PlacementSkillsResponse, PlacementTask, PlacementTaskType, RevisionItem } from "../types.js";
+import type {
+  PlacementFeasibility,
+  PlacementProfile,
+  PlacementSkillsResponse,
+  PlacementTask,
+  PlacementTaskType,
+  RevisionItem,
+} from "../types.js";
 import { addDays, diffDays, weekdayOf, weekStart } from "./dates.js";
 import type { EvidenceBundle } from "./evidence.js";
 import type { TaskRecord } from "./store.js";
@@ -23,7 +30,16 @@ export const PLAN_RULES = {
   /** Questions and lessons already planned or finished in the last N days are not suggested again if alternatives exist. */
   repeatSuppressionDays: 30,
   /** Estimated minutes by difficulty. */
-  minutes: { easy: 25, medium: 40, hard: 60, revision: 20, interview: 45, communication: 30, project: 30, review: 15 },
+  minutes: {
+    easy: 25,
+    medium: 40,
+    hard: 60,
+    revision: 20,
+    interview: 45,
+    communication: 30,
+    project: 30,
+    review: 15,
+  },
   /** feasibility: required work up to this share of available time is "ok"; up to 100% is "tight". */
   okShare: 0.8,
 } as const;
@@ -49,7 +65,8 @@ export interface Candidate {
   depends_on_keys: string[];
 }
 
-export const taskIdFor = (uid: string, key: string): string => `t_${createHash("sha1").update(`${uid}|${key}`).digest("hex").slice(0, 24)}`;
+export const taskIdFor = (uid: string, key: string): string =>
+  `t_${createHash("sha1").update(`${uid}|${key}`).digest("hex").slice(0, 24)}`;
 
 export interface PlannerInput {
   uid: string;
@@ -73,10 +90,20 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
   const recentCutoff = addDays(today, -PLAN_RULES.repeatSuppressionDays);
   // Questions already finished, skipped or removed recently are not suggested again. Open tasks are NOT excluded: the same
   // question is chosen again (and found to exist), so refreshing never keeps adding different tasks for the same need.
-  const seenQuestionIds = new Set(existing.filter((t) => t.ref.kind === "question" && (t.status === "completed" || t.status === "skipped" || t.status === "removed") && t.updated_at.slice(0, 10) >= recentCutoff).map((t) => t.ref.id));
+  const seenQuestionIds = new Set(
+    existing
+      .filter(
+        (t) =>
+          t.ref.kind === "question" &&
+          (t.status === "completed" || t.status === "skipped" || t.status === "removed") &&
+          t.updated_at.slice(0, 10) >= recentCutoff,
+      )
+      .map((t) => t.ref.id),
+  );
   const solved = new Set(ev.dsa.outcomes.filter((o) => o.solved).map((o) => o.question_id));
   const outcomeOf = new Map(ev.dsa.outcomes.map((o) => [o.question_id, o]));
-  const verifiedCheck = (eligible: boolean): "verified_event" | "student" => (exec.verified && eligible ? "verified_event" : "student");
+  const verifiedCheck = (eligible: boolean): "verified_event" | "student" =>
+    exec.verified && eligible ? "verified_event" : "student";
 
   // ---- R1: revision items that are due (the existing spaced-review queue)
   if (exec.configured) {
@@ -92,7 +119,8 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
         minutes: PLAN_RULES.minutes.revision,
         link: "/dsa/revision",
         ref: { kind: "revision", id: r.question_id },
-        completion_criteria: "Open it in the revision queue and mark it complete (remembered or struggled).",
+        completion_criteria:
+          "Open it in the revision queue and mark it complete (remembered or struggled).",
         completion_check: "verified_event",
         evidence_source: `revision:${r.question_id}`,
         reason:
@@ -113,13 +141,27 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
   const canPractise = exec.configured && ev.dsa.gradable.length > 0;
   const pickQuestions = (topic: string, n: number, easyFirst: boolean) =>
     ev.dsa.gradable
-      .filter((g) => g.summary.topics.includes(topic) && !solved.has(g.summary.id) && !seenQuestionIds.has(g.summary.id))
+      .filter(
+        (g) =>
+          g.summary.topics.includes(topic) &&
+          !solved.has(g.summary.id) &&
+          !seenQuestionIds.has(g.summary.id),
+      )
       .filter((g) => !((outcomeOf.get(g.summary.id)?.attempts ?? 0) > 0)) // a question already attempted belongs to the revision queue, not to new practice
-      .sort((a, b) => (easyFirst ? DIFFICULTY_RANK[a.summary.difficulty] - DIFFICULTY_RANK[b.summary.difficulty] : 0) || Number(b.eligible) - Number(a.eligible) || a.summary.id.localeCompare(b.summary.id))
+      .sort(
+        (a, b) =>
+          (easyFirst
+            ? DIFFICULTY_RANK[a.summary.difficulty] - DIFFICULTY_RANK[b.summary.difficulty]
+            : 0) ||
+          Number(b.eligible) - Number(a.eligible) ||
+          a.summary.id.localeCompare(b.summary.id),
+      )
       .slice(0, n);
   const taken = new Set<string>();
   if (canPractise) {
-    const weakTopics = skills.skills.filter((s) => s.category === "dsa" && s.status === "weak" && s.estimate !== null).map((s) => s.area.slice(4));
+    const weakTopics = skills.skills
+      .filter((s) => s.category === "dsa" && s.status === "weak" && s.estimate !== null)
+      .map((s) => s.area.slice(4));
     const maxTopics = reduced ? 1 : 2;
     for (const topic of weakTopics.slice(0, maxTopics)) {
       const weak = ev.dsa.overview?.weaknesses.find((w) => w.topic === topic);
@@ -136,7 +178,10 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
           minutes: PLAN_RULES.minutes[g.summary.difficulty],
           link: `/dsa/questions/${encodeURIComponent(g.summary.id)}/code`,
           ref: { kind: "question", id: g.summary.id },
-          completion_criteria: exec.verified && g.eligible ? "Submit a solution that the judge accepts." : "Solve it in the coding workspace and mark it done (the result will not be counted as verified).",
+          completion_criteria:
+            exec.verified && g.eligible
+              ? "Submit a solution that the judge accepts."
+              : "Solve it in the coding workspace and mark it done (the result will not be counted as verified).",
           completion_check: verifiedCheck(g.eligible),
           evidence_source: `analytics:weakness:${topic}`,
           reason: `${topic} is a weak area in your verified judged submissions${weak?.explanation[0] ? `: ${weak.explanation[0]}` : "."}`,
@@ -148,9 +193,18 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
     // first measurements: the student's own weak areas first, then alphabetical
     const priorityTopics = new Set(profile.weak_areas.map((x) => x.toLowerCase()));
     const unassessed = skills.skills
-      .filter((s) => s.category === "dsa" && (s.confidence === "none" || s.estimate === null) && s.status === "unassessed")
+      .filter(
+        (s) =>
+          s.category === "dsa" &&
+          (s.confidence === "none" || s.estimate === null) &&
+          s.status === "unassessed",
+      )
       .map((s) => s.area.slice(4))
-      .sort((a, b) => Number(priorityTopics.has(b.toLowerCase())) - Number(priorityTopics.has(a.toLowerCase())) || a.localeCompare(b));
+      .sort(
+        (a, b) =>
+          Number(priorityTopics.has(b.toLowerCase())) -
+            Number(priorityTopics.has(a.toLowerCase())) || a.localeCompare(b),
+      );
     const covered = new Set<string>();
     let diagnostics = 0;
     for (const topic of unassessed) {
@@ -171,7 +225,10 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
         minutes: PLAN_RULES.minutes[q.summary.difficulty],
         link: `/dsa/questions/${encodeURIComponent(q.summary.id)}/code`,
         ref: { kind: "question", id: q.summary.id },
-        completion_criteria: exec.verified && q.eligible ? "Submit a solution that the judge accepts or rejects: any counted judged attempt gives a first measurement." : "Attempt it in the coding workspace and mark it done (not counted as verified).",
+        completion_criteria:
+          exec.verified && q.eligible
+            ? "Submit a solution that the judge accepts or rejects: any counted judged attempt gives a first measurement."
+            : "Attempt it in the coding workspace and mark it done (not counted as verified).",
         completion_check: verifiedCheck(q.eligible),
         evidence_source: "rule:diagnostic_unassessed_topic",
         reason: `There is no verified result for ${topic} yet, so one question gives a first measurement${priorityTopics.has(topic.toLowerCase()) ? " (you listed it as a weak area)" : ""}.`,
@@ -186,13 +243,19 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
   for (const roleId of profile.role_ids) {
     const role = input.roles.get(roleId);
     if (!role) continue;
-    const already = ev.interview.sessions.some((s) => s.role_id === roleId && s.created_at.slice(0, 10) >= wk);
+    const already = ev.interview.sessions.some(
+      (s) => s.role_id === roleId && s.created_at.slice(0, 10) >= wk,
+    );
     if (already) continue;
-    const mine = skills.skills.filter((s) => s.category === "interview" && s.area.startsWith(`interview:${roleId}:`));
+    const mine = skills.skills.filter(
+      (s) => s.category === "interview" && s.area.startsWith(`interview:${roleId}:`),
+    );
     const weak = mine.filter((s) => s.status === "weak" || s.status === "developing");
     const unassessed = mine.filter((s) => s.status === "unassessed");
     if (weak.length === 0 && unassessed.length === 0 && mine.length > 0) continue; // every skill is strong: nothing to schedule
-    const focus = (weak.length > 0 ? weak : unassessed).slice(0, 3).map((s) => s.label.replace(/^Interview: /, "").replace(/ \(.*\)$/, ""));
+    const focus = (weak.length > 0 ? weak : unassessed)
+      .slice(0, 3)
+      .map((s) => s.label.replace(/^Interview: /, "").replace(/ \(.*\)$/, ""));
     out.push({
       key: `technical_interview|role:${roleId}@week:${wk}`,
       type: "technical_interview",
@@ -205,7 +268,8 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
       ref: { kind: "role", id: roleId },
       completion_criteria: `Complete an interview session for ${role.name} in which at least one claim is assessed.`,
       completion_check: "verified_event",
-      evidence_source: weak.length > 0 ? `interview:${weak[0]!.area}` : "rule:interview_first_assessment",
+      evidence_source:
+        weak.length > 0 ? `interview:${weak[0]!.area}` : "rule:interview_first_assessment",
       reason:
         weak.length > 0
           ? `Your latest assessment of ${focus[0]} for ${role.name} found an unresolved gap, so focused interview practice is scheduled.`
@@ -221,16 +285,19 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
       key: `communication|mentor:interview_practice@week:${wk}`,
       type: "communication",
       title: "HR and communication practice with the AI mentor",
-      description: "Open the AI mentor in Interview Practice mode and answer a few HR or behavioural questions out loud or in writing.",
+      description:
+        "Open the AI mentor in Interview Practice mode and answer a few HR or behavioural questions out loud or in writing.",
       skill_area: "communication",
       priority: 3,
       minutes: PLAN_RULES.minutes.communication,
       link: "/mentor",
       ref: { kind: "mentor_mode", id: "interview_practice" },
-      completion_criteria: "Have a conversation of at least two exchanges in the AI mentor's Interview Practice mode.",
+      completion_criteria:
+        "Have a conversation of at least two exchanges in the AI mentor's Interview Practice mode.",
       completion_check: "verified_event",
       evidence_source: "profile:priorities",
-      reason: "You chose communication as a priority. The AI mentor's Interview Practice mode asks HR and behavioural questions.",
+      reason:
+        "You chose communication as a priority. The AI mentor's Interview Practice mode asks HR and behavioural questions.",
       reason_codes: ["profile_priority_communication"],
       depends_on_keys: [],
     });
@@ -240,7 +307,10 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
   if (skills.skills.some((sk) => sk.area === "dbms")) {
     // Topics already started come first, then the rest in the order they are taught.
     const open = ev.dbms.topics.filter((t) => !t.passed);
-    const next = [...open.filter((t) => t.attempts > 0), ...open.filter((t) => t.attempts === 0)].slice(0, 2);
+    const next = [
+      ...open.filter((t) => t.attempts > 0),
+      ...open.filter((t) => t.attempts === 0),
+    ].slice(0, 2);
     const done = ev.dbms.topics.filter((t) => t.passed).length;
     next.forEach((t, i) => {
       const prev = next[i - 1];
@@ -266,7 +336,15 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
                 ? "You chose DBMS as a priority and have not passed a topic quiz yet."
                 : "You have started DBMS, and no topic quiz has been passed yet."
               : `You have passed ${done} DBMS topic(s); this is the next one in the path.`,
-        reason_codes: [prev ? "dbms_follow_up" : t.attempts > 0 ? "dbms_retry" : done === 0 ? "dbms_start" : "dbms_next"],
+        reason_codes: [
+          prev
+            ? "dbms_follow_up"
+            : t.attempts > 0
+              ? "dbms_retry"
+              : done === 0
+                ? "dbms_start"
+                : "dbms_next",
+        ],
         depends_on_keys: prev ? [`dbms|topic:${prev.id}`] : [],
       });
     });
@@ -300,7 +378,8 @@ export function buildCandidates(input: PlannerInput): Candidate[] {
       key: `general|review@week:${wk}`,
       type: "general",
       title: "Weekly review",
-      description: "Look at what you completed this week, what changed in your plan and what to adjust.",
+      description:
+        "Look at what you completed this week, what changed in your plan and what to adjust.",
       skill_area: "planning",
       priority: 5,
       minutes: PLAN_RULES.minutes.review,
@@ -330,9 +409,13 @@ export function capacityOn(profile: PlacementProfile, date: string): number {
 }
 
 /** Minutes already committed per day by incomplete tasks. */
-export function usedByDate(tasks: readonly Pick<PlacementTask, "status" | "due_date" | "estimated_minutes">[]): Map<string, number> {
+export function usedByDate(
+  tasks: readonly Pick<PlacementTask, "status" | "due_date" | "estimated_minutes">[],
+): Map<string, number> {
   const used = new Map<string, number>();
-  for (const t of tasks) if (t.status === "planned" || t.status === "in_progress") used.set(t.due_date, (used.get(t.due_date) ?? 0) + t.estimated_minutes);
+  for (const t of tasks)
+    if (t.status === "planned" || t.status === "in_progress")
+      used.set(t.due_date, (used.get(t.due_date) ?? 0) + t.estimated_minutes);
   return used;
 }
 
@@ -340,7 +423,13 @@ export function usedByDate(tasks: readonly Pick<PlacementTask, "status" | "due_d
  * Finds the first day from `from` to `last` that is available and has room. A task longer than a whole day is allowed on
  * an empty available day (it cannot be split), and is the only way such a task is ever placed.
  */
-export function findSlot(profile: PlacementProfile, used: Map<string, number>, minutes: number, from: string, last: string): string | null {
+export function findSlot(
+  profile: PlacementProfile,
+  used: Map<string, number>,
+  minutes: number,
+  from: string,
+  last: string,
+): string | null {
   for (let d = from; d <= last; d = addDays(d, 1)) {
     const cap = capacityOn(profile, d);
     if (cap === 0) continue;
@@ -359,7 +448,9 @@ export function lastPlanDay(profile: PlacementProfile, today: string): string {
 }
 
 export function availableMinutes(profile: PlacementProfile, today: string): number {
-  const end = profile.placement_date ? addDays(profile.placement_date, -1) : addDays(today, PLAN_RULES.horizonDays - 1);
+  const end = profile.placement_date
+    ? addDays(profile.placement_date, -1)
+    : addDays(today, PLAN_RULES.horizonDays - 1);
   const stop = addDays(today, PLAN_RULES.maxLookaheadDays);
   let total = 0;
   for (let d = today; d <= end && d <= stop; d = addDays(d, 1)) total += capacityOn(profile, d);
@@ -370,22 +461,56 @@ export function availableMinutes(profile: PlacementProfile, today: string): numb
  * Whether the work that matters most fits before the placement date. "Required" is every incomplete priority 1 and 2
  * task plus the candidates not yet created. With no deadline there is nothing to be infeasible against.
  */
-export function assessFeasibility(profile: PlacementProfile, today: string, requiredMinutes: number, deferred: string[], reduced: boolean): PlacementFeasibility {
+export function assessFeasibility(
+  profile: PlacementProfile,
+  today: string,
+  requiredMinutes: number,
+  deferred: string[],
+  reduced: boolean,
+): PlacementFeasibility {
   const available = availableMinutes(profile, today);
   if (!profile.placement_date) {
-    return { status: "no_deadline", required_minutes: requiredMinutes, available_minutes: available, message: "No placement date is set, so the plan covers the next two weeks and the time pressure is unknown. Set a date to check feasibility.", reduced, deferred_task_ids: deferred };
+    return {
+      status: "no_deadline",
+      required_minutes: requiredMinutes,
+      available_minutes: available,
+      message:
+        "No placement date is set, so the plan covers the next two weeks and the time pressure is unknown. Set a date to check feasibility.",
+      reduced,
+      deferred_task_ids: deferred,
+    };
   }
   const days = diffDays(profile.placement_date, today);
-  if (days <= 0) return { status: "insufficient", required_minutes: requiredMinutes, available_minutes: 0, message: "The placement date is today, so there is no time to schedule new work.", reduced, deferred_task_ids: deferred };
-  const status = requiredMinutes <= available * PLAN_RULES.okShare ? "ok" : requiredMinutes <= available ? "tight" : "insufficient";
+  if (days <= 0)
+    return {
+      status: "insufficient",
+      required_minutes: requiredMinutes,
+      available_minutes: 0,
+      message: "The placement date is today, so there is no time to schedule new work.",
+      reduced,
+      deferred_task_ids: deferred,
+    };
+  const status =
+    requiredMinutes <= available * PLAN_RULES.okShare
+      ? "ok"
+      : requiredMinutes <= available
+        ? "tight"
+        : "insufficient";
   const hours = (m: number) => `${Math.round((m / 60) * 10) / 10} h`;
   const message =
     requiredMinutes === 0
       ? `No high-priority work is waiting right now, and you have about ${hours(available)} before ${profile.placement_date}.`
       : status === "ok"
-      ? `The most important work needs about ${hours(requiredMinutes)} and you have about ${hours(available)} before ${profile.placement_date}.`
-      : status === "tight"
-        ? `The most important work needs about ${hours(requiredMinutes)} of your ${hours(available)} before ${profile.placement_date}: it fits, but with little slack.`
-        : `The most important work needs about ${hours(requiredMinutes)} but you have only about ${hours(available)} before ${profile.placement_date}. A reduced plan with the highest-priority work was made${deferred.length > 0 ? ` and ${deferred.length} task(s) were left out` : ""}; adding study days or minutes would help.`;
-  return { status, required_minutes: requiredMinutes, available_minutes: available, message, reduced, deferred_task_ids: deferred };
+        ? `The most important work needs about ${hours(requiredMinutes)} and you have about ${hours(available)} before ${profile.placement_date}.`
+        : status === "tight"
+          ? `The most important work needs about ${hours(requiredMinutes)} of your ${hours(available)} before ${profile.placement_date}: it fits, but with little slack.`
+          : `The most important work needs about ${hours(requiredMinutes)} but you have only about ${hours(available)} before ${profile.placement_date}. A reduced plan with the highest-priority work was made${deferred.length > 0 ? ` and ${deferred.length} task(s) were left out` : ""}; adding study days or minutes would help.`;
+  return {
+    status,
+    required_minutes: requiredMinutes,
+    available_minutes: available,
+    message,
+    reduced,
+    deferred_task_ids: deferred,
+  };
 }

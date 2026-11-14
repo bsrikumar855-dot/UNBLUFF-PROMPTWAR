@@ -242,14 +242,13 @@ const DsaQuestionsPage: React.FC = () => {
           )}
         </form>
 
-        <section
-          aria-label="Questions"
-          className={cn(GLASS, "min-w-0 p-5 sm:p-6")}
-        >
+        <section aria-label="Questions" className={cn(GLASS, "min-w-0 p-5 sm:p-6")}>
           {error !== null && (
             <ErrorState error={error} onRetry={() => setAttempt((a) => a + 1)} />
           )}
-          {error === null && data === null && <LoadingState message="Loading questions…" />}
+          {error === null && data === null && (
+            <LoadingState message="Loading questions…" />
+          )}
 
           {error === null && data && (
             <>

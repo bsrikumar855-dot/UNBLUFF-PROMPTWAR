@@ -13,7 +13,16 @@ const wrap = (ui: React.ReactElement) => (
 );
 
 const setReducedMotion = (reduce: boolean) =>
-  vi.stubGlobal("matchMedia", (query: string) => ({ matches: reduce && query.includes("reduce"), media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false }));
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: reduce && query.includes("reduce"),
+    media: query,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    onchange: null,
+    dispatchEvent: () => false,
+  }));
 
 describe("the opening screen", () => {
   beforeEach(() => {
@@ -57,12 +66,16 @@ describe("the opening screen", () => {
   it("is not shown again in the same session", () => {
     window.sessionStorage.setItem("unbluff_intro_seen", "1");
     render(wrap(<IntroLoader />));
-    expect(screen.queryByRole("status", { name: "Loading UNBLUFF" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("status", { name: "Loading UNBLUFF" })
+    ).not.toBeInTheDocument();
   });
 
   it("is not shown at all to people who ask for reduced motion", () => {
     setReducedMotion(true);
     render(wrap(<IntroLoader />));
-    expect(screen.queryByRole("status", { name: "Loading UNBLUFF" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("status", { name: "Loading UNBLUFF" })
+    ).not.toBeInTheDocument();
   });
 });

@@ -13,7 +13,8 @@ try {
     `OK ${path}\n  source: ${file.source.name} (${file.source.license_status}), imported ${file.source.imported_at}\n` +
       `  ${file.companies.length} companies, ${file.questions.length} questions, ${file.associations.length} associations`,
   );
-  if (file.source.license_status === "development_fixture") console.log("  NOTE: development fixture, not real company data.");
+  if (file.source.license_status === "development_fixture")
+    console.log("  NOTE: development fixture, not real company data.");
 } catch (err) {
   console.error(`INVALID ${path}\n  ${(err as Error).message}`);
   process.exit(1);

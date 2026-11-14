@@ -57,10 +57,16 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({ turn, busy, onSubm
           </span>
         )}
         {turn.mode === "retest" && (
-          <span className="rounded-full bg-redline-soft px-2.5 py-0.5 normal-case text-redline-dark">Retest</span>
+          <span className="rounded-full bg-redline-soft px-2.5 py-0.5 normal-case text-redline-dark">
+            Retest
+          </span>
         )}
       </div>
-      <h2 ref={headingRef} tabIndex={-1} className="mb-4 text-lg font-semibold text-ink-primary">
+      <h2
+        ref={headingRef}
+        tabIndex={-1}
+        className="mb-4 text-lg font-semibold text-ink-primary"
+      >
         {turn.question}
       </h2>
       <form onSubmit={submit} className="grid gap-3">
@@ -77,10 +83,20 @@ export const QuestionPanel: React.FC<QuestionPanelProps> = ({ turn, busy, onSubm
           className="w-full rounded-2xl border border-line-strong bg-white/70 p-3.5 text-sm"
         />
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" className="rounded-full" disabled={busy || !answer.trim()}>
+          <Button
+            type="submit"
+            className="rounded-full"
+            disabled={busy || !answer.trim()}
+          >
             Submit answer
           </Button>
-          <Button type="button" variant="outline" className="rounded-full bg-white/70" disabled={busy} onClick={() => send(IDK)}>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full bg-white/70"
+            disabled={busy}
+            onClick={() => send(IDK)}
+          >
             I don&apos;t know
           </Button>
         </div>

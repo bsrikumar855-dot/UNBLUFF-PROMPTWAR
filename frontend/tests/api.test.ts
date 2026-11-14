@@ -77,9 +77,9 @@ describe("API Client & Endpoint Layer", () => {
     });
 
     // Run with 50ms timeout for test speed
-    await expect(
-      apiClient("/claims/extract", { timeoutMs: 50 })
-    ).rejects.toThrowError(ApiError);
+    await expect(apiClient("/claims/extract", { timeoutMs: 50 })).rejects.toThrowError(
+      ApiError
+    );
 
     try {
       await apiClient("/claims/extract", { timeoutMs: 50 });

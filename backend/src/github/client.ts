@@ -3,7 +3,8 @@ import type { ZodType } from "zod";
 /** The only GraphQL endpoint this server ever calls. */
 export const GITHUB_GRAPHQL_URL = "https://api.github.com/graphql";
 
-export type GithubErrorKind = "unauthorized" | "forbidden" | "rate_limited" | "unavailable" | "timeout" | "invalid_response";
+export type GithubErrorKind =
+  "unauthorized" | "forbidden" | "rate_limited" | "unavailable" | "timeout" | "invalid_response";
 
 export class GithubApiError extends Error {
   constructor(
@@ -64,14 +65,22 @@ export class GithubGraphQL {
    * Runs one of this server's own query documents. `query` must be a constant from queries.ts, never client input, and
    * `variables` are passed as GraphQL variables (never interpolated). The response is validated against `schema`.
    */
-  async query<T>(token: string, query: string, variables: Record<string, unknown>, schema: ZodType<T>): Promise<GraphQLResult<T>> {
+  async query<T>(
+    token: string,
+    query: string,
+    variables: Record<string, unknown>,
+    schema: ZodType<T>,
+  ): Promise<GraphQLResult<T>> {
     let lastTransient: GithubApiError | null = null;
     for (let attempt = 0; attempt <= this.retries; attempt++) {
       if (attempt > 0) await this.sleep(300 * 2 ** (attempt - 1));
       try {
         return await this.once(token, query, variables, schema);
       } catch (err) {
-        if (err instanceof GithubApiError && (err.kind === "unavailable" || err.kind === "timeout")) {
+        if (
+          err instanceof GithubApiError &&
+          (err.kind === "unavailable" || err.kind === "timeout")
+        ) {
           lastTransient = err;
           continue;
         }
@@ -81,7 +90,12 @@ export class GithubGraphQL {
     throw lastTransient ?? new GithubApiError("unavailable");
   }
 
-  private async once<T>(token: string, query: string, variables: Record<string, unknown>, schema: ZodType<T>): Promise<GraphQLResult<T>> {
+  private async once<T>(
+    token: string,
+    query: string,
+    variables: Record<string, unknown>,
+    schema: ZodType<T>,
+  ): Promise<GraphQLResult<T>> {
     let res: Response;
     try {
       res = await this.fetchImpl(GITHUB_GRAPHQL_URL, {
@@ -98,7 +112,9 @@ export class GithubGraphQL {
       });
     } catch (err) {
       const name = (err as { name?: string } | null)?.name;
-      throw new GithubApiError(name === "TimeoutError" || name === "AbortError" ? "timeout" : "unavailable");
+      throw new GithubApiError(
+        name === "TimeoutError" || name === "AbortError" ? "timeout" : "unavailable",
+      );
     }
 
     if (res.status === 401) throw new GithubApiError("unauthorized");
@@ -120,9 +136,11 @@ export class GithubGraphQL {
     const errs = Array.isArray(errors) ? (errors as Record<string, unknown>[]) : [];
     const types = errs.map((e) => (typeof e.type === "string" ? e.type : "UNKNOWN"));
 
-    if (types.includes("RATE_LIMITED")) throw new GithubApiError("rate_limited", this.resetFrom(res));
+    if (types.includes("RATE_LIMITED"))
+      throw new GithubApiError("rate_limited", this.resetFrom(res));
     if (data === null || data === undefined) {
-      if (types.some((t) => t === "FORBIDDEN" || t === "INSUFFICIENT_SCOPES")) throw new GithubApiError("forbidden");
+      if (types.some((t) => t === "FORBIDDEN" || t === "INSUFFICIENT_SCOPES"))
+        throw new GithubApiError("forbidden");
       throw new GithubApiError(errs.length > 0 ? "unavailable" : "invalid_response");
     }
 
@@ -136,12 +154,17 @@ export class GithubGraphQL {
   }
 
   private isRateLimited(res: Response): boolean {
-    return res.headers.get("x-ratelimit-remaining") === "0" || res.headers.has("retry-after") || res.status === 429;
+    return (
+      res.headers.get("x-ratelimit-remaining") === "0" ||
+      res.headers.has("retry-after") ||
+      res.status === 429
+    );
   }
 
   private resetFrom(res: Response): string | null {
     const retry = Number(res.headers.get("retry-after"));
-    if (Number.isFinite(retry) && retry > 0) return new Date(this.now().getTime() + retry * 1000).toISOString();
+    if (Number.isFinite(retry) && retry > 0)
+      return new Date(this.now().getTime() + retry * 1000).toISOString();
     const reset = Number(res.headers.get("x-ratelimit-reset"));
     if (Number.isFinite(reset) && reset > 0) return new Date(reset * 1000).toISOString();
     return null;
@@ -149,7 +172,15 @@ export class GithubGraphQL {
 }
 
 function rateOf(data: unknown): RateInfo | null {
-  const r = (data as { rateLimit?: { cost?: unknown; remaining?: unknown; resetAt?: unknown } } | null)?.rateLimit;
-  if (!r || typeof r.cost !== "number" || typeof r.remaining !== "number" || typeof r.resetAt !== "string") return null;
+  const r = (
+    data as { rateLimit?: { cost?: unknown; remaining?: unknown; resetAt?: unknown } } | null
+  )?.rateLimit;
+  if (
+    !r ||
+    typeof r.cost !== "number" ||
+    typeof r.remaining !== "number" ||
+    typeof r.resetAt !== "string"
+  )
+    return null;
   return { cost: r.cost, remaining: r.remaining, resetAt: r.resetAt };
 }

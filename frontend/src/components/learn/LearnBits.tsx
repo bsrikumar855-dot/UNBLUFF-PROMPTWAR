@@ -1,9 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, type LucideIcon } from "lucide-react";
 import { GLASS } from "@/components/ui/GlassCard";
 import { cn } from "@/lib/cn";
 
@@ -17,10 +14,13 @@ export const Pill: React.FC<{
     className={cn(
       "inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase leading-4 tracking-wide",
       tone === "core" && "bg-redline-soft text-redline",
-      tone === "plain" && "bg-white/80 text-ink-secondary shadow-[inset_0_0_0_1px_rgba(24,24,27,0.1)]",
+      tone === "plain" &&
+        "bg-white/80 text-ink-secondary shadow-[inset_0_0_0_1px_rgba(24,24,27,0.1)]",
       tone === "ink" && "bg-ink-primary text-surface-50",
-      tone === "verified" && "bg-verified/12 text-verified shadow-[inset_0_0_0_1px_rgba(30,110,70,0.25)]",
-      tone === "alert" && "bg-redline-soft/70 text-redline shadow-[inset_0_0_0_1px_rgba(179,41,26,0.2)]",
+      tone === "verified" &&
+        "bg-verified/12 text-verified shadow-[inset_0_0_0_1px_rgba(30,110,70,0.25)]",
+      tone === "alert" &&
+        "bg-redline-soft/70 text-redline shadow-[inset_0_0_0_1px_rgba(179,41,26,0.2)]",
       className
     )}
   >
@@ -131,11 +131,13 @@ export const LearnProgress: React.FC<{
         className="h-2.5 w-full overflow-hidden rounded-full bg-surface-200"
       >
         <div
-          className={cn("h-full rounded-full", tone === "verified" ? "bg-verified" : "bg-redline")}
+          className={cn(
+            "h-full rounded-full",
+            tone === "verified" ? "bg-verified" : "bg-redline"
+          )}
           style={{ width: `${pct * 100}%` }}
         />
       </div>
     </div>
   );
 };
-

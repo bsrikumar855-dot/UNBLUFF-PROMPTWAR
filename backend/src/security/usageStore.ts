@@ -62,7 +62,12 @@ export class FirestoreUsageStore implements UsageStore {
       if (used >= limit) return { allowed: false, used };
       const expires = new Date(`${day}T00:00:00.000Z`);
       expires.setUTCDate(expires.getUTCDate() + 2);
-      const next: UsageDoc = { owner_uid: uid, day, count: used + 1, expires_at: Timestamp.fromDate(expires) };
+      const next: UsageDoc = {
+        owner_uid: uid,
+        day,
+        count: used + 1,
+        expires_at: Timestamp.fromDate(expires),
+      };
       tx.set(ref, next);
       return { allowed: true, used: used + 1 };
     });

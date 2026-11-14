@@ -34,7 +34,10 @@ export class MemoryResumeStore implements ResumeStore {
 
 export class FirestoreResumeStore implements ResumeStore {
   private readonly col;
-  constructor(db: Firestore = new Firestore({ ignoreUndefinedProperties: true }), name = "unbluff_resume_documents") {
+  constructor(
+    db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
+    name = "unbluff_resume_documents",
+  ) {
     this.col = db.collection(name);
   }
   async get(uid: string) {

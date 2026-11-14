@@ -52,15 +52,34 @@ export interface SyncResult {
 }
 
 const failureOf = (k: GithubApiError["kind"]): GithubSyncFailure =>
-  k === "rate_limited" ? "rate_limited" : k === "timeout" ? "timeout" : k === "invalid_response" ? "invalid_response" : k === "forbidden" || k === "unauthorized" ? "unauthorized" : "unavailable";
+  k === "rate_limited"
+    ? "rate_limited"
+    : k === "timeout"
+      ? "timeout"
+      : k === "invalid_response"
+        ? "invalid_response"
+        : k === "forbidden" || k === "unauthorized"
+          ? "unauthorized"
+          : "unavailable";
 
 /**
  * One bounded synchronisation of a student's PUBLIC GitHub data. The token is used only inside this call.
  * Throws GithubApiError("unauthorized") when the token is dead or belongs to a different GitHub account than the one linked.
  * Any other failure is recorded per section so one broken section does not discard the rest.
  */
-export async function runSync(gql: GithubGraphQL, token: string, expectedGithubId: string, now: Date): Promise<SyncResult> {
-  const result: SyncResult = { unavailable: [], partial: [], failure: null, resetAt: null, remaining: null };
+export async function runSync(
+  gql: GithubGraphQL,
+  token: string,
+  expectedGithubId: string,
+  now: Date,
+): Promise<SyncResult> {
+  const result: SyncResult = {
+    unavailable: [],
+    partial: [],
+    failure: null,
+    resetAt: null,
+    remaining: null,
+  };
   const track = <T>(r: GraphQLResult<T>) => {
     if (r.rate) result.remaining = r.rate.remaining;
     return r;
@@ -71,7 +90,10 @@ export async function runSync(gql: GithubGraphQL, token: string, expectedGithubI
   if (String(viewer.databaseId) !== expectedGithubId) throw new GithubApiError("unauthorized");
 
   const to = now;
-  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - LIMITS.contributionDays * 86_400_000);
+  const from = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) -
+      LIMITS.contributionDays * 86_400_000,
+  );
   const since = new Date(now.getTime() - LIMITS.commitWindowDays * 86_400_000).toISOString();
   let stop = false;
 
@@ -95,7 +117,14 @@ export async function runSync(gql: GithubGraphQL, token: string, expectedGithubI
   };
 
   await section("contributions", async () => {
-    const r = track(await gql.query(token, CONTRIBUTIONS_QUERY, { from: from.toISOString(), to: to.toISOString() }, ContributionsData));
+    const r = track(
+      await gql.query(
+        token,
+        CONTRIBUTIONS_QUERY,
+        { from: from.toISOString(), to: to.toISOString() },
+        ContributionsData,
+      ),
+    );
     result.contributions = normalizeContributions(r.data);
     return r.partial.length > 0;
   });
@@ -107,7 +136,14 @@ export async function runSync(gql: GithubGraphQL, token: string, expectedGithubI
     let more = false;
     let partial = false;
     for (let page = 0; page < LIMITS.repositoryPages; page++) {
-      const r: GraphQLResult<ReturnType<typeof RepositoriesData.parse>> = track(await gql.query(token, REPOSITORIES_QUERY, { after, since, authorId: viewer.id }, RepositoriesData));
+      const r: GraphQLResult<ReturnType<typeof RepositoriesData.parse>> = track(
+        await gql.query(
+          token,
+          REPOSITORIES_QUERY,
+          { after, since, authorId: viewer.id },
+          RepositoriesData,
+        ),
+      );
       partial ||= r.partial.length > 0;
       const repos = r.data.viewer.repositories;
       total = repos.totalCount;
@@ -137,7 +173,11 @@ export async function runSync(gql: GithubGraphQL, token: string, expectedGithubI
         toRead.forEach(({ n }, i) => {
           const parsed = ReadmeBlob.safeParse(r.data[`r${i}`]);
           const o = parsed.success ? parsed.data?.object : null;
-          if (o && typeof o.text === "string") readmes.set(n.nameWithOwner, { text: o.text.slice(0, LIMITS.readmeBytes), truncated: o.isTruncated === true });
+          if (o && typeof o.text === "string")
+            readmes.set(n.nameWithOwner, {
+              text: o.text.slice(0, LIMITS.readmeBytes),
+              truncated: o.isTruncated === true,
+            });
         });
       } catch (err) {
         if (!(err instanceof GithubApiError)) throw err;
@@ -151,19 +191,34 @@ export async function runSync(gql: GithubGraphQL, token: string, expectedGithubI
       }
     }
 
-    const { checklist, licenseByRepo } = buildChecklist(checkable(kept).slice(0, MAX_README_READS), readmes);
+    const { checklist, licenseByRepo } = buildChecklist(
+      checkable(kept).slice(0, MAX_README_READS),
+      readmes,
+    );
     const repositories: GithubRepository[] = kept.map((n) => {
       const repo = normalizeRepository(n);
       const l = licenseByRepo.get(n.nameWithOwner);
       if (l !== undefined) repo.has_license = l;
       return repo;
     });
-    result.repositories = { total_public: total, truncated: more || total > nodes.length, repositories, checklist };
+    result.repositories = {
+      total_public: total,
+      truncated: more || total > nodes.length,
+      repositories,
+      checklist,
+    };
     return partial;
   });
 
   await section("activity", async () => {
-    const r = track(await gql.query(token, ACTIVITY_QUERY, { from: from.toISOString(), to: to.toISOString() }, ActivityData));
+    const r = track(
+      await gql.query(
+        token,
+        ACTIVITY_QUERY,
+        { from: from.toISOString(), to: to.toISOString() },
+        ActivityData,
+      ),
+    );
     result.activity = normalizeActivity(r.data);
     return r.partial.length > 0;
   });

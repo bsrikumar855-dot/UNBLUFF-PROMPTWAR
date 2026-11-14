@@ -12,13 +12,22 @@ const Id = z.string().regex(/^[a-z0-9_]+$/);
 
 const GraphFile = z.object({
   topic_names: z.record(Id, z.string().min(1)),
-  skill_topics: z.record(Id, z.array(z.object({ topic: Id, share: z.number().positive().max(1) })).min(1)),
+  skill_topics: z.record(
+    Id,
+    z.array(z.object({ topic: Id, share: z.number().positive().max(1) })).min(1),
+  ),
   prerequisites: z.record(Id, z.array(Id)),
   aliases: z.record(z.string().min(1), Id).optional(),
 });
 
 const CertFile = z.object({
-  rules: z.array(z.object({ id: z.string().regex(/^[a-z0-9-]+$/), keywords: z.array(z.string().trim().min(1)).min(1), topics: z.array(Id).min(1) })),
+  rules: z.array(
+    z.object({
+      id: z.string().regex(/^[a-z0-9-]+$/),
+      keywords: z.array(z.string().trim().min(1)).min(1),
+      topics: z.array(Id).min(1),
+    }),
+  ),
 });
 
 const ResourceFile = z.object({
@@ -53,7 +62,12 @@ function assertAcyclic(prerequisites: Record<string, string[]>): void {
 }
 
 /** Validates the curated learning data against the roles. Throws on any problem (fail fast at startup). */
-export function parseLearningData(rawGraph: unknown, rawResources: unknown, roles: readonly Role[], rawCerts: unknown = { rules: [] }): LearningData {
+export function parseLearningData(
+  rawGraph: unknown,
+  rawResources: unknown,
+  roles: readonly Role[],
+  rawCerts: unknown = { rules: [] },
+): LearningData {
   const g = GraphFile.parse(rawGraph);
   const r = ResourceFile.parse(rawResources);
   const c = CertFile.parse(rawCerts);
@@ -67,17 +81,23 @@ export function parseLearningData(rawGraph: unknown, rawResources: unknown, role
     }
   }
   for (const [skill, topics] of Object.entries(g.skill_topics)) {
-    if (!roleSkillIds.has(skill)) throw new Error(`skill_topics names an unknown role skill: ${skill}`);
+    if (!roleSkillIds.has(skill))
+      throw new Error(`skill_topics names an unknown role skill: ${skill}`);
     const sum = topics.reduce((a, t) => a + t.share, 0);
-    if (Math.abs(sum - 1) > 0.001) throw new Error(`skill_topics ${skill}: shares sum to ${sum}, expected 1`);
-    for (const t of topics) if (!(t.topic in topicNames)) throw new Error(`skill_topics ${skill}: unknown topic ${t.topic}`);
+    if (Math.abs(sum - 1) > 0.001)
+      throw new Error(`skill_topics ${skill}: shares sum to ${sum}, expected 1`);
+    for (const t of topics)
+      if (!(t.topic in topicNames))
+        throw new Error(`skill_topics ${skill}: unknown topic ${t.topic}`);
   }
   for (const [topic, pre] of Object.entries(g.prerequisites)) {
-    for (const t of [topic, ...pre]) if (!(t in topicNames)) throw new Error(`prerequisites: unknown topic ${t}`);
+    for (const t of [topic, ...pre])
+      if (!(t in topicNames)) throw new Error(`prerequisites: unknown topic ${t}`);
   }
   assertAcyclic(g.prerequisites);
   for (const [alias, topic] of Object.entries(g.aliases ?? {})) {
-    if (!(topic in topicNames)) throw new Error(`alias "${alias}" points to unknown topic ${topic}`);
+    if (!(topic in topicNames))
+      throw new Error(`alias "${alias}" points to unknown topic ${topic}`);
     if (alias !== alias.toLowerCase()) throw new Error(`alias "${alias}" must be lower case`);
   }
 
@@ -85,19 +105,38 @@ export function parseLearningData(rawGraph: unknown, rawResources: unknown, role
   for (const rule of c.rules) {
     if (certIds.has(rule.id)) throw new Error(`duplicate certification rule id ${rule.id}`);
     certIds.add(rule.id);
-    for (const t of rule.topics) if (!(t in topicNames)) throw new Error(`certification rule ${rule.id}: unknown topic ${t}`);
+    for (const t of rule.topics)
+      if (!(t in topicNames)) throw new Error(`certification rule ${rule.id}: unknown topic ${t}`);
   }
 
   const ids = new Set<string>();
   for (const res of r.resources) {
     if (ids.has(res.id)) throw new Error(`duplicate resource id ${res.id}`);
     ids.add(res.id);
-    if (!(res.skill_id in topicNames)) throw new Error(`resource ${res.id}: unknown topic ${res.skill_id}`);
+    if (!(res.skill_id in topicNames))
+      throw new Error(`resource ${res.id}: unknown topic ${res.skill_id}`);
   }
-  return { graph: { topic_names: topicNames, skill_topics: g.skill_topics, prerequisites: g.prerequisites, aliases: g.aliases ?? {}, certifications: c.rules }, resources: r.resources };
+  return {
+    graph: {
+      topic_names: topicNames,
+      skill_topics: g.skill_topics,
+      prerequisites: g.prerequisites,
+      aliases: g.aliases ?? {},
+      certifications: c.rules,
+    },
+    resources: r.resources,
+  };
 }
 
 export function loadLearningData(dir: string, roles: RoleRegistry): LearningData {
-  const list = roles.list().map((s) => roles.get(s.id)).filter((r): r is Role => r !== undefined);
-  return parseLearningData(JSON.parse(readFileSync(join(dir, "graph.json"), "utf8").replace(/^\uFEFF/, "")), JSON.parse(readFileSync(join(dir, "resources.json"), "utf8").replace(/^\uFEFF/, "")), list, JSON.parse(readFileSync(join(dir, "certifications.json"), "utf8").replace(/^\uFEFF/, "")));
+  const list = roles
+    .list()
+    .map((s) => roles.get(s.id))
+    .filter((r): r is Role => r !== undefined);
+  return parseLearningData(
+    JSON.parse(readFileSync(join(dir, "graph.json"), "utf8").replace(/^\uFEFF/, "")),
+    JSON.parse(readFileSync(join(dir, "resources.json"), "utf8").replace(/^\uFEFF/, "")),
+    list,
+    JSON.parse(readFileSync(join(dir, "certifications.json"), "utf8").replace(/^\uFEFF/, "")),
+  );
 }

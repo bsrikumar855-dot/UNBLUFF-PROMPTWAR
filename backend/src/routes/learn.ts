@@ -6,12 +6,20 @@ import { uidOf } from "../middleware/auth.js";
 import { formatIssues } from "../middleware/validate.js";
 
 const noStore = { "Cache-Control": "no-store" };
-const Id = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "invalid id").max(60);
-const QuizBody = z.strictObject({ answers: z.array(z.number().int().min(0).max(3)).min(1).max(20) });
+const Id = z
+  .string()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "invalid id")
+  .max(60);
+const QuizBody = z.strictObject({
+  answers: z.array(z.number().int().min(0).max(3)).min(1).max(20),
+});
 const Key = z.string().regex(/^[a-z0-9_-]{1,80}$/i, "invalid problem key");
 const ProgressBody = z.strictObject({
   done: z.boolean().optional(),
-  problems: z.array(z.strictObject({ key: Key, done: z.boolean() })).max(64).optional(),
+  problems: z
+    .array(z.strictObject({ key: Key, done: z.boolean() }))
+    .max(64)
+    .optional(),
 });
 
 function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
@@ -39,16 +47,35 @@ export function learnPublicRouter(learn: LearnService): Router {
 }
 
 /** Progress and quiz grading. Every route needs a verified student, and the owner is always the token's uid. */
-export function learnPrivateRouter(learn: LearnService, limiters: { read: RequestHandler; write: RequestHandler }): Router {
+export function learnPrivateRouter(
+  learn: LearnService,
+  limiters: { read: RequestHandler; write: RequestHandler },
+): Router {
   const router = Router();
   router.get("/learn/progress", limiters.read, async (_req, res) => {
     res.set(noStore).json(await learn.progress(uidOf(res)));
   });
   router.put("/learn/patterns/:id/progress", limiters.write, async (req, res) => {
-    res.set(noStore).json(await learn.setPatternProgress(uidOf(res), parse(Id, req.params.id), parse(ProgressBody, req.body ?? {})));
+    res
+      .set(noStore)
+      .json(
+        await learn.setPatternProgress(
+          uidOf(res),
+          parse(Id, req.params.id),
+          parse(ProgressBody, req.body ?? {}),
+        ),
+      );
   });
   router.post("/learn/dbms/:id/quiz", limiters.write, async (req, res) => {
-    res.set(noStore).json(await learn.gradeQuiz(uidOf(res), parse(Id, req.params.id), parse(QuizBody, req.body ?? {}).answers));
+    res
+      .set(noStore)
+      .json(
+        await learn.gradeQuiz(
+          uidOf(res),
+          parse(Id, req.params.id),
+          parse(QuizBody, req.body ?? {}).answers,
+        ),
+      );
   });
   return router;
 }

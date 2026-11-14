@@ -13,7 +13,10 @@ const MAX_TOKEN_LENGTH = 4096;
  * (missing, malformed, invalid, expired, revoked) gets the same response, and nothing about the token is logged or echoed.
  * The rest of the request runs with the uid in its context (see security/context.ts).
  */
-export function requireAuth(verifier: TokenVerifier, opts: { revocation?: RevocationGuard | null; logger?: Logger } = {}): RequestHandler {
+export function requireAuth(
+  verifier: TokenVerifier,
+  opts: { revocation?: RevocationGuard | null; logger?: Logger } = {},
+): RequestHandler {
   return async (req, res, next) => {
     let uid: string;
     try {
@@ -47,8 +50,17 @@ export function requireAuth(verifier: TokenVerifier, opts: { revocation?: Revoca
 export function requireVerifiedEmail(logger: Logger): RequestHandler {
   return (_req, res, next) => {
     if (res.locals.emailVerified === false) {
-      audit(logger, "auth.unverified_email_refused", typeof res.locals.uid === "string" ? res.locals.uid : null);
-      next(new ApiError("EMAIL_NOT_VERIFIED", "Verify your email address to continue. Check your inbox for the link."));
+      audit(
+        logger,
+        "auth.unverified_email_refused",
+        typeof res.locals.uid === "string" ? res.locals.uid : null,
+      );
+      next(
+        new ApiError(
+          "EMAIL_NOT_VERIFIED",
+          "Verify your email address to continue. Check your inbox for the link.",
+        ),
+      );
       return;
     }
     next();

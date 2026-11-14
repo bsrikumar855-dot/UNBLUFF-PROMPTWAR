@@ -112,7 +112,10 @@ const shortestHops = (input: string): string => {
 const coveredTime = (input: string): string => {
   const l = lines(input);
   const n = Number(l[0]);
-  const iv = Array.from({ length: n }, (_v, i) => l[1 + i]!.split(" ").map(Number) as [number, number]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const iv = Array.from(
+    { length: n },
+    (_v, i) => l[1 + i]!.split(" ").map(Number) as [number, number],
+  ).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   let total = 0;
   let curL = iv[0]![0];
   let curR = iv[0]![1];
@@ -160,7 +163,12 @@ const islandCount = (input: string): string => {
       grid[i]![j] = ".";
       while (stack.length > 0) {
         const [x, y] = stack.pop()!;
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+        for (const [dx, dy] of [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ] as const) {
           const nx = x + dx;
           const ny = y + dy;
           if (nx >= 0 && ny >= 0 && nx < r && ny < c && grid[nx]![ny] === "#") {
@@ -181,7 +189,11 @@ const editCost = (input: string): string => {
   for (let i = 1; i <= a.length; i++) {
     const cur = [i];
     for (let j = 1; j <= b.length; j++) {
-      cur[j] = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+      cur[j] = Math.min(
+        prev[j]! + 1,
+        cur[j - 1]! + 1,
+        prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1),
+      );
     }
     prev = cur;
   }
@@ -207,7 +219,9 @@ function gridInput(rows: string[]) {
 }
 
 function randomGrid(r: (n: number) => number, h: number, w: number, density: number): string[] {
-  return Array.from({ length: h }, () => Array.from({ length: w }, () => (r(100) < density ? "#" : ".")).join(""));
+  return Array.from({ length: h }, () =>
+    Array.from({ length: w }, () => (r(100) < density ? "#" : ".")).join(""),
+  );
 }
 
 function intervalsInput(iv: [number, number][]) {
@@ -221,7 +235,6 @@ function queriesInput(a: number[], qs: number[]) {
 function sortedArray(r: (n: number) => number, n: number, lo: number, hi: number) {
   return ints(r, n, lo, hi).sort((x, y) => x - y);
 }
-
 
 function coreExercises(): Exercise[] {
   const r1 = rng(101);
@@ -246,7 +259,20 @@ function coreExercises(): Exercise[] {
       topics: ["Stack", "Strings"],
       statement: `A line contains a non-empty string made only of the characters ( ) [ ] { }. It is balanced when every opening bracket is closed by the same kind of bracket, in the right order, and nothing is left open. Print YES if the string is balanced, otherwise NO. Length at most 1000. ${limitsNote}`,
       samples: ["([]{})\n", "([)]\n"],
-      tests: ["()\n", "(\n", ")(\n", "{[()()]}\n", "((((\n", "))))\n", "([)]{}\n", `${balancedLong}\n`, `${balancedLong}]\n`, `${str(r1, 40, "()[]{}")}\n`, "[]{}()\n", "{{{{}}}}[(\n"],
+      tests: [
+        "()\n",
+        "(\n",
+        ")(\n",
+        "{[()()]}\n",
+        "((((\n",
+        "))))\n",
+        "([)]{}\n",
+        `${balancedLong}\n`,
+        `${balancedLong}]\n`,
+        `${str(r1, 40, "()[]{}")}\n`,
+        "[]{}()\n",
+        "{{{{}}}}[(\n",
+      ],
       solve: (i) => brackets(lines(i)[0]!),
     },
     {
@@ -277,7 +303,18 @@ function coreExercises(): Exercise[] {
       topics: ["Strings", "Two Pointers"],
       statement: `A line contains a non-empty string of lowercase letters (length at most 20000). A run is a block of equal consecutive letters. Print the length of the longest run. ${limitsNote}`,
       samples: ["aabbbcc\n", "abcd\n"],
-      tests: ["z\n", "aaaaaa\n", "ababab\n", "abbbb\n", "aaaab\n", "baaab\n", "abccccdddde\n", `${"x".repeat(15000)}\n`, `${str(r3, 200, "ab")}\n`, `${"ab".repeat(7000)}\n`],
+      tests: [
+        "z\n",
+        "aaaaaa\n",
+        "ababab\n",
+        "abbbb\n",
+        "aaaab\n",
+        "baaab\n",
+        "abccccdddde\n",
+        `${"x".repeat(15000)}\n`,
+        `${str(r3, 200, "ab")}\n`,
+        `${"ab".repeat(7000)}\n`,
+      ],
       solve: longestRun,
     },
     {
@@ -294,7 +331,10 @@ function coreExercises(): Exercise[] {
         queriesInput(a4, [-5, 9, 10, 0, 3]),
         queriesInput([1, 2, 3, 4, 5], [1, 5, 6]),
         queriesInput(a4big, ints(r4, 100, -1100, 1100)),
-        queriesInput(a4big.map((x) => x * 100), [0, 50000, -1000000, 1000000]),
+        queriesInput(
+          a4big.map((x) => x * 100),
+          [0, 50000, -1000000, 1000000],
+        ),
         queriesInput(a4, ints(r4, 50, -8, 12)),
       ],
       solve: firstNotLess,
@@ -326,14 +366,83 @@ function coreExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Graphs", "Breadth-First Search"],
       statement: `A network has n towns numbered 1 to n and m two-way roads. The first line has n, m, s and t. Each of the next m lines has two towns joined by a road. Print the fewest roads needed to travel from s to t, or -1 if t cannot be reached. Roads may repeat or join a town to itself. n is at most 1000 and m at most 5000. ${limitsNote}`,
-      samples: [graphInput(5, [[1, 2], [2, 3], [1, 4], [4, 5], [5, 3]], 1, 3), graphInput(3, [[1, 2]], 1, 3)],
+      samples: [
+        graphInput(
+          5,
+          [
+            [1, 2],
+            [2, 3],
+            [1, 4],
+            [4, 5],
+            [5, 3],
+          ],
+          1,
+          3,
+        ),
+        graphInput(3, [[1, 2]], 1, 3),
+      ],
       tests: [
         graphInput(1, [], 1, 1),
-        graphInput(4, [[1, 2], [3, 4]], 1, 4),
-        graphInput(6, [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6]], 1, 6),
-        graphInput(5, [[1, 1], [1, 2], [1, 2], [2, 5]], 1, 5),
-        graphInput(6, [[1, 2], [2, 3], [3, 1], [3, 4], [4, 5], [5, 6], [6, 4]], 2, 6),
-        graphInput(7, [[1, 2], [1, 3], [2, 4], [3, 4], [4, 5], [5, 6], [6, 7]], 7, 1),
+        graphInput(
+          4,
+          [
+            [1, 2],
+            [3, 4],
+          ],
+          1,
+          4,
+        ),
+        graphInput(
+          6,
+          [
+            [1, 2],
+            [2, 3],
+            [3, 4],
+            [4, 5],
+            [5, 6],
+          ],
+          1,
+          6,
+        ),
+        graphInput(
+          5,
+          [
+            [1, 1],
+            [1, 2],
+            [1, 2],
+            [2, 5],
+          ],
+          1,
+          5,
+        ),
+        graphInput(
+          6,
+          [
+            [1, 2],
+            [2, 3],
+            [3, 1],
+            [3, 4],
+            [4, 5],
+            [5, 6],
+            [6, 4],
+          ],
+          2,
+          6,
+        ),
+        graphInput(
+          7,
+          [
+            [1, 2],
+            [1, 3],
+            [2, 4],
+            [3, 4],
+            [4, 5],
+            [5, 6],
+            [6, 7],
+          ],
+          7,
+          1,
+        ),
         graphInput(50, randomGraph(r6, 50, 70), 3, 40),
         graphInput(200, randomGraph(r6, 200, 150), 1, 200),
         graphInput(30, randomGraph(r6, 30, 25), 10, 10),
@@ -346,17 +455,57 @@ function coreExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Sorting", "Intervals"],
       statement: `The first line has n. Each of the next n lines has two integers l and r with l < r describing the half-open interval [l, r). Print the total length of the union of all intervals (time covered by at least one interval). Intervals may overlap, repeat, nest or touch. n is at most 20000 and values are between -1000000000 and 1000000000. ${limitsNote}`,
-      samples: [intervalsInput([[1, 4], [3, 6], [8, 9]]), intervalsInput([[0, 2], [2, 5]])],
+      samples: [
+        intervalsInput([
+          [1, 4],
+          [3, 6],
+          [8, 9],
+        ]),
+        intervalsInput([
+          [0, 2],
+          [2, 5],
+        ]),
+      ],
       tests: [
         intervalsInput([[5, 6]]),
-        intervalsInput([[1, 10], [2, 3], [4, 5]]),
-        intervalsInput([[1, 3], [3, 5], [5, 7]]),
-        intervalsInput([[1, 2], [4, 5], [7, 8]]),
-        intervalsInput([[2, 4], [2, 4], [2, 4]]),
-        intervalsInput([[-5, -1], [-3, 2], [10, 12]]),
-        intervalsInput([[9, 12], [1, 4], [3, 7], [6, 8]]),
+        intervalsInput([
+          [1, 10],
+          [2, 3],
+          [4, 5],
+        ]),
+        intervalsInput([
+          [1, 3],
+          [3, 5],
+          [5, 7],
+        ]),
+        intervalsInput([
+          [1, 2],
+          [4, 5],
+          [7, 8],
+        ]),
+        intervalsInput([
+          [2, 4],
+          [2, 4],
+          [2, 4],
+        ]),
+        intervalsInput([
+          [-5, -1],
+          [-3, 2],
+          [10, 12],
+        ]),
+        intervalsInput([
+          [9, 12],
+          [1, 4],
+          [3, 7],
+          [6, 8],
+        ]),
         intervalsInput([[-1000000000, 1000000000]]),
-        intervalsInput(Array.from({ length: 500 }, () => { const a = r7(1000); return [a, a + 1 + r7(30)] as [number, number]; })),
+        intervalsInput(
+          Array.from({ length: 500 }, () => {
+            const a = r7(1000);
+            return [a, a + 1 + r7(30)] as [number, number];
+          }),
+        ),
       ],
       solve: coveredTime,
     },
@@ -407,7 +556,19 @@ function coreExercises(): Exercise[] {
       topics: ["Dynamic Programming", "Strings"],
       statement: `Two lines each contain a non-empty string of lowercase letters (length at most 500). In one step you may insert a letter, delete a letter or replace a letter. Print the fewest steps needed to turn the first string into the second. ${limitsNote}`,
       samples: ["kitten\nsitting\n", "abc\nabc\n"],
-      tests: ["a\nb\n", "a\na\n", "abc\nxyz\n", "abc\nabcd\n", "abcd\nabc\n", "intention\nexecution\n", "aaaa\naa\n", "ab\nba\n", `${str(r10, 40, "abc")}\n${str(r10, 35, "abc")}\n`, `${str(r10, 200, "ab")}\n${str(r10, 180, "ab")}\n`, `${"a".repeat(500)}\n${"b".repeat(500)}\n`],
+      tests: [
+        "a\nb\n",
+        "a\na\n",
+        "abc\nxyz\n",
+        "abc\nabcd\n",
+        "abcd\nabc\n",
+        "intention\nexecution\n",
+        "aaaa\naa\n",
+        "ab\nba\n",
+        `${str(r10, 40, "abc")}\n${str(r10, 35, "abc")}\n`,
+        `${str(r10, 200, "ab")}\n${str(r10, 180, "ab")}\n`,
+        `${"a".repeat(500)}\n${"b".repeat(500)}\n`,
+      ],
       solve: editCost,
     },
   ];
@@ -422,7 +583,8 @@ export function exercises(): Exercise[] {
 const SOURCE = {
   name: "UNBLUFF first-party practice pack",
   license_status: "own_work",
-  license_note: "Written by the UNBLUFF project for this application. Not copied from any third-party problem set and not a company interview question.",
+  license_note:
+    "Written by the UNBLUFF project for this application. Not copied from any third-party problem set and not a company interview question.",
   url: null,
   imported_at: "2026-01-01T00:00:00.000Z",
   source_updated_at: null,
@@ -436,7 +598,13 @@ export function buildPracticePack() {
     schema_version: 1,
     source: SOURCE,
     companies: [],
-    questions: all.map((e) => ({ id: e.id, title: e.title, url: null, difficulty: e.difficulty, topics: [...e.topics].sort() })),
+    questions: all.map((e) => ({
+      id: e.id,
+      title: e.title,
+      url: null,
+      difficulty: e.difficulty,
+      topics: [...e.topics].sort(),
+    })),
     associations: [],
   };
   const suites = {

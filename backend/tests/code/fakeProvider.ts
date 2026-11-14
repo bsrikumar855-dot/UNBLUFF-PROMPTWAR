@@ -1,4 +1,10 @@
-import { ExecutionError, type ExecuteInput, type ExecuteResult, type ExecutionProvider, type ProviderLanguage } from "../../src/code/provider.js";
+import {
+  ExecutionError,
+  type ExecuteInput,
+  type ExecuteResult,
+  type ExecutionProvider,
+  type ProviderLanguage,
+} from "../../src/code/provider.js";
 
 /**
  * Deterministic stand-in for the execution service. It does NOT run code: the behaviour is chosen by a
@@ -71,10 +77,19 @@ export class FakeProvider implements ExecutionProvider {
     this.calls.push(input);
     const src = input.source;
     if (src.includes("SLEEP")) await new Promise((r) => setTimeout(r, 30));
-    if (src.includes("THROW")) throw new ExecutionError("unavailable", "The code execution service is not available.");
-    if (src.includes("DOWN_AFTER_FIRST") && this.calls.length > 1) throw new ExecutionError("timeout", "The execution service took too long to respond.");
-    if (src.includes("COMPILE")) return ok("", { outcome: "compile_error", compile_output: "error: expected ';' before '}' token", time_ms: null, memory_kb: null });
-    if (src.includes("RUNTIME")) return ok("", { outcome: "runtime_error", stderr: "Traceback: ZeroDivisionError" });
+    if (src.includes("THROW"))
+      throw new ExecutionError("unavailable", "The code execution service is not available.");
+    if (src.includes("DOWN_AFTER_FIRST") && this.calls.length > 1)
+      throw new ExecutionError("timeout", "The execution service took too long to respond.");
+    if (src.includes("COMPILE"))
+      return ok("", {
+        outcome: "compile_error",
+        compile_output: "error: expected ';' before '}' token",
+        time_ms: null,
+        memory_kb: null,
+      });
+    if (src.includes("RUNTIME"))
+      return ok("", { outcome: "runtime_error", stderr: "Traceback: ZeroDivisionError" });
     if (src.includes("SLOW")) return ok("", { outcome: "time_limit_exceeded", time_ms: 2000 });
     if (src.includes("JUDGE")) return ok("", { outcome: "internal_error" });
     if (src.includes("WRONG")) return ok("wrong\n");

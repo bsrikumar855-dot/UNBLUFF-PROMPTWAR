@@ -12,7 +12,15 @@ describe("buildReport", () => {
       mode: "defense",
       resume_text: null,
       claims: [...example, claim("CL-008", "git", "defended", 1, { rewrite: "stale rewrite" })],
-      history: [{ at: "t1", mode: "assess", claim_id: "CL-001", skill_id: "js_fundamentals", proficiency: 0.85 }],
+      history: [
+        {
+          at: "t1",
+          mode: "assess",
+          claim_id: "CL-001",
+          skill_id: "js_fundamentals",
+          proficiency: 0.85,
+        },
+      ],
     },
     role,
     "2026-09-26T10:00:00.000Z",
@@ -20,7 +28,9 @@ describe("buildReport", () => {
 
   it("has one skill entry per role skill in role order, with history", () => {
     expect(report.skills.map((s) => s.skill_id)).toEqual(role.skills.map((s) => s.id));
-    expect(report.skills[0]?.history).toEqual([{ at: "t1", mode: "assess", claim_id: "CL-001", proficiency: 0.85 }]);
+    expect(report.skills[0]?.history).toEqual([
+      { at: "t1", mode: "assess", claim_id: "CL-001", proficiency: 0.85 },
+    ]);
   });
 
   it("reports scores, deprioritized claims and blind spots", () => {
@@ -69,7 +79,13 @@ describe("claims helpers and role validation", () => {
 
   it("rejects duplicate skill ids", () => {
     const first = role.skills[0]!;
-    const dup = { ...role, skills: [{ ...first, weight: 0.5 }, { ...first, weight: 0.5 }] };
+    const dup = {
+      ...role,
+      skills: [
+        { ...first, weight: 0.5 },
+        { ...first, weight: 0.5 },
+      ],
+    };
     expect(() => parseRole(dup)).toThrow(/duplicate/);
   });
 });

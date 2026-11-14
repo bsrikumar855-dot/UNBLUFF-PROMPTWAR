@@ -2,7 +2,15 @@ import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import type { MentorMemoryProposal } from "../llm/schemas.js";
 import type { Catalogue } from "../dsa/catalogue.js";
-import type { CodeLanguageId, ExplanationStyle, GoalTrack, MentorMemory, MentorProfile, MentorRetention, SkillLevel } from "../types.js";
+import type {
+  CodeLanguageId,
+  ExplanationStyle,
+  GoalTrack,
+  MentorMemory,
+  MentorProfile,
+  MentorRetention,
+  SkillLevel,
+} from "../types.js";
 import type { MemoryRecord } from "./store.js";
 
 /**
@@ -22,7 +30,11 @@ export interface RetentionConfig {
   learningDays: number;
 }
 
-export const DEFAULT_RETENTION: RetentionConfig = { conversationDays: 90, summaryDays: 365, learningDays: 180 };
+export const DEFAULT_RETENTION: RetentionConfig = {
+  conversationDays: 90,
+  summaryDays: 365,
+  learningDays: 180,
+};
 
 export const retentionInfo = (r: RetentionConfig): MentorRetention => ({
   conversation_days: r.conversationDays,
@@ -31,12 +43,14 @@ export const retentionInfo = (r: RetentionConfig): MentorRetention => ({
   profile_and_goals: "until you delete them",
 });
 
-export const addDays = (iso: string, days: number): string => new Date(Date.parse(iso) + days * DAY_MS).toISOString();
+export const addDays = (iso: string, days: number): string =>
+  new Date(Date.parse(iso) + days * DAY_MS).toISOString();
 export const newMemoryId = (): string => `mem_${randomUUID()}`;
 const hash = (s: string) => createHash("sha1").update(s).digest("hex").slice(0, 24);
 export const profileMemoryId = (uid: string, field: string): string => `prof_${field}_${hash(uid)}`;
 export const summaryMemoryId = (conversationId: string): string => `sum_${hash(conversationId)}`;
-export const conversationIdFor = (uid: string, clientMessageId: string): string => `conv_${hash(`${uid}:${clientMessageId}`)}`;
+export const conversationIdFor = (uid: string, clientMessageId: string): string =>
+  `conv_${hash(`${uid}:${clientMessageId}`)}`;
 
 /** True for control characters other than tab and newline (those are kept and then collapsed to spaces). */
 export function isControl(ch: string): boolean {
@@ -46,7 +60,10 @@ export function isControl(ch: string): boolean {
 
 /** Replaces control characters (including tabs and newlines would be collapsed by cleanText) with spaces. */
 export function stripControl(s: string): string {
-  return s.split("").map((ch) => (isControl(ch) ? " " : ch)).join("");
+  return s
+    .split("")
+    .map((ch) => (isControl(ch) ? " " : ch))
+    .join("");
 }
 
 /** Plain text only: no markup that could pose as one of our prompt delimiters, no control characters, bounded length. */
@@ -63,7 +80,9 @@ export function cleanText(s: string, max: number): string {
 
 /** Removes obvious personal identifiers (emails, phone-like numbers) from text that is stored long term. */
 export function redactPii(s: string): string {
-  return s.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[email removed]").replace(/(?<!\d)(?:\+?\d[\d\s().-]{8,}\d)(?!\d)/g, "[number removed]");
+  return s
+    .replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[email removed]")
+    .replace(/(?<!\d)(?:\+?\d[\d\s().-]{8,}\d)(?!\d)/g, "[number removed]");
 }
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
@@ -90,7 +109,9 @@ export const ProfileInput = z.strictObject({
   placement_timeline: z.string().trim().min(1).max(100).nullable(),
   explanation_style: z.enum(["concise", "detailed", "step_by_step"]).nullable(),
   current_goals: z.string().trim().min(1).max(300).nullable(),
-  skill_self_assessment: z.record(z.string().trim().min(1).max(40), z.enum(["beginner", "intermediate", "advanced"])).refine((r) => Object.keys(r).length <= 20, "at most 20 skills"),
+  skill_self_assessment: z
+    .record(z.string().trim().min(1).max(40), z.enum(["beginner", "intermediate", "advanced"]))
+    .refine((r) => Object.keys(r).length <= 20, "at most 20 skills"),
 });
 
 export const PROFILE_FIELDS = Object.keys(EMPTY_PROFILE) as (keyof MentorProfile)[];
@@ -109,14 +130,24 @@ const PROFILE_LABEL: Record<keyof MentorProfile, string> = {
 export function profileContent(field: keyof MentorProfile, value: unknown): string {
   if (Array.isArray(value)) return `${PROFILE_LABEL[field]}: ${value.join(", ")}`;
   if (field === "daily_study_minutes") return `${PROFILE_LABEL[field]}: ${value} minutes`;
-  if (field === "skill_self_assessment") return `${PROFILE_LABEL[field]}: ${Object.entries(value as Record<string, string>).map(([k, v]) => `${k} (${v})`).join(", ")}`;
+  if (field === "skill_self_assessment")
+    return `${PROFILE_LABEL[field]}: ${Object.entries(value as Record<string, string>)
+      .map(([k, v]) => `${k} (${v})`)
+      .join(", ")}`;
   return `${PROFILE_LABEL[field]}: ${String(value)}`;
 }
 
-const isEmptyValue = (v: unknown) => v === null || v === undefined || (Array.isArray(v) && v.length === 0) || (typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0);
+const isEmptyValue = (v: unknown) =>
+  v === null ||
+  v === undefined ||
+  (Array.isArray(v) && v.length === 0) ||
+  (typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length === 0);
 
 /** Rebuilds the profile from stored profile memories. Unknown or malformed values are ignored. */
-export function profileFromMemories(records: MemoryRecord[]): { profile: MentorProfile; updated_at: string | null } {
+export function profileFromMemories(records: MemoryRecord[]): {
+  profile: MentorProfile;
+  updated_at: string | null;
+} {
   const profile: MentorProfile = structuredClone(EMPTY_PROFILE);
   let updated: string | null = null;
   for (const r of records) {
@@ -130,7 +161,12 @@ export function profileFromMemories(records: MemoryRecord[]): { profile: MentorP
 }
 
 /** The records that make up a profile: one memory per non-empty field, student-provided, no expiry. */
-export function profileRecords(uid: string, profile: MentorProfile, existing: Map<string, MemoryRecord>, now: string): { save: MemoryRecord[]; remove: string[] } {
+export function profileRecords(
+  uid: string,
+  profile: MentorProfile,
+  existing: Map<string, MemoryRecord>,
+  now: string,
+): { save: MemoryRecord[]; remove: string[] } {
   const save: MemoryRecord[] = [];
   const remove: string[] = [];
   for (const field of PROFILE_FIELDS) {
@@ -173,16 +209,41 @@ export interface Rejected {
 
 export type Draft =
   | { kind: "profile"; field: keyof MentorProfile; value: unknown; content: string; quote: string }
-  | { kind: "learning"; topic: string; signal: NonNullable<MentorMemory["signal"]>; content: string; quote: string }
+  | {
+      kind: "learning";
+      topic: string;
+      signal: NonNullable<MentorMemory["signal"]>;
+      content: string;
+      quote: string;
+    }
   | { kind: "goal"; content: string; track: GoalTrack | null; quote: string };
 
-const STYLE: Record<string, ExplanationStyle> = { concise: "concise", brief: "concise", short: "concise", detailed: "detailed", thorough: "detailed", step_by_step: "step_by_step", "step by step": "step_by_step", steps: "step_by_step" };
-const LANGUAGE: Record<string, CodeLanguageId> = { python: "python", javascript: "javascript", js: "javascript", cpp: "cpp", "c++": "cpp", java: "java" };
+const STYLE: Record<string, ExplanationStyle> = {
+  concise: "concise",
+  brief: "concise",
+  short: "concise",
+  detailed: "detailed",
+  thorough: "detailed",
+  step_by_step: "step_by_step",
+  "step by step": "step_by_step",
+  steps: "step_by_step",
+};
+const LANGUAGE: Record<string, CodeLanguageId> = {
+  python: "python",
+  javascript: "javascript",
+  js: "javascript",
+  cpp: "cpp",
+  "c++": "cpp",
+  java: "java",
+};
 
 /** Finds the languages the student named inside free text ("short explanations with Python examples"), in a fixed order, once each. */
 function languagesIn(content: string): CodeLanguageId[] {
   const found = new Set<CodeLanguageId>();
-  for (const m of content.toLowerCase().matchAll(/(?<![a-z0-9+])(python|javascript|js|cpp|c\+\+|java)(?![a-z0-9+])/g)) found.add(LANGUAGE[m[1]!]!);
+  for (const m of content
+    .toLowerCase()
+    .matchAll(/(?<![a-z0-9+])(python|javascript|js|cpp|c\+\+|java)(?![a-z0-9+])/g))
+    found.add(LANGUAGE[m[1]!]!);
   return [...found];
 }
 
@@ -198,7 +259,11 @@ function styleIn(content: string): ExplanationStyle | undefined {
 }
 
 function list(content: string): string[] {
-  return content.split(/[,;]|\band\b/i).map((x) => cleanText(x, 60)).filter(Boolean).slice(0, 10);
+  return content
+    .split(/[,;]|\band\b/i)
+    .map((x) => cleanText(x, 60))
+    .filter(Boolean)
+    .slice(0, 10);
 }
 
 /**
@@ -206,7 +271,11 @@ function list(content: string): string[] {
  * A proposal survives only if its evidence_quote appears, verbatim (ignoring case and spacing), in the student's
  * latest message. Retrieved memories, summaries and model text can therefore never create new memories.
  */
-export function validateProposals(proposals: MentorMemoryProposal[], studentMessage: string, catalogue: Catalogue): { drafts: Draft[]; rejected: Rejected[] } {
+export function validateProposals(
+  proposals: MentorMemoryProposal[],
+  studentMessage: string,
+  catalogue: Catalogue,
+): { drafts: Draft[]; rejected: Rejected[] } {
   const drafts: Draft[] = [];
   const rejected: Rejected[] = [];
   const message = norm(studentMessage);
@@ -226,7 +295,11 @@ export function validateProposals(proposals: MentorMemoryProposal[], studentMess
 
     if (p.type === "profile") {
       const field = p.field as keyof MentorProfile | null;
-      if (!field || !(PROFILE_FIELDS as string[]).includes(field) || field === "skill_self_assessment") {
+      if (
+        !field ||
+        !(PROFILE_FIELDS as string[]).includes(field) ||
+        field === "skill_self_assessment"
+      ) {
         rejected.push({ reason: "unsupported profile field" });
         continue;
       }
@@ -254,17 +327,21 @@ export function validateProposals(proposals: MentorMemoryProposal[], studentMess
     } else {
       let track: GoalTrack | null = null;
       if (p.track_kind === "question_solved" || p.track_kind === "revision_completed") {
-        if (p.track_question_id && catalogue.hasQuestion(p.track_question_id)) track = { kind: p.track_kind, question_id: p.track_question_id };
+        if (p.track_question_id && catalogue.hasQuestion(p.track_question_id))
+          track = { kind: p.track_kind, question_id: p.track_question_id };
       } else if (p.track_kind === "topic_practice") {
         if (p.track_topic && topics.has(p.track_topic.toLowerCase()) && p.track_target) {
-          const topic = catalogue.allTopics().find((t) => t.toLowerCase() === p.track_topic!.toLowerCase())!;
+          const topic = catalogue
+            .allTopics()
+            .find((t) => t.toLowerCase() === p.track_topic!.toLowerCase())!;
           track = { kind: "topic_practice", topic, target: p.track_target };
         }
       }
       drafts.push({ kind: "goal", content, track, quote });
     }
   }
-  if (proposals.length > MAX_UPDATES_PER_TURN) rejected.push({ reason: "too many updates in one turn" });
+  if (proposals.length > MAX_UPDATES_PER_TURN)
+    rejected.push({ reason: "too many updates in one turn" });
   return { drafts, rejected };
 }
 
@@ -274,14 +351,23 @@ export interface ApplyResult {
 }
 
 /** Merges drafts into the student's memories (dedupe, supersede, caps). Pure: the caller persists the result. */
-export function applyDrafts(uid: string, drafts: Draft[], existing: MemoryRecord[], conversationId: string | null, now: string, retention: RetentionConfig): ApplyResult {
+export function applyDrafts(
+  uid: string,
+  drafts: Draft[],
+  existing: MemoryRecord[],
+  conversationId: string | null,
+  now: string,
+  retention: RetentionConfig,
+): ApplyResult {
   const byId = new Map(existing.map((m) => [m.id, m]));
   const saved: MemoryRecord[] = [];
   const removed: string[] = [];
   let total = existing.length;
   let activeGoals = existing.filter((m) => m.type === "goal" && m.status === "active").length;
 
-  const base = (over: Partial<MemoryRecord> & Pick<MemoryRecord, "id" | "type" | "content">): MemoryRecord => ({
+  const base = (
+    over: Partial<MemoryRecord> & Pick<MemoryRecord, "id" | "type" | "content">,
+  ): MemoryRecord => ({
     owner_uid: uid,
     key: null,
     topic: null,
@@ -304,8 +390,20 @@ export function applyDrafts(uid: string, drafts: Draft[], existing: MemoryRecord
       const id = profileMemoryId(uid, d.field);
       const prev = byId.get(id);
       let value = d.value;
-      if (Array.isArray(value) && Array.isArray(prev?.value)) value = Array.from(new Set([...(prev!.value as string[]), ...(value as string[])])).slice(0, 10);
-      const rec = base({ id, type: "profile", key: d.field, content: profileContent(d.field, value), value, confidence: "high", created_at: prev?.created_at ?? now });
+      if (Array.isArray(value) && Array.isArray(prev?.value))
+        value = Array.from(new Set([...(prev!.value as string[]), ...(value as string[])])).slice(
+          0,
+          10,
+        );
+      const rec = base({
+        id,
+        type: "profile",
+        key: d.field,
+        content: profileContent(d.field, value),
+        value,
+        confidence: "high",
+        created_at: prev?.created_at ?? now,
+      });
       if (!prev && total >= MAX_MEMORIES_PER_STUDENT) continue;
       if (!prev) total += 1;
       byId.set(id, rec);
@@ -315,7 +413,8 @@ export function applyDrafts(uid: string, drafts: Draft[], existing: MemoryRecord
       const sameId = `learn_${hash(`${uid}:${topicKey}:${d.signal}`)}`;
       const prev = byId.get(sameId);
       // A newer "understood" replaces "difficult" for the same topic (and the other way round).
-      const opposite = d.signal === "understood" ? "difficult" : d.signal === "difficult" ? "understood" : null;
+      const opposite =
+        d.signal === "understood" ? "difficult" : d.signal === "difficult" ? "understood" : null;
       if (opposite) {
         const oppId = `learn_${hash(`${uid}:${topicKey}:${opposite}`)}`;
         if (byId.has(oppId)) {
@@ -346,7 +445,14 @@ export function applyDrafts(uid: string, drafts: Draft[], existing: MemoryRecord
       if (activeGoals >= MAX_ACTIVE_GOALS || (!prev && total >= MAX_MEMORIES_PER_STUDENT)) continue;
       if (!prev) total += 1;
       activeGoals += 1;
-      const rec = base({ id, type: "goal", content: d.content, status: "active", track: d.track, confidence: "medium" });
+      const rec = base({
+        id,
+        type: "goal",
+        content: d.content,
+        status: "active",
+        track: d.track,
+        confidence: "medium",
+      });
       byId.set(id, rec);
       saved.push(rec);
     }

@@ -3,15 +3,28 @@ import { ApiError } from "../errors.js";
 
 /** zod schemas for every request body (CONTRACT.md §4/§5). Unknown keys are rejected. */
 
-const id = (label: string) => z.string({ error: `${label} is required` }).trim().min(1, `${label} is required`).max(100);
+const id = (label: string) =>
+  z
+    .string({ error: `${label} is required` })
+    .trim()
+    .min(1, `${label} is required`)
+    .max(100);
 
 export const ExtractRequestSchema = z
   .strictObject({
     role_id: id("role_id"),
-    mode: z.enum(["prepare", "defense"], { error: "mode must be \"prepare\" or \"defense\"" }).optional(),
+    mode: z
+      .enum(["prepare", "defense"], { error: 'mode must be "prepare" or "defense"' })
+      .optional(),
     resume_text: z.string().max(20_000, "resume_text must be at most 20000 characters").nullish(),
     declared_skills: z
-      .array(z.string().trim().min(1, "declared skills cannot be empty").max(60, "each declared skill must be at most 60 characters"))
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1, "declared skills cannot be empty")
+          .max(60, "each declared skill must be at most 60 characters"),
+      )
       .max(20, "at most 20 declared skills")
       .optional(),
   })
@@ -39,7 +52,12 @@ export const InterrogateRequestSchema = z.strictObject({
   claim_id: id("claim_id"),
   mode: z.enum(["assess", "retest"]).optional(),
   // null is accepted and treated exactly like an omitted answer (start/resume).
-  answer: z.string().trim().min(1, "answer cannot be empty").max(4000, "answer must be at most 4000 characters").nullish(),
+  answer: z
+    .string()
+    .trim()
+    .min(1, "answer cannot be empty")
+    .max(4000, "answer must be at most 4000 characters")
+    .nullish(),
 });
 
 export const FixTaskRequestSchema = z.strictObject({

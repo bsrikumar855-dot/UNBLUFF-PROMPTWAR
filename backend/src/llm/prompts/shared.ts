@@ -32,7 +32,9 @@ export function criteriaList(skill: RoleSkill | null, level: Level): string {
 }
 
 export function skillsJson(role: Role): string {
-  return JSON.stringify(role.skills.map((s) => ({ id: s.id, name: s.name, description: s.description })));
+  return JSON.stringify(
+    role.skills.map((s) => ({ id: s.id, name: s.name, description: s.description })),
+  );
 }
 
 export function historyText(history: QA[]): string {

@@ -41,7 +41,9 @@ export class MemorySubmissionStore implements SubmissionStore {
   }
 
   async listByOwner(uid: string, questionId?: string): Promise<SubmissionRecord[]> {
-    return [...this.records.values()].filter((r) => r.owner_uid === uid && (!questionId || r.question_id === questionId)).map((r) => ({ ...r }));
+    return [...this.records.values()]
+      .filter((r) => r.owner_uid === uid && (!questionId || r.question_id === questionId))
+      .map((r) => ({ ...r }));
   }
 
   async delete(id: string): Promise<void> {
@@ -49,11 +51,15 @@ export class MemorySubmissionStore implements SubmissionStore {
   }
 
   async listRecentByOwner(uid: string, limit: number): Promise<SubmissionRecord[]> {
-    return (await this.listByOwner(uid)).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit);
+    return (await this.listByOwner(uid))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .slice(0, limit);
   }
 
   async listCountedByOwner(uid: string, limit: number): Promise<SubmissionRecord[]> {
-    return (await this.listByOwner(uid)).filter((r) => r.analytics_status === "counted").slice(0, limit);
+    return (await this.listByOwner(uid))
+      .filter((r) => r.analytics_status === "counted")
+      .slice(0, limit);
   }
 }
 
@@ -66,7 +72,10 @@ const SAFE_ID = /^sub_[A-Za-z0-9-]{1,64}$/;
 export class FirestoreSubmissionStore implements SubmissionStore {
   private readonly collection;
 
-  constructor(collectionName = "unbluff_code_submissions", db = new Firestore({ ignoreUndefinedProperties: true })) {
+  constructor(
+    collectionName = "unbluff_code_submissions",
+    db = new Firestore({ ignoreUndefinedProperties: true }),
+  ) {
     this.collection = db.collection(collectionName);
   }
 
@@ -83,7 +92,9 @@ export class FirestoreSubmissionStore implements SubmissionStore {
 
   async listByOwner(uid: string, questionId?: string): Promise<SubmissionRecord[]> {
     const snap = await this.collection.where("owner_uid", "==", uid).get();
-    return snap.docs.map((d) => d.data() as SubmissionRecord).filter((r) => r.owner_uid === uid && (!questionId || r.question_id === questionId));
+    return snap.docs
+      .map((d) => d.data() as SubmissionRecord)
+      .filter((r) => r.owner_uid === uid && (!questionId || r.question_id === questionId));
   }
 
   async delete(id: string): Promise<void> {
@@ -92,12 +103,20 @@ export class FirestoreSubmissionStore implements SubmissionStore {
   }
 
   async listRecentByOwner(uid: string, limit: number): Promise<SubmissionRecord[]> {
-    const snap = await this.collection.where("owner_uid", "==", uid).orderBy("created_at", "desc").limit(limit).get();
+    const snap = await this.collection
+      .where("owner_uid", "==", uid)
+      .orderBy("created_at", "desc")
+      .limit(limit)
+      .get();
     return snap.docs.map((d) => d.data() as SubmissionRecord).filter((r) => r.owner_uid === uid);
   }
 
   async listCountedByOwner(uid: string, limit: number): Promise<SubmissionRecord[]> {
-    const snap = await this.collection.where("owner_uid", "==", uid).where("analytics_status", "==", "counted").limit(limit).get();
+    const snap = await this.collection
+      .where("owner_uid", "==", uid)
+      .where("analytics_status", "==", "counted")
+      .limit(limit)
+      .get();
     return snap.docs.map((d) => d.data() as SubmissionRecord).filter((r) => r.owner_uid === uid);
   }
 }

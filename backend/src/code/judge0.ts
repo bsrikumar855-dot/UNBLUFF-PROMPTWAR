@@ -1,6 +1,13 @@
 import { z } from "zod";
 import type { Logger } from "../logger.js";
-import { ExecutionError, type ExecuteInput, type ExecuteResult, type ExecutionProvider, type Outcome, type ProviderLanguage } from "./provider.js";
+import {
+  ExecutionError,
+  type ExecuteInput,
+  type ExecuteResult,
+  type ExecutionProvider,
+  type Outcome,
+  type ProviderLanguage,
+} from "./provider.js";
 
 /**
  * Judge0 adapter (https://ce.judge0.com/). Student code runs in Judge0's isolated sandbox, never in this
@@ -26,7 +33,9 @@ export interface Judge0Options {
   maxOutputChars?: number;
 }
 
-const LanguagesSchema = z.array(z.object({ id: z.number().int().positive(), name: z.string().min(1).max(200) }).passthrough());
+const LanguagesSchema = z.array(
+  z.object({ id: z.number().int().positive(), name: z.string().min(1).max(200) }).passthrough(),
+);
 const CreateSchema = z.object({ token: z.string().regex(/^[A-Za-z0-9-]{8,64}$/) });
 const nullableText = z.string().nullable().optional();
 const ResultSchema = z.object({
@@ -39,7 +48,8 @@ const ResultSchema = z.object({
   memory: z.number().nullable().optional(),
 });
 
-const decode = (v: string | null | undefined): string => (v ? Buffer.from(v, "base64").toString("utf8") : "");
+const decode = (v: string | null | undefined): string =>
+  v ? Buffer.from(v, "base64").toString("utf8") : "";
 
 function outcomeOf(statusId: number): Outcome {
   if (statusId === 3 || statusId === 4) return "completed"; // we never send expected_output, but 4 would still mean "ran"
@@ -79,7 +89,11 @@ export class Judge0Provider implements ExecutionProvider {
   async listLanguages(): Promise<ProviderLanguage[]> {
     const body = await this.request("GET", "/languages");
     const parsed = LanguagesSchema.safeParse(body);
-    if (!parsed.success) throw new ExecutionError("invalid_response", "The execution service returned an unexpected response.");
+    if (!parsed.success)
+      throw new ExecutionError(
+        "invalid_response",
+        "The execution service returned an unexpected response.",
+      );
     return parsed.data.map((l) => ({ id: l.id, name: l.name }));
   }
 
@@ -95,25 +109,39 @@ export class Judge0Provider implements ExecutionProvider {
       enable_network: false,
     });
     const token = CreateSchema.safeParse(created);
-    if (!token.success) throw new ExecutionError("invalid_response", "The execution service returned an unexpected response.");
+    if (!token.success)
+      throw new ExecutionError(
+        "invalid_response",
+        "The execution service returned an unexpected response.",
+      );
 
     const started = Date.now();
     for (;;) {
-      const raw = await this.request("GET", `/submissions/${token.data.token}?base64_encoded=true&fields=stdout,stderr,compile_output,message,status,time,memory`);
+      const raw = await this.request(
+        "GET",
+        `/submissions/${token.data.token}?base64_encoded=true&fields=stdout,stderr,compile_output,message,status,time,memory`,
+      );
       const r = ResultSchema.safeParse(raw);
-      if (!r.success) throw new ExecutionError("invalid_response", "The execution service returned an unexpected response.");
+      if (!r.success)
+        throw new ExecutionError(
+          "invalid_response",
+          "The execution service returned an unexpected response.",
+        );
       const id = r.data.status.id;
       if (id > 2) return this.toResult(r.data);
-      if (Date.now() - started >= this.deadlineMs) throw new ExecutionError("timeout", "The execution service took too long to respond.");
+      if (Date.now() - started >= this.deadlineMs)
+        throw new ExecutionError("timeout", "The execution service took too long to respond.");
       await this.sleep(this.pollMs);
     }
   }
 
   private toResult(r: z.infer<typeof ResultSchema>): ExecuteResult {
     const seconds = r.time === null || r.time === undefined ? null : Number(r.time);
-    const clip = (s: string) => (s.length > this.maxChars ? `${s.slice(0, this.maxChars)}\n[output truncated]` : s);
+    const clip = (s: string) =>
+      s.length > this.maxChars ? `${s.slice(0, this.maxChars)}\n[output truncated]` : s;
     const outcome = outcomeOf(r.status.id);
-    if (outcome === "internal_error") this.logger?.warn({ status_id: r.status.id }, "execution service reported an internal error");
+    if (outcome === "internal_error")
+      this.logger?.warn({ status_id: r.status.id }, "execution service reported an internal error");
     return {
       outcome,
       stdout: clip(decode(r.stdout)),
@@ -136,16 +164,23 @@ export class Judge0Provider implements ExecutionProvider {
         redirect: "error",
       });
     } catch (err) {
-      const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+      const timedOut =
+        err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
       this.logger?.warn({ method, timed_out: timedOut }, "execution service request failed");
-      throw new ExecutionError(timedOut ? "timeout" : "unavailable", "The code execution service is not reachable right now.");
+      throw new ExecutionError(
+        timedOut ? "timeout" : "unavailable",
+        "The code execution service is not reachable right now.",
+      );
     }
     if (res.status === 401 || res.status === 403) {
       this.logger?.error({ status: res.status }, "execution service rejected our credentials");
       throw new ExecutionError("unavailable", "The code execution service is not available.");
     }
     if (res.status === 422) {
-      this.logger?.error({ status: res.status }, "execution service rejected the request (limits or language not allowed)");
+      this.logger?.error(
+        { status: res.status },
+        "execution service rejected the request (limits or language not allowed)",
+      );
       throw new ExecutionError("rejected", "The code execution service rejected the request.");
     }
     if (!res.ok) {
@@ -155,7 +190,10 @@ export class Judge0Provider implements ExecutionProvider {
     try {
       return (await res.json()) as unknown;
     } catch {
-      throw new ExecutionError("invalid_response", "The execution service returned an unexpected response.");
+      throw new ExecutionError(
+        "invalid_response",
+        "The execution service returned an unexpected response.",
+      );
     }
   }
 }

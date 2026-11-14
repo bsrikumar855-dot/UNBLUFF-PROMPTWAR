@@ -18,6 +18,11 @@ export type AuditEvent =
   | "appcheck.failed"
   | "startup.admin_check_failed";
 
-export function audit(logger: Logger, event: AuditEvent, uid: string | null, details: Record<string, unknown> = {}): void {
+export function audit(
+  logger: Logger,
+  event: AuditEvent,
+  uid: string | null,
+  details: Record<string, unknown> = {},
+): void {
   logger.info({ audit: event, uid, ...details }, `audit: ${event}`);
 }

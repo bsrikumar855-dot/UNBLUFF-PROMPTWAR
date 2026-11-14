@@ -35,7 +35,8 @@ const CASES: Case[] = [
   {
     id: "b",
     label: "fluent but wrong",
-    answer: "React re-renders because hooks make the app faster and the virtual DOM caches everything",
+    answer:
+      "React re-renders because hooks make the app faster and the virtual DOM caches everything",
     expected: "fails accuracy",
     ok: (g) => !g.criteria.accuracy.passed && !g.level_passed,
   },
@@ -73,7 +74,8 @@ const CASES: Case[] = [
 
 async function main() {
   const model = process.env.GEMINI_MODEL;
-  if (!model || !process.env.GEMINI_API_KEY) throw new Error("GEMINI_MODEL and GEMINI_API_KEY are required");
+  if (!model || !process.env.GEMINI_API_KEY)
+    throw new Error("GEMINI_MODEL and GEMINI_API_KEY are required");
   const thinking = (process.env.GRADE_THINKING as ThinkingLevel | undefined) ?? ThinkingLevel.LOW;
 
   const role = RoleRegistry.fromDirectory("data/roles").get("frontend_developer")!;
@@ -84,7 +86,13 @@ async function main() {
     skill_id: skill.id,
     source: "resume",
   });
-  const llm = new GeminiProvider({ apiKey: process.env.GEMINI_API_KEY, model, fallbackModel: process.env.GEMINI_FALLBACK_MODEL, logger: pino({ level: "warn" }), gradeThinking: thinking });
+  const llm = new GeminiProvider({
+    apiKey: process.env.GEMINI_API_KEY,
+    model,
+    fallbackModel: process.env.GEMINI_FALLBACK_MODEL,
+    logger: pino({ level: "warn" }),
+    gradeThinking: thinking,
+  });
 
   console.log(`model=${model} thinking=${thinking} skill=react_state level=L2`);
   console.log(`question: "${QUESTION}"\n`);
@@ -92,12 +100,22 @@ async function main() {
   let failures = 0;
   for (const c of CASES) {
     const t = performance.now();
-    const raw = await llm.grade({ role, skill, claim, level: 2, history: [], question: QUESTION, answer: c.answer });
+    const raw = await llm.grade({
+      role,
+      skill,
+      claim,
+      level: 2,
+      history: [],
+      question: QUESTION,
+      answer: c.answer,
+    });
     const grade = finalizeGrade(raw, c.answer, 2, skill.prerequisites); // code decides, after the evidence guard
     const turn = decideTurn(startCursor("assess", 2), grade).turn;
     const pass = c.ok(grade);
     if (!pass) failures++;
-    const crit = (["accuracy", "mechanism"] as const).map((k) => `${k.slice(0, 4)}=${grade.criteria[k].passed ? "T" : "F"}`).join(" ");
+    const crit = (["accuracy", "mechanism"] as const)
+      .map((k) => `${k.slice(0, 4)}=${grade.criteria[k].passed ? "T" : "F"}`)
+      .join(" ");
     rows.push([
       `(${c.id}) ${c.label}`,
       c.expected,
@@ -105,7 +123,9 @@ async function main() {
       pass ? "OK" : "WRONG",
       `${Math.round(performance.now() - t)}ms`,
     ]);
-    const missing = Object.entries(grade.criteria).filter(([, v]) => !v.passed && v.missing_concept).map(([k, v]) => `${k}: ${v.missing_concept}`);
+    const missing = Object.entries(grade.criteria)
+      .filter(([, v]) => !v.passed && v.missing_concept)
+      .map(([k, v]) => `${k}: ${v.missing_concept}`);
     if (missing.length) console.log(`(${c.id}) missing → ${missing.slice(0, 2).join(" | ")}`);
   }
 

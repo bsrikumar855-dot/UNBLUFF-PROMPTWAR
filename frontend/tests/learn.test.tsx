@@ -5,7 +5,11 @@ import { AppRoutes } from "@/App";
 import { AuthProvider } from "@/auth/AuthContext";
 import type { AuthClient, AuthUser } from "@/auth/types";
 import { api } from "@/api/endpoints";
-import type { DbmsTopicDetail, LearnProgressResponse, PatternDetail } from "@/types/contract";
+import type {
+  DbmsTopicDetail,
+  LearnProgressResponse,
+  PatternDetail,
+} from "@/types/contract";
 
 vi.mock("@/api/endpoints", () => ({
   api: {
@@ -66,8 +70,22 @@ const pattern: PatternDetail = {
   pitfalls: ["Off-by-one at the first window."],
   variants: [{ name: "Averages", when: "You need the mean." }],
   problems: [
-    { key: "maximum-average-subarray-i", title: "Maximum Average Subarray I", difficulty: "easy", note: "Window of size k.", url: "https://leetcode.com/problems/maximum-average-subarray-i/", practice_id: null },
-    { key: "fp_021_longest_unique_stretch", title: "Longest unique stretch", difficulty: "medium", note: "Own problem.", url: null, practice_id: "fp_021_longest_unique_stretch" },
+    {
+      key: "maximum-average-subarray-i",
+      title: "Maximum Average Subarray I",
+      difficulty: "easy",
+      note: "Window of size k.",
+      url: "https://leetcode.com/problems/maximum-average-subarray-i/",
+      practice_id: null,
+    },
+    {
+      key: "fp_021_longest_unique_stretch",
+      title: "Longest unique stretch",
+      difficulty: "medium",
+      note: "Own problem.",
+      url: null,
+      practice_id: "fp_021_longest_unique_stretch",
+    },
   ],
   related: [{ id: "prefix-sum", name: "Prefix sums" }],
 };
@@ -82,11 +100,29 @@ const topic: DbmsTopicDetail = {
   quiz_questions: 2,
   sections: [{ heading: "Inner join", body: ["Keeps only matching rows."] }],
   key_points: ["LEFT JOIN keeps unmatched left rows."],
-  example: { title: "Orders and customers", setup: "CREATE TABLE c(id);", query: "SELECT * FROM c;", explanation: "One row per match.", columns: ["id", "name"], rows: [[1, "Asha"], [2, null]] },
+  example: {
+    title: "Orders and customers",
+    setup: "CREATE TABLE c(id);",
+    query: "SELECT * FROM c;",
+    explanation: "One row per match.",
+    columns: ["id", "name"],
+    rows: [
+      [1, "Asha"],
+      [2, null],
+    ],
+  },
   interview: [{ q: "Inner vs outer join?", a: "Outer keeps unmatched rows." }],
   quiz: [
-    { id: "q1", question: "Which join keeps unmatched left rows?", options: ["INNER", "LEFT"] },
-    { id: "q2", question: "What does ON do?", options: ["Filters groups", "Matches rows"] },
+    {
+      id: "q1",
+      question: "Which join keeps unmatched left rows?",
+      options: ["INNER", "LEFT"],
+    },
+    {
+      id: "q2",
+      question: "What does ON do?",
+      options: ["Filters groups", "Matches rows"],
+    },
   ],
   related: [{ id: "subqueries-cte", name: "Subqueries and CTEs" }],
 };
@@ -100,10 +136,22 @@ describe("learn: patterns", () => {
   it("lists patterns by family for a signed-out visitor, without asking for progress", async () => {
     mocked.getLearnPatterns.mockResolvedValue({
       topics: ["Arrays and strings"],
-      patterns: [{ id: pattern.id, name: pattern.name, topic: pattern.topic, level: "core", cues: pattern.cues, summary: pattern.summary, problem_count: 2 }],
+      patterns: [
+        {
+          id: pattern.id,
+          name: pattern.name,
+          topic: pattern.topic,
+          level: "core",
+          cues: pattern.cues,
+          summary: pattern.summary,
+          problem_count: 2,
+        },
+      ],
     });
     renderAt("/learn/patterns", null);
-    expect(await screen.findByRole("link", { name: "Sliding window, fixed size" })).toHaveAttribute("href", "/learn/patterns/sliding-window-fixed");
+    expect(
+      await screen.findByRole("link", { name: "Sliding window, fixed size" })
+    ).toHaveAttribute("href", "/learn/patterns/sliding-window-fixed");
     expect(screen.getByText("Arrays and strings")).toBeInTheDocument();
     expect(screen.getByText("“subarray of size k”")).toBeInTheDocument();
     expect(mocked.getLearnProgress).not.toHaveBeenCalled();
@@ -112,32 +160,65 @@ describe("learn: patterns", () => {
   it("shows the template, the problems and both kinds of practice link", async () => {
     mocked.getLearnPattern.mockResolvedValue(pattern);
     renderAt("/learn/patterns/sliding-window-fixed", null);
-    expect(await screen.findByRole("heading", { level: 1, name: "Sliding window, fixed size" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Sliding window, fixed size" })
+    ).toBeInTheDocument();
     expect(screen.getByText(/def best/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /LeetCode/ })).toHaveAttribute("href", "https://leetcode.com/problems/maximum-average-subarray-i/");
-    expect(screen.getByRole("link", { name: /Solve in UNBLUFF/ })).toHaveAttribute("href", "/dsa/questions/fp_021_longest_unique_stretch/code");
+    expect(screen.getByRole("link", { name: /LeetCode/ })).toHaveAttribute(
+      "href",
+      "https://leetcode.com/problems/maximum-average-subarray-i/"
+    );
+    expect(screen.getByRole("link", { name: /Solve in UNBLUFF/ })).toHaveAttribute(
+      "href",
+      "/dsa/questions/fp_021_longest_unique_stretch/code"
+    );
     expect(screen.queryByRole("button", { name: "Mark solved" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ask the mentor" })).toHaveAttribute("href", expect.stringContaining("/mentor?prompt="));
+    expect(screen.getByRole("link", { name: "Ask the mentor" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/mentor?prompt=")
+    );
   });
 
   it("marks a problem solved for a signed-in student and shows the saved state", async () => {
     mocked.getLearnPattern.mockResolvedValue(pattern);
     mocked.setPatternProgress.mockResolvedValue(
-      progress({ progress: { patterns: { [pattern.id]: { done: false, problems_done: ["maximum-average-subarray-i"] } }, dbms: {}, updated_at: "now" } })
+      progress({
+        progress: {
+          patterns: {
+            [pattern.id]: { done: false, problems_done: ["maximum-average-subarray-i"] },
+          },
+          dbms: {},
+          updated_at: "now",
+        },
+      })
     );
     renderAt("/learn/patterns/sliding-window-fixed");
     const buttons = await screen.findAllByRole("button", { name: "Mark solved" });
     fireEvent.click(buttons[0]!);
-    await waitFor(() => expect(mocked.setPatternProgress).toHaveBeenCalledWith(pattern.id, { problems: [{ key: "maximum-average-subarray-i", done: true }] }));
+    await waitFor(() =>
+      expect(mocked.setPatternProgress).toHaveBeenCalledWith(pattern.id, {
+        problems: [{ key: "maximum-average-subarray-i", done: true }],
+      })
+    );
     expect(await screen.findByText("Marked solved")).toBeInTheDocument();
   });
 
   it("keeps a mark saved even when the first progress load finishes after it", async () => {
     let finishLoad: (r: LearnProgressResponse) => void = () => undefined;
-    mocked.getLearnProgress.mockReturnValue(new Promise((resolve) => (finishLoad = resolve)));
+    mocked.getLearnProgress.mockReturnValue(
+      new Promise((resolve) => (finishLoad = resolve))
+    );
     mocked.getLearnPattern.mockResolvedValue(pattern);
     mocked.setPatternProgress.mockResolvedValue(
-      progress({ progress: { patterns: { [pattern.id]: { done: false, problems_done: ["maximum-average-subarray-i"] } }, dbms: {}, updated_at: "now" } })
+      progress({
+        progress: {
+          patterns: {
+            [pattern.id]: { done: false, problems_done: ["maximum-average-subarray-i"] },
+          },
+          dbms: {},
+          updated_at: "now",
+        },
+      })
     );
     renderAt("/learn/patterns/sliding-window-fixed");
     fireEvent.click((await screen.findAllByRole("button", { name: "Mark solved" }))[0]!);
@@ -150,24 +231,45 @@ describe("learn: patterns", () => {
   it("keeps a mark saved when the progress load answers while the save is still in flight", async () => {
     let finishLoad: (r: LearnProgressResponse) => void = () => undefined;
     let finishSave: (r: LearnProgressResponse) => void = () => undefined;
-    mocked.getLearnProgress.mockReturnValue(new Promise((resolve) => (finishLoad = resolve)));
+    mocked.getLearnProgress.mockReturnValue(
+      new Promise((resolve) => (finishLoad = resolve))
+    );
     mocked.getLearnPattern.mockResolvedValue(pattern);
-    mocked.setPatternProgress.mockReturnValue(new Promise((resolve) => (finishSave = resolve)));
+    mocked.setPatternProgress.mockReturnValue(
+      new Promise((resolve) => (finishSave = resolve))
+    );
     renderAt("/learn/patterns/sliding-window-fixed");
     fireEvent.click((await screen.findAllByRole("button", { name: "Mark solved" }))[0]!);
     await waitFor(() => expect(mocked.setPatternProgress).toHaveBeenCalled());
     await act(async () => finishLoad(progress())); // the older, empty load answers first
     await act(async () =>
-      finishSave(progress({ progress: { patterns: { [pattern.id]: { done: false, problems_done: ["maximum-average-subarray-i"] } }, dbms: {}, updated_at: "now" } }))
+      finishSave(
+        progress({
+          progress: {
+            patterns: {
+              [pattern.id]: {
+                done: false,
+                problems_done: ["maximum-average-subarray-i"],
+              },
+            },
+            dbms: {},
+            updated_at: "now",
+          },
+        })
+      )
     );
     expect(await screen.findByText("Marked solved")).toBeInTheDocument();
   });
 
   it("shows an error with a retry when the pattern cannot be loaded", async () => {
-    mocked.getLearnPattern.mockRejectedValueOnce(new Error("boom")).mockResolvedValueOnce(pattern);
+    mocked.getLearnPattern
+      .mockRejectedValueOnce(new Error("boom"))
+      .mockResolvedValueOnce(pattern);
     renderAt("/learn/patterns/sliding-window-fixed", null);
     fireEvent.click(await screen.findByRole("button", { name: /retry/i }));
-    expect(await screen.findByRole("heading", { level: 1, name: "Sliding window, fixed size" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Sliding window, fixed size" })
+    ).toBeInTheDocument();
   });
 });
 
@@ -175,25 +277,57 @@ describe("learn: DBMS", () => {
   it("lists topics with the student's quiz state", async () => {
     mocked.getDbmsTopics.mockResolvedValue({
       groups: ["SQL"],
-      topics: [{ id: "joins", name: "Joins", group: "SQL", summary: "Combine rows.", minutes: 8, has_example: true, quiz_questions: 4 }],
+      topics: [
+        {
+          id: "joins",
+          name: "Joins",
+          group: "SQL",
+          summary: "Combine rows.",
+          minutes: 8,
+          has_example: true,
+          quiz_questions: 4,
+        },
+      ],
     });
     mocked.getLearnProgress.mockResolvedValue(
-      progress({ dbms_passed: 1, progress: { patterns: {}, dbms: { joins: { best_score: 4, total: 4, attempts: 1, passed_at: "t", last_attempt_at: "t" } }, updated_at: "t" } })
+      progress({
+        dbms_passed: 1,
+        progress: {
+          patterns: {},
+          dbms: {
+            joins: {
+              best_score: 4,
+              total: 4,
+              attempts: 1,
+              passed_at: "t",
+              last_attempt_at: "t",
+            },
+          },
+          updated_at: "t",
+        },
+      })
     );
     renderAt("/learn/dbms");
-    expect(await screen.findByRole("link", { name: "Joins" })).toHaveAttribute("href", "/learn/dbms/joins");
+    expect(await screen.findByRole("link", { name: "Joins" })).toHaveAttribute(
+      "href",
+      "/learn/dbms/joins"
+    );
     expect(await screen.findByText("Quiz passed")).toBeInTheDocument();
   });
 
   it("renders the notes and the checked SQL example, with NULL shown for missing values", async () => {
     mocked.getDbmsTopic.mockResolvedValue(topic);
     renderAt("/learn/dbms/joins", null);
-    expect(await screen.findByRole("heading", { level: 1, name: "Joins" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Joins" })
+    ).toBeInTheDocument();
     expect(screen.getByText("Keeps only matching rows.")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "name" })).toBeInTheDocument();
     expect(screen.getByText("NULL")).toBeInTheDocument();
     expect(screen.getByText(/Sign in/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Check my answers" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check my answers" })
+    ).not.toBeInTheDocument();
   });
 
   it("grades the quiz on the server and shows the right answers only afterwards", async () => {
@@ -205,10 +339,28 @@ describe("learn: DBMS", () => {
       pass_mark: 2,
       passed: false,
       results: [
-        { question_id: "q1", chosen: 1, answer: 1, correct: true, why: "LEFT keeps every left row." },
-        { question_id: "q2", chosen: 0, answer: 1, correct: false, why: "ON matches rows." },
+        {
+          question_id: "q1",
+          chosen: 1,
+          answer: 1,
+          correct: true,
+          why: "LEFT keeps every left row.",
+        },
+        {
+          question_id: "q2",
+          chosen: 0,
+          answer: 1,
+          correct: false,
+          why: "ON matches rows.",
+        },
       ],
-      progress: { best_score: 1, total: 2, attempts: 1, passed_at: null, last_attempt_at: "t" },
+      progress: {
+        best_score: 1,
+        total: 2,
+        attempts: 1,
+        passed_at: null,
+        last_attempt_at: "t",
+      },
     });
     renderAt("/learn/dbms/joins");
     const submit = await screen.findByRole("button", { name: "Check my answers" });
@@ -217,18 +369,24 @@ describe("learn: DBMS", () => {
     fireEvent.click(screen.getByRole("radio", { name: "LEFT" }));
     fireEvent.click(screen.getByRole("radio", { name: "Filters groups" }));
     fireEvent.click(submit);
-    await waitFor(() => expect(mocked.submitDbmsQuiz).toHaveBeenCalledWith("joins", { answers: [1, 0] }));
+    await waitFor(() =>
+      expect(mocked.submitDbmsQuiz).toHaveBeenCalledWith("joins", { answers: [1, 0] })
+    );
     expect(await screen.findByText(/1 of 2 correct/)).toBeInTheDocument();
     expect(screen.getByText("Not passed yet")).toBeInTheDocument();
     expect(screen.getByText("ON matches rows.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Retake" }));
-    expect(await screen.findByRole("button", { name: "Check my answers" })).toBeDisabled();
+    expect(
+      await screen.findByRole("button", { name: "Check my answers" })
+    ).toBeDisabled();
   });
 });
 
 describe("learn: removed GraphQL Lab", () => {
   it("no longer has a /graphql-lab route", async () => {
     renderAt("/graphql-lab");
-    expect(await screen.findByRole("heading", { name: /Page Not Found/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /Page Not Found/ })
+    ).toBeInTheDocument();
   });
 });

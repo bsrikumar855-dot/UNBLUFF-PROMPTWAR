@@ -56,7 +56,13 @@ const PracticeRow: React.FC<{
       <div className="flex flex-wrap items-center gap-2">
         <RetestStatus claim={claim} sessionId={sessionId} />
         {sessionId && isWeak(claim) && !shown && (
-          <Button variant="outline" size="sm" className="rounded-full bg-white/70" onClick={openTask} disabled={loading}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full bg-white/70"
+            onClick={openTask}
+            disabled={loading}
+          >
             Open fix task
           </Button>
         )}

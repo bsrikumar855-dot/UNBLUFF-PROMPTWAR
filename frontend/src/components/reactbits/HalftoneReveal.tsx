@@ -1,17 +1,19 @@
 // @ts-nocheck -- vendored from React Bits (MIT + Commons Clause); written without this project's noUncheckedIndexedAccess
-'use client';
+"use client";
 
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties } from "react";
 
-const DEFAULT_SRC = 'https://images.unsplash.com/photo-1693250707557-a846a014b321?q=80&w=1400&auto=format&fit=crop';
+const DEFAULT_SRC =
+  "https://images.unsplash.com/photo-1693250707557-a846a014b321?q=80&w=1400&auto=format&fit=crop";
 
-export type HalftoneRevealMode = 'mono' | 'duotone' | 'color';
+export type HalftoneRevealMode = "mono" | "duotone" | "color";
 
-export type HalftoneRevealShape = 'dot' | 'ellipse' | 'square' | 'diamond' | 'line' | 'cross';
+export type HalftoneRevealShape =
+  "dot" | "ellipse" | "square" | "diamond" | "line" | "cross";
 
 export interface HalftoneRevealProps {
   src?: string;
-  fit?: 'contain' | 'cover';
+  fit?: "contain" | "cover";
   mode?: HalftoneRevealMode;
   shape?: HalftoneRevealShape;
   cellSize?: number;
@@ -37,7 +39,7 @@ export interface HalftoneRevealProps {
 }
 
 type Settings = {
-  fit: 'contain' | 'cover';
+  fit: "contain" | "cover";
   mode: number;
   shape: number;
   cellSize: number;
@@ -60,7 +62,12 @@ type Settings = {
   intro: boolean;
 };
 
-type MaskTarget = { texture: WebGLTexture | null; framebuffer: WebGLFramebuffer | null; width: number; height: number };
+type MaskTarget = {
+  texture: WebGLTexture | null;
+  framebuffer: WebGLFramebuffer | null;
+  width: number;
+  height: number;
+};
 
 const VERTEX = `#version 300 es
 in vec2 aPosition;
@@ -344,13 +351,21 @@ void main() {
 }`;
 
 const MODES: Record<string, number> = { mono: 0, duotone: 1, color: 2 };
-const SHAPES: Record<string, number> = { dot: 0, ellipse: 1, square: 2, diamond: 3, line: 4, cross: 5 };
+const SHAPES: Record<string, number> = {
+  dot: 0,
+  ellipse: 1,
+  square: 2,
+  diamond: 3,
+  line: 4,
+  cross: 5,
+};
 const MAX_BURSTS = 4;
 const BURST_SECONDS = 1.3;
 const INTRO_SECONDS = 1.4;
 const MASK_SCALE = 0.5;
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 const compile = (gl: WebGL2RenderingContext, type: number, source: string) => {
   const shader = gl.createShader(type);
@@ -369,7 +384,7 @@ const link = (gl: WebGL2RenderingContext, fragmentSource: string) => {
   if (!vertex || !fragment || !program) return null;
   gl.attachShader(program, vertex);
   gl.attachShader(program, fragment);
-  gl.bindAttribLocation(program, 0, 'aPosition');
+  gl.bindAttribLocation(program, 0, "aPosition");
   gl.linkProgram(program);
   gl.deleteShader(vertex);
   gl.deleteShader(fragment);
@@ -386,7 +401,7 @@ const locate = (gl: WebGL2RenderingContext, program: WebGLProgram, names: string
 
 const wanderAt = (t: number, w: number, h: number): [number, number] => [
   w * (0.5 + 0.32 * Math.sin(t * 0.53) + 0.08 * Math.sin(t * 1.31 + 0.6)),
-  h * (0.5 + 0.27 * Math.sin(t * 0.71 + 1.1) + 0.07 * Math.cos(t * 1.57))
+  h * (0.5 + 0.27 * Math.sin(t * 0.71 + 1.1) + 0.07 * Math.cos(t * 1.57)),
 ];
 
 const measureEdge = (context: CanvasRenderingContext2D, image: HTMLImageElement) => {
@@ -415,21 +430,25 @@ const measureEdge = (context: CanvasRenderingContext2D, image: HTMLImageElement)
   }
   const matte = [sum[0] / count, sum[1] / count, sum[2] / count];
   const spread =
-    matte.reduce((total, mean, c) => total + Math.sqrt(Math.max(0, squares[c] / count - mean * mean)), 0) / 3;
+    matte.reduce(
+      (total, mean, c) =>
+        total + Math.sqrt(Math.max(0, squares[c] / count - mean * mean)),
+      0
+    ) / 3;
   return { matte, plain: clear < count * 0.5 && spread < 0.06 };
 };
 
 const HalftoneReveal = ({
   src = DEFAULT_SRC,
-  fit = 'cover',
-  mode = 'mono',
-  shape = 'dot',
+  fit = "cover",
+  mode = "mono",
+  shape = "dot",
   cellSize = 6,
   angle = 45,
   dotScale = 1,
-  inkColor = '#120f17',
-  accentColor = '#ff4f2a',
-  paperColor = '#ffffff',
+  inkColor = "#120f17",
+  accentColor = "#ff4f2a",
+  paperColor = "#ffffff",
   contrast = 1.1,
   brightness = 0,
   invert = false,
@@ -442,8 +461,8 @@ const HalftoneReveal = ({
   wander = false,
   clickBurst = true,
   intro = true,
-  className = '',
-  style
+  className = "",
+  style,
 }: HalftoneRevealProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -469,7 +488,7 @@ const HalftoneReveal = ({
     reverse,
     wander,
     clickBurst,
-    intro
+    intro,
   };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -477,12 +496,12 @@ const HalftoneReveal = ({
   useEffect(() => {
     const container = containerRef.current;
     const canvas = canvasRef.current;
-    const gl = canvas?.getContext('webgl2', {
+    const gl = canvas?.getContext("webgl2", {
       alpha: false,
       antialias: false,
       depth: false,
       stencil: false,
-      preserveDrawingBuffer: false
+      preserveDrawingBuffer: false,
     });
     if (!container || !canvas || !gl) return undefined;
 
@@ -490,58 +509,72 @@ const HalftoneReveal = ({
     const viewProgram = link(gl, VIEW);
     if (!maskProgram || !viewProgram) return undefined;
     const maskUniforms = locate(gl, maskProgram, [
-      'uPrevious',
-      'uTexture',
-      'uView',
-      'uFrom',
-      'uTo',
-      'uRadius',
-      'uSoftness',
-      'uStrength',
-      'uFade'
+      "uPrevious",
+      "uTexture",
+      "uView",
+      "uFrom",
+      "uTo",
+      "uRadius",
+      "uSoftness",
+      "uStrength",
+      "uFade",
     ]);
     const viewUniforms = locate(gl, viewProgram, [
-      'uImage',
-      'uMask',
-      'uResolution',
-      'uView',
-      'uDpr',
-      'uFrame',
-      'uTexels',
-      'uMode',
-      'uShape',
-      'uCell',
-      'uAngle',
-      'uScale',
-      'uInk',
-      'uAccent',
-      'uPaper',
-      'uContrast',
-      'uBrightness',
-      'uInvert',
-      'uRough',
-      'uShift',
-      'uMatte',
-      'uKey',
-      'uReverse',
-      'uIntro',
-      'uBursts',
-      'uBurstWidth'
+      "uImage",
+      "uMask",
+      "uResolution",
+      "uView",
+      "uDpr",
+      "uFrame",
+      "uTexels",
+      "uMode",
+      "uShape",
+      "uCell",
+      "uAngle",
+      "uScale",
+      "uInk",
+      "uAccent",
+      "uPaper",
+      "uContrast",
+      "uBrightness",
+      "uInvert",
+      "uRough",
+      "uShift",
+      "uMatte",
+      "uKey",
+      "uReverse",
+      "uIntro",
+      "uBursts",
+      "uBurstWidth",
     ]);
 
     const vao = gl.createVertexArray();
     const buffer = gl.createBuffer();
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 3, -1, -1, 3]),
+      gl.STATIC_DRAW
+    );
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.bindVertexArray(null);
 
-    const floatMask = !!gl.getExtension('EXT_color_buffer_float');
+    const floatMask = !!gl.getExtension("EXT_color_buffer_float");
     const imageTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, imageTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.RGBA,
+      1,
+      1,
+      0,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      new Uint8Array(4)
+    );
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -550,15 +583,43 @@ const HalftoneReveal = ({
     const createMask = (width: number, height: number): MaskTarget => {
       const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      if (floatMask) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
-      else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      if (floatMask)
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA16F,
+          width,
+          height,
+          0,
+          gl.RGBA,
+          gl.HALF_FLOAT,
+          null
+        );
+      else
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.RGBA,
+          width,
+          height,
+          0,
+          gl.RGBA,
+          gl.UNSIGNED_BYTE,
+          null
+        );
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       const framebuffer = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        texture,
+        0
+      );
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -570,8 +631,11 @@ const HalftoneReveal = ({
     };
     let masks = [createMask(2, 2), createMask(2, 2)];
 
-    const probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const probe = document
+      .createElement("canvas")
+      .getContext("2d", { willReadFrequently: true });
+    const reduce =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     const colorCache = new Map<string, number[]>();
     const bursts: { x: number; y: number; start: number }[] = [];
     const burstData = new Float32Array(MAX_BURSTS * 4);
@@ -587,7 +651,7 @@ const HalftoneReveal = ({
       introStart: 0,
       presence: 0,
       drift: 0,
-      trailUntil: 0
+      trailUntil: 0,
     };
     let raf = 0;
     let last = 0;
@@ -600,7 +664,7 @@ const HalftoneReveal = ({
       let rgb = [0, 0, 0];
       if (probe && value) {
         probe.clearRect(0, 0, 1, 1);
-        probe.fillStyle = '#000000';
+        probe.fillStyle = "#000000";
         probe.fillStyle = /^[0-9a-f]{3,8}$/i.test(value) ? `#${value}` : value;
         probe.fillRect(0, 0, 1, 1);
         const [r, g, b] = probe.getImageData(0, 0, 1, 1).data;
@@ -613,7 +677,10 @@ const HalftoneReveal = ({
     const frameRect = (s: Settings) => {
       const { image, width, height } = state;
       if (!image) return [0, 0, width, height];
-      const scale = (s.fit === 'cover' ? Math.max : Math.min)(width / image.naturalWidth, height / image.naturalHeight);
+      const scale = (s.fit === "cover" ? Math.max : Math.min)(
+        width / image.naturalWidth,
+        height / image.naturalHeight
+      );
       const w = image.naturalWidth * scale;
       const h = image.naturalHeight * scale;
       return [(width - w) / 2, (height - h) / 2, w, h];
@@ -656,7 +723,10 @@ const HalftoneReveal = ({
       gl.uniform1f(maskUniforms.uRadius, s.revealRadius * (0.45 + 0.55 * state.presence));
       gl.uniform1f(maskUniforms.uSoftness, s.softness);
       gl.uniform1f(maskUniforms.uStrength, state.presence);
-      gl.uniform1f(maskUniforms.uFade, Math.max(s.linger > 0 ? dt / s.linger : 1, minimum));
+      gl.uniform1f(
+        maskUniforms.uFade,
+        Math.max(s.linger > 0 ? dt / s.linger : 1, minimum)
+      );
       gl.bindVertexArray(vao);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -666,7 +736,11 @@ const HalftoneReveal = ({
     const drawView = (s: Settings, now: number) => {
       const [fx, fy, fw, fh] = frameRect(s);
       const image = state.image;
-      const intro = !image ? 0 : !s.intro || reduce ? 1 : Math.min(1, (now - state.introStart) / 1000 / INTRO_SECONDS);
+      const intro = !image
+        ? 0
+        : !s.intro || reduce
+          ? 1
+          : Math.min(1, (now - state.introStart) / 1000 / INTRO_SECONDS);
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.useProgram(viewProgram);
       gl.activeTexture(gl.TEXTURE0);
@@ -742,7 +816,11 @@ const HalftoneReveal = ({
       }
       bursts.forEach((b, i) => {
         const k = Math.max(0, (now - b.start) / 1000 / BURST_SECONDS);
-        const reach = Math.hypot(Math.max(b.x, state.width - b.x), Math.max(b.y, state.height - b.y)) + 80;
+        const reach =
+          Math.hypot(
+            Math.max(b.x, state.width - b.x),
+            Math.max(b.y, state.height - b.y)
+          ) + 80;
         burstData[i * 4] = b.x;
         burstData[i * 4 + 1] = b.y;
         burstData[i * 4 + 2] = reach * Math.sin((k * Math.PI) / 2);
@@ -756,18 +834,23 @@ const HalftoneReveal = ({
       const intro = drawView(s, now);
 
       const busy =
-        engaged || state.presence > 0.002 || bursts.length > 0 || now < state.trailUntil || (state.image && intro < 1);
+        engaged ||
+        state.presence > 0.002 ||
+        bursts.length > 0 ||
+        now < state.trailUntil ||
+        (state.image && intro < 1);
       if (busy) raf = requestAnimationFrame(frame);
       else last = 0;
     };
 
     const wake = () => {
-      if (!raf && alive && visible && !document.hidden) raf = requestAnimationFrame(frame);
+      if (!raf && alive && visible && !document.hidden)
+        raf = requestAnimationFrame(frame);
     };
 
     const image = new Image();
-    image.crossOrigin = 'anonymous';
-    image.decoding = 'async';
+    image.crossOrigin = "anonymous";
+    image.decoding = "async";
     image.onload = () => {
       if (!alive) return;
       gl.bindTexture(gl.TEXTURE_2D, imageTexture);
@@ -775,7 +858,9 @@ const HalftoneReveal = ({
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-      const sampler = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      const sampler = document
+        .createElement("canvas")
+        .getContext("2d", { willReadFrequently: true });
       if (sampler) {
         try {
           const edge = measureEdge(sampler, image);
@@ -811,7 +896,11 @@ const HalftoneReveal = ({
     };
     const onDown = (event: PointerEvent) => {
       onMove(event);
-      if (!settingsRef.current.clickBurst || (event.pointerType === 'mouse' && event.button !== 0)) return;
+      if (
+        !settingsRef.current.clickBurst ||
+        (event.pointerType === "mouse" && event.button !== 0)
+      )
+        return;
       bursts.push({ x: pointer.x, y: pointer.y, start: performance.now() });
       if (bursts.length > MAX_BURSTS) bursts.shift();
     };
@@ -820,16 +909,16 @@ const HalftoneReveal = ({
       wake();
     };
 
-    container.addEventListener('pointermove', onMove, { passive: true });
-    container.addEventListener('pointerenter', onMove, { passive: true });
-    container.addEventListener('pointerdown', onDown, { passive: true });
-    container.addEventListener('pointerleave', onLeave, { passive: true });
-    container.addEventListener('pointercancel', onLeave, { passive: true });
-    document.addEventListener('visibilitychange', onVisibility);
+    container.addEventListener("pointermove", onMove, { passive: true });
+    container.addEventListener("pointerenter", onMove, { passive: true });
+    container.addEventListener("pointerdown", onDown, { passive: true });
+    container.addEventListener("pointerleave", onLeave, { passive: true });
+    container.addEventListener("pointercancel", onLeave, { passive: true });
+    document.addEventListener("visibilitychange", onVisibility);
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(container);
-    const intersection = new IntersectionObserver(entries => {
-      visible = entries.some(entry => entry.isIntersecting);
+    const intersection = new IntersectionObserver((entries) => {
+      visible = entries.some((entry) => entry.isIntersecting);
       if (visible) {
         last = 0;
         wake();
@@ -852,12 +941,12 @@ const HalftoneReveal = ({
       image.onload = null;
       resizeObserver.disconnect();
       intersection.disconnect();
-      container.removeEventListener('pointermove', onMove);
-      container.removeEventListener('pointerenter', onMove);
-      container.removeEventListener('pointerdown', onDown);
-      container.removeEventListener('pointerleave', onLeave);
-      container.removeEventListener('pointercancel', onLeave);
-      document.removeEventListener('visibilitychange', onVisibility);
+      container.removeEventListener("pointermove", onMove);
+      container.removeEventListener("pointerenter", onMove);
+      container.removeEventListener("pointerdown", onDown);
+      container.removeEventListener("pointerleave", onLeave);
+      container.removeEventListener("pointercancel", onLeave);
+      document.removeEventListener("visibilitychange", onVisibility);
       masks.forEach(destroyMask);
       gl.deleteTexture(imageTexture);
       gl.deleteBuffer(buffer);
@@ -874,10 +963,16 @@ const HalftoneReveal = ({
   return (
     <div
       ref={containerRef}
-      className={['relative h-full w-full overflow-hidden', className].filter(Boolean).join(' ')}
+      className={["relative h-full w-full overflow-hidden", className]
+        .filter(Boolean)
+        .join(" ")}
       style={style}
     >
-      <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full" aria-hidden="true" />
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 block h-full w-full"
+        aria-hidden="true"
+      />
     </div>
   );
 };

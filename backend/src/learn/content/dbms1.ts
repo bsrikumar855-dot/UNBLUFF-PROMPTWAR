@@ -6,14 +6,15 @@ export const DBMS_1: DbmsTopicContent[] = [
     id: "er-model",
     name: "ER modelling and turning it into tables",
     group: "Design",
-    summary: "Describe the things your system keeps facts about and how they relate, then translate that picture into tables.",
+    summary:
+      "Describe the things your system keeps facts about and how they relate, then translate that picture into tables.",
     minutes: 12,
     sections: [
       {
         heading: "Entities, attributes and relationships",
         body: [
           "An entity is a thing you store facts about: a Student, a Course, an Order. Its attributes are those facts: a student has a name and an email. A relationship connects entities: a student enrolls in a course.",
-          "A strong entity has an identifying attribute of its own (a student id). A weak entity cannot be identified alone and depends on another entity: an order line is only meaningful as \"line 2 of order 17\", so its identity combines the order's key with its own position.",
+          'A strong entity has an identifying attribute of its own (a student id). A weak entity cannot be identified alone and depends on another entity: an order line is only meaningful as "line 2 of order 17", so its identity combines the order\'s key with its own position.',
           "Attributes come in kinds. A composite attribute splits into parts (an address into street and city). A multivalued attribute can hold several values (a person's phone numbers). A derived attribute is computed from others (age from date of birth) and usually is not stored.",
         ],
       },
@@ -27,7 +28,7 @@ export const DBMS_1: DbmsTopicContent[] = [
       {
         heading: "From the diagram to tables",
         body: [
-          "Each strong entity becomes a table, with its identifying attribute as the primary key. A one-to-many relationship is stored as a foreign key on the \"many\" side: an employee row holds its department id.",
+          'Each strong entity becomes a table, with its identifying attribute as the primary key. A one-to-many relationship is stored as a foreign key on the "many" side: an employee row holds its department id.',
           "A many-to-many relationship needs its own table, often called a junction or bridge table, holding a foreign key to each side. Its primary key is usually the pair, and attributes of the relationship itself (the grade for an enrollment) live here.",
           "A one-to-one relationship is a foreign key with a UNIQUE constraint, or the two entities may simply be merged. A multivalued attribute becomes a separate table (person_id, phone). A weak entity's table uses a composite key made of its owner's key plus its own partial key.",
         ],
@@ -58,20 +59,75 @@ FROM enrollment e
 JOIN student s ON s.id = e.student_id
 JOIN course c ON c.id = e.course_id
 ORDER BY s.name, c.title;`,
-      explanation: "Neither student nor course can hold the relationship: a student takes many courses and a course has many students. The enrollment table holds one row per pair, with the grade, which belongs to the pair and to neither side alone.",
+      explanation:
+        "Neither student nor course can hold the relationship: a student takes many courses and a course has many students. The enrollment table holds one row per pair, with the grade, which belongs to the pair and to neither side alone.",
       columns: ["name", "title", "grade"],
-      rows: [["Asha", "Algorithms", "B"], ["Asha", "Databases", "A"], ["Ravi", "Databases", "B"]],
+      rows: [
+        ["Asha", "Algorithms", "B"],
+        ["Asha", "Databases", "A"],
+        ["Ravi", "Databases", "B"],
+      ],
     },
     interview: [
-      { q: "How do you represent a many-to-many relationship in a relational database?", a: "With a junction table that has a foreign key to each entity. The pair of keys is usually its primary key, and any attribute that belongs to the relationship, such as a grade or a quantity, is stored there." },
-      { q: "What is the difference between a strong and a weak entity?", a: "A strong entity has a key of its own. A weak entity cannot be identified without an owner entity, so its table's key combines the owner's key with a partial key of its own, for example (order_id, line_number)." },
-      { q: "What is the difference between cardinality and participation?", a: "Cardinality is how many instances can be related (1:1, 1:N, M:N). Participation is whether being related is mandatory (total) or optional (partial)." },
+      {
+        q: "How do you represent a many-to-many relationship in a relational database?",
+        a: "With a junction table that has a foreign key to each entity. The pair of keys is usually its primary key, and any attribute that belongs to the relationship, such as a grade or a quantity, is stored there.",
+      },
+      {
+        q: "What is the difference between a strong and a weak entity?",
+        a: "A strong entity has a key of its own. A weak entity cannot be identified without an owner entity, so its table's key combines the owner's key with a partial key of its own, for example (order_id, line_number).",
+      },
+      {
+        q: "What is the difference between cardinality and participation?",
+        a: "Cardinality is how many instances can be related (1:1, 1:N, M:N). Participation is whether being related is mandatory (total) or optional (partial).",
+      },
     ],
     quiz: [
-      { id: "er1", question: "A department has many employees and each employee belongs to one department. Where does the foreign key go?", options: ["In the department table", "In the employee table", "In a third table", "Nowhere, it is not needed"], answer: 1, why: "In a one-to-many relationship the foreign key lives on the many side: each employee row stores its department id." },
-      { id: "er2", question: "Which design correctly stores a many-to-many relationship between Student and Course?", options: ["A course_id column in the student table", "A student_id column in the course table", "A separate enrollment table with student_id and course_id", "Two copies of each table"], answer: 2, why: "Either single column would limit one side to one partner. A junction table holds one row per pair." },
-      { id: "er3", question: "Which attribute is a good candidate to leave unstored because it is derived?", options: ["Date of birth", "Age", "Email address", "Student id"], answer: 1, why: "Age can be computed from the date of birth and would go stale if stored." },
-      { id: "er4", question: "What identifies a row of a weak entity such as an order line?", options: ["Its own attributes alone", "A random number", "The owner's key combined with its own partial key", "Nothing, weak entities have no key"], answer: 2, why: "A weak entity depends on its owner, so its key is the owner's key plus a partial key like the line number." },
+      {
+        id: "er1",
+        question:
+          "A department has many employees and each employee belongs to one department. Where does the foreign key go?",
+        options: [
+          "In the department table",
+          "In the employee table",
+          "In a third table",
+          "Nowhere, it is not needed",
+        ],
+        answer: 1,
+        why: "In a one-to-many relationship the foreign key lives on the many side: each employee row stores its department id.",
+      },
+      {
+        id: "er2",
+        question:
+          "Which design correctly stores a many-to-many relationship between Student and Course?",
+        options: [
+          "A course_id column in the student table",
+          "A student_id column in the course table",
+          "A separate enrollment table with student_id and course_id",
+          "Two copies of each table",
+        ],
+        answer: 2,
+        why: "Either single column would limit one side to one partner. A junction table holds one row per pair.",
+      },
+      {
+        id: "er3",
+        question: "Which attribute is a good candidate to leave unstored because it is derived?",
+        options: ["Date of birth", "Age", "Email address", "Student id"],
+        answer: 1,
+        why: "Age can be computed from the date of birth and would go stale if stored.",
+      },
+      {
+        id: "er4",
+        question: "What identifies a row of a weak entity such as an order line?",
+        options: [
+          "Its own attributes alone",
+          "A random number",
+          "The owner's key combined with its own partial key",
+          "Nothing, weak entities have no key",
+        ],
+        answer: 2,
+        why: "A weak entity depends on its owner, so its key is the owner's key plus a partial key like the line number.",
+      },
     ],
     related: ["keys-constraints", "normalization", "joins"],
   },
@@ -79,7 +135,8 @@ ORDER BY s.name, c.title;`,
     id: "keys-constraints",
     name: "Keys and constraints",
     group: "Design",
-    summary: "How a database identifies a row and refuses bad data: super, candidate, primary and foreign keys, and the constraints that guard them.",
+    summary:
+      "How a database identifies a row and refuses bad data: super, candidate, primary and foreign keys, and the constraints that guard them.",
     minutes: 10,
     sections: [
       {
@@ -125,20 +182,75 @@ INSERT INTO employee VALUES
        COUNT(DISTINCT name) AS distinct_name,
        COUNT(DISTINCT dept) AS distinct_dept
 FROM employee;`,
-      explanation: "A column can only be a candidate key if it has as many distinct values as there are rows. Here email qualifies (4 of 4). Name does not (two people are called Asha) and neither does dept. Remember the data can only disprove a key; the meaning of the column decides whether it will stay unique tomorrow.",
+      explanation:
+        "A column can only be a candidate key if it has as many distinct values as there are rows. Here email qualifies (4 of 4). Name does not (two people are called Asha) and neither does dept. Remember the data can only disprove a key; the meaning of the column decides whether it will stay unique tomorrow.",
       columns: ["total_rows", "distinct_email", "distinct_name", "distinct_dept"],
       rows: [[4, 4, 3, 2]],
     },
     interview: [
-      { q: "What is the difference between a primary key and a unique key?", a: "Both enforce uniqueness. A table has one primary key and it can never be NULL. A table can have many unique constraints, and in most databases they allow NULL (often several)." },
-      { q: "What is a candidate key?", a: "A minimal set of columns that uniquely identifies every row. A table may have several; one is chosen as the primary key and the rest become alternate keys." },
-      { q: "What does ON DELETE CASCADE do?", a: "When a parent row is deleted, the database automatically deletes the child rows that reference it, so no orphan rows remain." },
+      {
+        q: "What is the difference between a primary key and a unique key?",
+        a: "Both enforce uniqueness. A table has one primary key and it can never be NULL. A table can have many unique constraints, and in most databases they allow NULL (often several).",
+      },
+      {
+        q: "What is a candidate key?",
+        a: "A minimal set of columns that uniquely identifies every row. A table may have several; one is chosen as the primary key and the rest become alternate keys.",
+      },
+      {
+        q: "What does ON DELETE CASCADE do?",
+        a: "When a parent row is deleted, the database automatically deletes the child rows that reference it, so no orphan rows remain.",
+      },
     ],
     quiz: [
-      { id: "k1", question: "A table has id (unique) and email (unique). The set (id, email) is a...", options: ["Candidate key", "Super key but not a candidate key", "Foreign key", "Not a key at all"], answer: 1, why: "It uniquely identifies rows, so it is a super key, but it is not minimal: either column alone would do, so it is not a candidate key." },
-      { id: "k2", question: "Which statement about a primary key is true?", options: ["It may contain NULL", "A table can have two primary keys", "It must be unique and not null", "It must be a single column"], answer: 2, why: "A primary key is unique and non-null. A table has exactly one, though it can span several columns." },
-      { id: "k3", question: "You delete a customer who has orders and the foreign key says ON DELETE RESTRICT. What happens?", options: ["The orders are deleted too", "The delete is refused", "The orders keep a dangling customer id", "The customer id in the orders becomes 0"], answer: 1, why: "RESTRICT refuses the delete while child rows exist." },
-      { id: "k4", question: "Why can a UNIQUE column in most databases hold several NULLs?", options: ["NULL is a special number", "NULL is not equal to any value, including another NULL", "The database ignores the constraint for NULL by mistake", "NULL means zero"], answer: 1, why: "NULL means unknown, and two unknowns are not known to be equal, so they do not violate uniqueness." },
+      {
+        id: "k1",
+        question: "A table has id (unique) and email (unique). The set (id, email) is a...",
+        options: [
+          "Candidate key",
+          "Super key but not a candidate key",
+          "Foreign key",
+          "Not a key at all",
+        ],
+        answer: 1,
+        why: "It uniquely identifies rows, so it is a super key, but it is not minimal: either column alone would do, so it is not a candidate key.",
+      },
+      {
+        id: "k2",
+        question: "Which statement about a primary key is true?",
+        options: [
+          "It may contain NULL",
+          "A table can have two primary keys",
+          "It must be unique and not null",
+          "It must be a single column",
+        ],
+        answer: 2,
+        why: "A primary key is unique and non-null. A table has exactly one, though it can span several columns.",
+      },
+      {
+        id: "k3",
+        question:
+          "You delete a customer who has orders and the foreign key says ON DELETE RESTRICT. What happens?",
+        options: [
+          "The orders are deleted too",
+          "The delete is refused",
+          "The orders keep a dangling customer id",
+          "The customer id in the orders becomes 0",
+        ],
+        answer: 1,
+        why: "RESTRICT refuses the delete while child rows exist.",
+      },
+      {
+        id: "k4",
+        question: "Why can a UNIQUE column in most databases hold several NULLs?",
+        options: [
+          "NULL is a special number",
+          "NULL is not equal to any value, including another NULL",
+          "The database ignores the constraint for NULL by mistake",
+          "NULL means zero",
+        ],
+        answer: 1,
+        why: "NULL means unknown, and two unknowns are not known to be equal, so they do not violate uniqueness.",
+      },
     ],
     related: ["er-model", "normalization", "sql-basics"],
   },
@@ -146,7 +258,8 @@ FROM employee;`,
     id: "sql-basics",
     name: "SQL basics: SELECT, WHERE, ORDER BY and NULL",
     group: "SQL",
-    summary: "The shape of a query, the order a database actually evaluates it in, and why NULL needs its own rules.",
+    summary:
+      "The shape of a query, the order a database actually evaluates it in, and why NULL needs its own rules.",
     minutes: 12,
     sections: [
       {
@@ -158,7 +271,7 @@ FROM employee;`,
         ],
       },
       {
-        heading: "NULL is not a value, it is \"unknown\"",
+        heading: 'NULL is not a value, it is "unknown"',
         body: [
           "Comparing anything with NULL gives unknown, not true or false, and WHERE keeps only rows where the condition is true. So price = NULL never matches anything: write price IS NULL, and IS NOT NULL for the opposite.",
           "NULL poisons arithmetic and comparisons: 5 + NULL is NULL. Aggregates such as SUM, AVG and COUNT(column) skip NULLs, while COUNT(*) counts every row. COALESCE(x, 0) substitutes a default.",
@@ -187,20 +300,69 @@ FROM product
 WHERE category = 'Electronics' OR price < 50
 ORDER BY price DESC
 LIMIT 3;`,
-      explanation: "Four products match (two electronics, plus the two cheap stationery items). They are sorted by price, highest first, and LIMIT 3 keeps the top three, so the Pen drops out. The Bag has a NULL stock; a condition such as stock < 10 would not match it, because NULL < 10 is unknown.",
+      explanation:
+        "Four products match (two electronics, plus the two cheap stationery items). They are sorted by price, highest first, and LIMIT 3 keeps the top three, so the Pen drops out. The Bag has a NULL stock; a condition such as stock < 10 would not match it, because NULL < 10 is unknown.",
       columns: ["name", "price"],
-      rows: [["Keyboard", 899], ["Mouse", 499], ["Notebook", 45]],
+      rows: [
+        ["Keyboard", 899],
+        ["Mouse", 499],
+        ["Notebook", 45],
+      ],
     },
     interview: [
-      { q: "What is the difference between WHERE and HAVING?", a: "WHERE filters individual rows before grouping and cannot use aggregates. HAVING filters whole groups after GROUP BY and can use aggregates such as COUNT(*) > 5." },
-      { q: "Why does WHERE x = NULL return nothing?", a: "Any comparison with NULL is unknown, and WHERE keeps only rows where the condition is true. Use x IS NULL." },
-      { q: "What is the difference between COUNT(*) and COUNT(column)?", a: "COUNT(*) counts all rows. COUNT(column) counts only the rows where that column is not NULL." },
+      {
+        q: "What is the difference between WHERE and HAVING?",
+        a: "WHERE filters individual rows before grouping and cannot use aggregates. HAVING filters whole groups after GROUP BY and can use aggregates such as COUNT(*) > 5.",
+      },
+      {
+        q: "Why does WHERE x = NULL return nothing?",
+        a: "Any comparison with NULL is unknown, and WHERE keeps only rows where the condition is true. Use x IS NULL.",
+      },
+      {
+        q: "What is the difference between COUNT(*) and COUNT(column)?",
+        a: "COUNT(*) counts all rows. COUNT(column) counts only the rows where that column is not NULL.",
+      },
     ],
     quiz: [
-      { id: "s1", question: "A table has 10 rows and 3 of them have a NULL salary. What does SELECT COUNT(salary) return?", options: ["10", "7", "3", "0"], answer: 1, why: "COUNT(column) ignores NULLs, so it counts the 7 rows that have a salary. COUNT(*) would return 10." },
-      { id: "s2", question: "Which query finds products with no stock figure recorded?", options: ["WHERE stock = NULL", "WHERE stock = 0", "WHERE stock IS NULL", "WHERE stock == NULL"], answer: 2, why: "Only IS NULL tests for a missing value. = NULL is always unknown." },
-      { id: "s3", question: "Which clause is evaluated first?", options: ["SELECT", "ORDER BY", "FROM", "WHERE"], answer: 2, why: "The database first decides which rows to read (FROM and joins), then filters (WHERE), and only later computes SELECT expressions." },
-      { id: "s4", question: "What does SELECT * FROM t WHERE a = 1 OR b = 2 AND c = 3 mean?", options: ["(a = 1 OR b = 2) AND c = 3", "a = 1 OR (b = 2 AND c = 3)", "a = 1 AND b = 2 AND c = 3", "It is a syntax error"], answer: 1, why: "AND binds tighter than OR, so the AND pair is grouped first. Use parentheses to say what you mean." },
+      {
+        id: "s1",
+        question:
+          "A table has 10 rows and 3 of them have a NULL salary. What does SELECT COUNT(salary) return?",
+        options: ["10", "7", "3", "0"],
+        answer: 1,
+        why: "COUNT(column) ignores NULLs, so it counts the 7 rows that have a salary. COUNT(*) would return 10.",
+      },
+      {
+        id: "s2",
+        question: "Which query finds products with no stock figure recorded?",
+        options: [
+          "WHERE stock = NULL",
+          "WHERE stock = 0",
+          "WHERE stock IS NULL",
+          "WHERE stock == NULL",
+        ],
+        answer: 2,
+        why: "Only IS NULL tests for a missing value. = NULL is always unknown.",
+      },
+      {
+        id: "s3",
+        question: "Which clause is evaluated first?",
+        options: ["SELECT", "ORDER BY", "FROM", "WHERE"],
+        answer: 2,
+        why: "The database first decides which rows to read (FROM and joins), then filters (WHERE), and only later computes SELECT expressions.",
+      },
+      {
+        id: "s4",
+        question: "What does SELECT * FROM t WHERE a = 1 OR b = 2 AND c = 3 mean?",
+        options: [
+          "(a = 1 OR b = 2) AND c = 3",
+          "a = 1 OR (b = 2 AND c = 3)",
+          "a = 1 AND b = 2 AND c = 3",
+          "It is a syntax error",
+        ],
+        answer: 1,
+        why: "AND binds tighter than OR, so the AND pair is grouped first. Use parentheses to say what you mean.",
+      },
     ],
     related: ["joins", "group-by-window", "keys-constraints"],
   },
@@ -208,7 +370,8 @@ LIMIT 3;`,
     id: "joins",
     name: "Joins",
     group: "SQL",
-    summary: "Combining rows from several tables: inner, left, right, full, self and cross joins, and what each does to rows that have no match.",
+    summary:
+      "Combining rows from several tables: inner, left, right, full, self and cross joins, and what each does to rows that have no match.",
     minutes: 14,
     sections: [
       {
@@ -231,7 +394,7 @@ LIMIT 3;`,
     key_points: [
       "INNER keeps matches only; LEFT keeps every left row and fills gaps with NULL.",
       "A WHERE filter on the right table of a LEFT JOIN turns it into an inner join; use ON instead.",
-      "Find \"no match\" with LEFT JOIN ... WHERE right.key IS NULL, or NOT EXISTS.",
+      'Find "no match" with LEFT JOIN ... WHERE right.key IS NULL, or NOT EXISTS.',
       "A join on a non-unique column multiplies rows.",
       "A self join needs two different aliases.",
     ],
@@ -246,20 +409,66 @@ FROM customer c
 LEFT JOIN orders o ON o.customer_id = c.id
 GROUP BY c.id
 ORDER BY c.name;`,
-      explanation: "Meena never ordered. An inner join would drop her; the LEFT JOIN keeps her row with NULL order columns, COUNT(o.id) counts 0 because it skips NULLs, and COALESCE turns the NULL total into 0.",
+      explanation:
+        "Meena never ordered. An inner join would drop her; the LEFT JOIN keeps her row with NULL order columns, COUNT(o.id) counts 0 because it skips NULLs, and COALESCE turns the NULL total into 0.",
       columns: ["name", "orders", "total"],
-      rows: [["Asha", 2, 350], ["Meena", 0, 0], ["Ravi", 1, 75]],
+      rows: [
+        ["Asha", 2, 350],
+        ["Meena", 0, 0],
+        ["Ravi", 1, 75],
+      ],
     },
     interview: [
-      { q: "What is the difference between INNER JOIN and LEFT JOIN?", a: "INNER JOIN returns only rows that have a match on both sides. LEFT JOIN returns every row of the left table, with NULLs in the right-hand columns where there is no match." },
-      { q: "How would you find customers who have never placed an order?", a: "LEFT JOIN orders and keep rows where the order key IS NULL, or use WHERE NOT EXISTS (SELECT 1 FROM orders WHERE customer_id = customer.id). Avoid NOT IN if the subquery can return NULL." },
-      { q: "Why can a join return more rows than either table?", a: "If the join key is not unique on one side, each row matches several rows on the other, so rows are multiplied. A cross join does this to the extreme." },
+      {
+        q: "What is the difference between INNER JOIN and LEFT JOIN?",
+        a: "INNER JOIN returns only rows that have a match on both sides. LEFT JOIN returns every row of the left table, with NULLs in the right-hand columns where there is no match.",
+      },
+      {
+        q: "How would you find customers who have never placed an order?",
+        a: "LEFT JOIN orders and keep rows where the order key IS NULL, or use WHERE NOT EXISTS (SELECT 1 FROM orders WHERE customer_id = customer.id). Avoid NOT IN if the subquery can return NULL.",
+      },
+      {
+        q: "Why can a join return more rows than either table?",
+        a: "If the join key is not unique on one side, each row matches several rows on the other, so rows are multiplied. A cross join does this to the extreme.",
+      },
     ],
     quiz: [
-      { id: "j1", question: "Table A has 3 rows, table B has 4. A CROSS JOIN returns how many rows?", options: ["3", "4", "7", "12"], answer: 3, why: "A cross join pairs every row of A with every row of B: 3 × 4 = 12." },
-      { id: "j2", question: "You LEFT JOIN orders to customers and add WHERE orders.status = 'paid'. What happens to customers with no orders?", options: ["They are kept with NULLs", "They disappear", "They are kept with status 'paid'", "The query fails"], answer: 1, why: "Their right-hand status is NULL, and NULL = 'paid' is unknown, so WHERE removes them. Put the condition in ON to keep them." },
-      { id: "j3", question: "Which join returns rows from both tables even when there is no match on either side?", options: ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"], answer: 3, why: "FULL OUTER JOIN keeps unmatched rows from both tables." },
-      { id: "j4", question: "To list each employee next to their manager, where both are in the employee table, you use a...", options: ["Cross join", "Self join with two aliases", "Union", "Subquery in GROUP BY"], answer: 1, why: "Join the table to itself: employee e JOIN employee m ON e.manager_id = m.id." },
+      {
+        id: "j1",
+        question: "Table A has 3 rows, table B has 4. A CROSS JOIN returns how many rows?",
+        options: ["3", "4", "7", "12"],
+        answer: 3,
+        why: "A cross join pairs every row of A with every row of B: 3 × 4 = 12.",
+      },
+      {
+        id: "j2",
+        question:
+          "You LEFT JOIN orders to customers and add WHERE orders.status = 'paid'. What happens to customers with no orders?",
+        options: [
+          "They are kept with NULLs",
+          "They disappear",
+          "They are kept with status 'paid'",
+          "The query fails",
+        ],
+        answer: 1,
+        why: "Their right-hand status is NULL, and NULL = 'paid' is unknown, so WHERE removes them. Put the condition in ON to keep them.",
+      },
+      {
+        id: "j3",
+        question:
+          "Which join returns rows from both tables even when there is no match on either side?",
+        options: ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"],
+        answer: 3,
+        why: "FULL OUTER JOIN keeps unmatched rows from both tables.",
+      },
+      {
+        id: "j4",
+        question:
+          "To list each employee next to their manager, where both are in the employee table, you use a...",
+        options: ["Cross join", "Self join with two aliases", "Union", "Subquery in GROUP BY"],
+        answer: 1,
+        why: "Join the table to itself: employee e JOIN employee m ON e.manager_id = m.id.",
+      },
     ],
     related: ["sql-basics", "group-by-window", "subqueries-cte"],
   },
@@ -267,7 +476,8 @@ ORDER BY c.name;`,
     id: "group-by-window",
     name: "GROUP BY, aggregates and window functions",
     group: "SQL",
-    summary: "Collapse rows into groups with aggregates, or keep every row and compute alongside it with window functions.",
+    summary:
+      "Collapse rows into groups with aggregates, or keep every row and compute alongside it with window functions.",
     minutes: 14,
     sections: [
       {
@@ -308,20 +518,70 @@ INSERT INTO emp VALUES
        SUM(salary) OVER (PARTITION BY dept) AS dept_total
 FROM emp
 ORDER BY dept, rank_in_dept, name;`,
-      explanation: "Every employee stays in the output (a GROUP BY would have collapsed them). Divya and Ravi tie at 100, so both are rank 2 in Engineering. The department total is repeated on each row of its partition.",
+      explanation:
+        "Every employee stays in the output (a GROUP BY would have collapsed them). Divya and Ravi tie at 100, so both are rank 2 in Engineering. The department total is repeated on each row of its partition.",
       columns: ["name", "dept", "salary", "rank_in_dept", "dept_total"],
-      rows: [["Asha", "Eng", 120, 1, 320], ["Divya", "Eng", 100, 2, 320], ["Ravi", "Eng", 100, 2, 320], ["Karan", "Ops", 95, 1, 185], ["Meena", "Ops", 90, 2, 185]],
+      rows: [
+        ["Asha", "Eng", 120, 1, 320],
+        ["Divya", "Eng", 100, 2, 320],
+        ["Ravi", "Eng", 100, 2, 320],
+        ["Karan", "Ops", 95, 1, 185],
+        ["Meena", "Ops", 90, 2, 185],
+      ],
     },
     interview: [
-      { q: "What is the difference between an aggregate used with GROUP BY and a window function?", a: "GROUP BY collapses each group to a single row. A window function computes over a window of related rows but returns a value for every input row, so you can show detail and summary together." },
-      { q: "How do you get the top 2 earners in each department?", a: "Rank with ROW_NUMBER() or DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) in a CTE or subquery, then filter WHERE rank <= 2 in the outer query." },
-      { q: "What is the difference between RANK and DENSE_RANK?", a: "Both give tied rows the same number. RANK then skips numbers (1, 2, 2, 4); DENSE_RANK does not (1, 2, 2, 3)." },
+      {
+        q: "What is the difference between an aggregate used with GROUP BY and a window function?",
+        a: "GROUP BY collapses each group to a single row. A window function computes over a window of related rows but returns a value for every input row, so you can show detail and summary together.",
+      },
+      {
+        q: "How do you get the top 2 earners in each department?",
+        a: "Rank with ROW_NUMBER() or DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary DESC) in a CTE or subquery, then filter WHERE rank <= 2 in the outer query.",
+      },
+      {
+        q: "What is the difference between RANK and DENSE_RANK?",
+        a: "Both give tied rows the same number. RANK then skips numbers (1, 2, 2, 4); DENSE_RANK does not (1, 2, 2, 3).",
+      },
     ],
     quiz: [
-      { id: "g1", question: "SELECT dept, name, COUNT(*) FROM emp GROUP BY dept fails in strict SQL. Why?", options: ["COUNT cannot be used with GROUP BY", "name is neither grouped nor aggregated", "dept must be quoted", "GROUP BY needs ORDER BY"], answer: 1, why: "Each group has many names, so the database cannot pick one. Group by it or aggregate it." },
-      { id: "g2", question: "Scores 100, 90, 90, 80 ranked with RANK() give...", options: ["1, 2, 3, 4", "1, 2, 2, 3", "1, 2, 2, 4", "1, 1, 2, 3"], answer: 2, why: "RANK gives ties the same rank and then skips, so the next rank is 4. DENSE_RANK would give 1, 2, 2, 3." },
-      { id: "g3", question: "Which filters groups after aggregation?", options: ["WHERE", "HAVING", "ORDER BY", "LIMIT"], answer: 1, why: "HAVING runs after GROUP BY and can use aggregates. WHERE runs before grouping." },
-      { id: "g4", question: "Which expression gives a running total of amount by date?", options: ["SUM(amount) GROUP BY date", "SUM(amount) OVER (ORDER BY date)", "COUNT(amount) OVER (PARTITION BY date)", "MAX(amount) OVER ()"], answer: 1, why: "A SUM window ordered by date accumulates as the window grows row by row." },
+      {
+        id: "g1",
+        question: "SELECT dept, name, COUNT(*) FROM emp GROUP BY dept fails in strict SQL. Why?",
+        options: [
+          "COUNT cannot be used with GROUP BY",
+          "name is neither grouped nor aggregated",
+          "dept must be quoted",
+          "GROUP BY needs ORDER BY",
+        ],
+        answer: 1,
+        why: "Each group has many names, so the database cannot pick one. Group by it or aggregate it.",
+      },
+      {
+        id: "g2",
+        question: "Scores 100, 90, 90, 80 ranked with RANK() give...",
+        options: ["1, 2, 3, 4", "1, 2, 2, 3", "1, 2, 2, 4", "1, 1, 2, 3"],
+        answer: 2,
+        why: "RANK gives ties the same rank and then skips, so the next rank is 4. DENSE_RANK would give 1, 2, 2, 3.",
+      },
+      {
+        id: "g3",
+        question: "Which filters groups after aggregation?",
+        options: ["WHERE", "HAVING", "ORDER BY", "LIMIT"],
+        answer: 1,
+        why: "HAVING runs after GROUP BY and can use aggregates. WHERE runs before grouping.",
+      },
+      {
+        id: "g4",
+        question: "Which expression gives a running total of amount by date?",
+        options: [
+          "SUM(amount) GROUP BY date",
+          "SUM(amount) OVER (ORDER BY date)",
+          "COUNT(amount) OVER (PARTITION BY date)",
+          "MAX(amount) OVER ()",
+        ],
+        answer: 1,
+        why: "A SUM window ordered by date accumulates as the window grows row by row.",
+      },
     ],
     related: ["joins", "subqueries-cte", "sql-basics"],
   },
@@ -329,7 +589,8 @@ ORDER BY dept, rank_in_dept, name;`,
     id: "subqueries-cte",
     name: "Subqueries and CTEs",
     group: "SQL",
-    summary: "Queries inside queries: scalar, row-set and correlated subqueries, EXISTS, and WITH clauses that make long queries readable.",
+    summary:
+      "Queries inside queries: scalar, row-set and correlated subqueries, EXISTS, and WITH clauses that make long queries readable.",
     minutes: 11,
     sections: [
       {
@@ -374,20 +635,72 @@ FROM emp e
 JOIN dept_avg d ON d.dept = e.dept
 WHERE e.salary > d.avg_salary
 ORDER BY e.name;`,
-      explanation: "The CTE computes each department's average once, then the main query compares every employee with it. Engineering averages 106.7, so only Asha (120) is above it; Operations averages 92.5, so only Karan (95) is.",
+      explanation:
+        "The CTE computes each department's average once, then the main query compares every employee with it. Engineering averages 106.7, so only Asha (120) is above it; Operations averages 92.5, so only Karan (95) is.",
       columns: ["name", "dept", "salary", "dept_avg"],
-      rows: [["Asha", "Eng", 120, 106.7], ["Karan", "Ops", 95, 92.5]],
+      rows: [
+        ["Asha", "Eng", 120, 106.7],
+        ["Karan", "Ops", 95, 92.5],
+      ],
     },
     interview: [
-      { q: "What is a correlated subquery?", a: "A subquery that references columns of the outer query, so its result depends on the current outer row. Conceptually it runs once per outer row." },
-      { q: "Why prefer NOT EXISTS to NOT IN?", a: "If the NOT IN list contains a NULL, every comparison is unknown and the query returns no rows. NOT EXISTS does not have that problem." },
-      { q: "What is a CTE and when would you use one?", a: "A named temporary result defined with WITH at the start of a statement. Use it to split a complex query into readable steps, to reuse a result, or (recursively) to walk a hierarchy." },
+      {
+        q: "What is a correlated subquery?",
+        a: "A subquery that references columns of the outer query, so its result depends on the current outer row. Conceptually it runs once per outer row.",
+      },
+      {
+        q: "Why prefer NOT EXISTS to NOT IN?",
+        a: "If the NOT IN list contains a NULL, every comparison is unknown and the query returns no rows. NOT EXISTS does not have that problem.",
+      },
+      {
+        q: "What is a CTE and when would you use one?",
+        a: "A named temporary result defined with WITH at the start of a statement. Use it to split a complex query into readable steps, to reuse a result, or (recursively) to walk a hierarchy.",
+      },
     ],
     quiz: [
-      { id: "c1", question: "Which subquery can follow the operator > in WHERE salary > (...)?", options: ["One that returns a single value", "One that returns many rows", "Only a correlated one", "Any query at all"], answer: 0, why: "A comparison operator needs one value. A multi-row result needs IN, ANY or ALL." },
-      { id: "c2", question: "NOT IN (SELECT x FROM t) returns no rows at all when...", options: ["t is empty", "The subquery returns a NULL", "x is indexed", "t has duplicates"], answer: 1, why: "Comparing against a NULL gives unknown for every row. NOT EXISTS avoids this." },
-      { id: "c3", question: "A recursive CTE is made of...", options: ["Two unrelated queries", "An anchor query and a recursive step", "A loop and a counter", "A trigger and a view"], answer: 1, why: "The anchor produces the first rows; the recursive part refers to the CTE itself and keeps adding rows until none are new." },
-      { id: "c4", question: "Which is true of a correlated subquery?", options: ["It cannot use the outer table", "It is evaluated once, before the outer query", "It depends on the current outer row", "It must use GROUP BY"], answer: 2, why: "It refers to the outer row, so its result can differ for each outer row." },
+      {
+        id: "c1",
+        question: "Which subquery can follow the operator > in WHERE salary > (...)?",
+        options: [
+          "One that returns a single value",
+          "One that returns many rows",
+          "Only a correlated one",
+          "Any query at all",
+        ],
+        answer: 0,
+        why: "A comparison operator needs one value. A multi-row result needs IN, ANY or ALL.",
+      },
+      {
+        id: "c2",
+        question: "NOT IN (SELECT x FROM t) returns no rows at all when...",
+        options: ["t is empty", "The subquery returns a NULL", "x is indexed", "t has duplicates"],
+        answer: 1,
+        why: "Comparing against a NULL gives unknown for every row. NOT EXISTS avoids this.",
+      },
+      {
+        id: "c3",
+        question: "A recursive CTE is made of...",
+        options: [
+          "Two unrelated queries",
+          "An anchor query and a recursive step",
+          "A loop and a counter",
+          "A trigger and a view",
+        ],
+        answer: 1,
+        why: "The anchor produces the first rows; the recursive part refers to the CTE itself and keeps adding rows until none are new.",
+      },
+      {
+        id: "c4",
+        question: "Which is true of a correlated subquery?",
+        options: [
+          "It cannot use the outer table",
+          "It is evaluated once, before the outer query",
+          "It depends on the current outer row",
+          "It must use GROUP BY",
+        ],
+        answer: 2,
+        why: "It refers to the outer row, so its result can differ for each outer row.",
+      },
     ],
     related: ["joins", "group-by-window", "sql-basics"],
   },

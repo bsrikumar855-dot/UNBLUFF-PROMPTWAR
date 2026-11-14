@@ -7,9 +7,15 @@ describe("role catalogue", () => {
   const roles = registry.list();
 
   it("offers every target role the product claims to cover", () => {
-    expect(roles.map((r) => r.id).sort()).toEqual(
-      ["backend_developer", "data_analyst", "devops_engineer", "frontend_developer", "fullstack_developer", "ml_engineer", "software_engineer"],
-    );
+    expect(roles.map((r) => r.id).sort()).toEqual([
+      "backend_developer",
+      "data_analyst",
+      "devops_engineer",
+      "frontend_developer",
+      "fullstack_developer",
+      "ml_engineer",
+      "software_engineer",
+    ]);
   });
 
   it("maps every role to job categories", () => {

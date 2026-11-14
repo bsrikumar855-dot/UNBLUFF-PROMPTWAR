@@ -27,7 +27,11 @@ export const careerMatcherAgent: Agent<CareerMatcherInput, CareerMatcherOutput> 
   async run({ role, states }, ctx) {
     const ranking: RoleRank[] = ctx.roles
       .list()
-      .map((s) => ({ role_id: s.id, name: s.name, match_percent: roleMatch(ctx.roles.get(s.id)!, states, ctx.graph) }))
+      .map((s) => ({
+        role_id: s.id,
+        name: s.name,
+        match_percent: roleMatch(ctx.roles.get(s.id)!, states, ctx.graph),
+      }))
       .sort((a, b) => b.match_percent - a.match_percent || a.role_id.localeCompare(b.role_id));
     const analysis = computeGaps(role, states, ctx.graph);
     const match = ranking.find((r) => r.role_id === role.id)!.match_percent;

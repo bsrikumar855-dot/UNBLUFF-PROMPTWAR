@@ -10,7 +10,11 @@ const noStore = { "Cache-Control": "no-store" };
 
 // Sizes are enforced again, in bytes, by the service; these only stop absurd bodies early.
 const Latex = z.string().max(100_000, "The résumé is too large.");
-const Role = z.string().regex(/^[a-z0-9_-]{1,60}$/i, "invalid role id").nullable().optional();
+const Role = z
+  .string()
+  .regex(/^[a-z0-9_-]{1,60}$/i, "invalid role id")
+  .nullable()
+  .optional();
 const Jd = z.string().max(MAX_JD_CHARS, "The job description is too long.").nullable().optional();
 const SaveBody = z.strictObject({ latex: Latex, role_id: Role, job_description: Jd });
 const ImportBody = z.strictObject({ text: z.string().max(40_000, "The text is too long.") });
@@ -26,7 +30,10 @@ function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
  * The résumé builder. Every route needs a verified student and the owner is always the token's uid. The ATS score is a
  * heuristic computed here from the LaTeX text; compiling runs TeX in an isolated container, never in this process.
  */
-export function resumeRouter(resume: ResumeService, limiters: { read: RequestHandler; write: RequestHandler; compile: RequestHandler }): Router {
+export function resumeRouter(
+  resume: ResumeService,
+  limiters: { read: RequestHandler; write: RequestHandler; compile: RequestHandler },
+): Router {
   const router = Router();
   router.get("/resume", limiters.read, async (_req, res) => {
     res.set(noStore).json(await resume.get(uidOf(res)));

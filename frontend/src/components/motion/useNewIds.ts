@@ -7,8 +7,16 @@ import { useRef } from "react";
  * (a conversation id): when it changes, the new list's current items are old again. `ready` is false while the list is
  * still loading.
  */
-export function useNewIds(ids: string[], scope: string, ready = true): (id: string) => boolean {
+export function useNewIds(
+  ids: string[],
+  scope: string,
+  ready = true
+): (id: string) => boolean {
   const state = useRef<{ scope: string; seen: Set<string> } | null>(null);
-  if (ready && (state.current === null || state.current.scope !== scope)) state.current = { scope, seen: new Set(ids) };
-  return (id: string) => state.current !== null && state.current.scope === scope && !state.current.seen.has(id);
+  if (ready && (state.current === null || state.current.scope !== scope))
+    state.current = { scope, seen: new Set(ids) };
+  return (id: string) =>
+    state.current !== null &&
+    state.current.scope === scope &&
+    !state.current.seen.has(id);
 }

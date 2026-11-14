@@ -98,7 +98,12 @@ export function CardRadioGroup<T extends string>({
                 {selected && <Check size={12} strokeWidth={3} />}
               </span>
             </div>
-            <p className={cn("mt-2 text-sm leading-relaxed text-ink-secondary", option.icon && "sm:pl-[3.25rem]")}>
+            <p
+              className={cn(
+                "mt-2 text-sm leading-relaxed text-ink-secondary",
+                option.icon && "sm:pl-[3.25rem]"
+              )}
+            >
               {option.description}
             </p>
           </button>

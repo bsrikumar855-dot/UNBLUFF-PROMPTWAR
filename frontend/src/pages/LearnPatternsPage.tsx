@@ -67,7 +67,10 @@ const LearnPatternsPage: React.FC = () => {
           )}
           {!progress.signedIn && (
             <p className={cn(TILE, "px-4 py-3 text-sm text-ink-secondary")}>
-              <Link to={routes.login} className="text-redline underline underline-offset-4">
+              <Link
+                to={routes.login}
+                className="text-redline underline underline-offset-4"
+              >
                 Sign in
               </Link>{" "}
               to mark patterns and problems as done. These marks are self-reported.
@@ -93,7 +96,11 @@ const LearnPatternsPage: React.FC = () => {
                       title={p.name}
                       to={routes.learnPattern(p.id)}
                       badge={<Pill tone={LEVEL_TONE[p.level]}>{LEVEL[p.level]}</Pill>}
-                      status={done[p.id]?.done ? <Pill tone="verified">Marked learned</Pill> : null}
+                      status={
+                        done[p.id]?.done ? (
+                          <Pill tone="verified">Marked learned</Pill>
+                        ) : null
+                      }
                       summary={p.summary}
                       chips={p.cues.slice(0, 4).map((c) => `“${c}”`)}
                       chipsLabel="Cues"
@@ -105,7 +112,11 @@ const LearnPatternsPage: React.FC = () => {
                           </span>
                           {progress.data && (
                             <span className="inline-flex items-center gap-1.5">
-                              <CheckCircle2 size={14} aria-hidden="true" className="text-redline" />
+                              <CheckCircle2
+                                size={14}
+                                aria-hidden="true"
+                                className="text-redline"
+                              />
                               {done[p.id]?.problems_done.length ?? 0} marked solved
                             </span>
                           )}

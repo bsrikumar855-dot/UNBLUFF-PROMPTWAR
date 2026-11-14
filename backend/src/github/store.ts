@@ -122,7 +122,9 @@ export class MemoryGithubStore implements GithubStore {
     return r ? structuredClone(r) : null;
   }
   async pruneStates(uid: string, now: string, keep: number) {
-    const mine = [...this.states.entries()].filter(([, s]) => s.owner_uid === uid).sort((a, b) => b[1].created_at.localeCompare(a[1].created_at));
+    const mine = [...this.states.entries()]
+      .filter(([, s]) => s.owner_uid === uid)
+      .sort((a, b) => b[1].created_at.localeCompare(a[1].created_at));
     let n = 0;
     mine.forEach(([hash, s], i) => {
       if (i >= keep || s.expires_at <= now) {
@@ -233,8 +235,16 @@ export class FirestoreGithubStore implements GithubStore {
   }
   async pruneStates(uid: string, now: string, keep: number) {
     const snap = await this.states.where("owner_uid", "==", uid).get();
-    const mine = snap.docs.filter((d) => (d.data() as OAuthStateRecord).owner_uid === uid).sort((a, b) => (b.data() as OAuthStateRecord).created_at.localeCompare((a.data() as OAuthStateRecord).created_at));
-    const drop = mine.filter((d, i) => i >= keep || (d.data() as OAuthStateRecord).expires_at <= now);
+    const mine = snap.docs
+      .filter((d) => (d.data() as OAuthStateRecord).owner_uid === uid)
+      .sort((a, b) =>
+        (b.data() as OAuthStateRecord).created_at.localeCompare(
+          (a.data() as OAuthStateRecord).created_at,
+        ),
+      );
+    const drop = mine.filter(
+      (d, i) => i >= keep || (d.data() as OAuthStateRecord).expires_at <= now,
+    );
     if (drop.length === 0) return 0;
     const batch = this.db.batch();
     for (const d of drop) batch.delete(d.ref);

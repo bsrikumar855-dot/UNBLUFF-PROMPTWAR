@@ -27,7 +27,13 @@ vi.mock("@/api/endpoints", () => ({
 }));
 const mocked = vi.mocked(api);
 
-const EMPTY: AccountProfile = { display_name: null, college: null, graduation_year: null, target_role_id: null, updated_at: null };
+const EMPTY: AccountProfile = {
+  display_name: null,
+  college: null,
+  graduation_year: null,
+  target_role_id: null,
+  updated_at: null,
+};
 
 /** A controllable fake: `emit` changes the signed-in user like Firebase's onAuthStateChanged does. */
 function fakeAuth(initial: AuthUser | null) {
@@ -58,7 +64,9 @@ const alice: AuthUser = { uid: "alice", email: "alice@example.test" };
 
 const Where: React.FC = () => {
   const loc = useLocation();
-  return <p data-testid="where">{`${loc.pathname}|${JSON.stringify(loc.state ?? null)}`}</p>;
+  return (
+    <p data-testid="where">{`${loc.pathname}|${JSON.stringify(loc.state ?? null)}`}</p>
+  );
 };
 
 function renderWith(client: AuthClient, ui: React.ReactNode, path = "/settings") {
@@ -86,36 +94,68 @@ beforeEach(() => {
   clearCachedAccountProfile();
   window.localStorage.clear();
   mocked.getAccountProfile.mockResolvedValue({ profile: EMPTY });
-  mocked.getRoles.mockResolvedValue({ roles: [{ id: "frontend_developer", name: "Frontend Developer", description: "d", skill_count: 1 }] });
+  mocked.getRoles.mockResolvedValue({
+    roles: [
+      {
+        id: "frontend_developer",
+        name: "Frontend Developer",
+        description: "d",
+        skill_count: 1,
+      },
+    ],
+  });
 });
 
 describe("profile", () => {
   it("saves trimmed values (blank → null) and shows the name in the account menu", async () => {
     const { client } = fakeAuth(alice);
-    mocked.saveAccountProfile.mockImplementation(async (p) => ({ profile: { ...p, updated_at: "2026-10-22T10:00:00.000Z" } }));
-    renderWith(client, <><ProfilePanel /><AccountMenu /></>);
-    fireEvent.change(await screen.findByLabelText("Display name"), { target: { value: "  Asha Rao " } });
+    mocked.saveAccountProfile.mockImplementation(async (p) => ({
+      profile: { ...p, updated_at: "2026-10-22T10:00:00.000Z" },
+    }));
+    renderWith(
+      client,
+      <>
+        <ProfilePanel />
+        <AccountMenu />
+      </>
+    );
+    fireEvent.change(await screen.findByLabelText("Display name"), {
+      target: { value: "  Asha Rao " },
+    });
     fireEvent.change(screen.getByLabelText("College"), { target: { value: "   " } });
-    fireEvent.change(screen.getByLabelText("Graduation year"), { target: { value: "2027" } });
+    fireEvent.change(screen.getByLabelText("Graduation year"), {
+      target: { value: "2027" },
+    });
     await screen.findByRole("option", { name: "Frontend Developer" });
-    fireEvent.change(screen.getByLabelText("Target role"), { target: { value: "frontend_developer" } });
+    fireEvent.change(screen.getByLabelText("Target role"), {
+      target: { value: "frontend_developer" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
     expect(await screen.findByRole("status")).toHaveTextContent("Saved.");
-    expect(mocked.saveAccountProfile).toHaveBeenCalledWith({ display_name: "Asha Rao", college: null, graduation_year: 2027, target_role_id: "frontend_developer" });
+    expect(mocked.saveAccountProfile).toHaveBeenCalledWith({
+      display_name: "Asha Rao",
+      college: null,
+      graduation_year: 2027,
+      target_role_id: "frontend_developer",
+    });
     expect(await screen.findByText("Asha Rao")).toBeInTheDocument();
   });
 
   it("refuses an impossible graduation year before calling the server", async () => {
     const { client } = fakeAuth(alice);
     renderWith(client, <ProfilePanel />);
-    fireEvent.change(await screen.findByLabelText("Graduation year"), { target: { value: "1800" } });
+    fireEvent.change(await screen.findByLabelText("Graduation year"), {
+      target: { value: "1800" },
+    });
     expect(screen.getByText("Enter a year between 1990 and 2100.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save profile" })).toBeDisabled();
     expect(mocked.saveAccountProfile).not.toHaveBeenCalled();
   });
 
   it("never shows one account's cached name to the next account", async () => {
-    mocked.getAccountProfile.mockResolvedValueOnce({ profile: { ...EMPTY, display_name: "Asha Rao" } }).mockResolvedValueOnce({ profile: EMPTY });
+    mocked.getAccountProfile
+      .mockResolvedValueOnce({ profile: { ...EMPTY, display_name: "Asha Rao" } })
+      .mockResolvedValueOnce({ profile: EMPTY });
     const { client, emit } = fakeAuth(alice);
     renderWith(client, <AccountMenu />);
     expect(await screen.findByText("Asha Rao")).toBeInTheDocument();
@@ -129,28 +169,50 @@ describe("security", () => {
   it("checks the new password locally, then changes it with the current one", async () => {
     const { client } = fakeAuth(alice);
     renderWith(client, <SecurityPanel />);
-    fireEvent.change(await screen.findByLabelText("Current password"), { target: { value: "old-password" } });
-    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "short" } });
+    fireEvent.change(await screen.findByLabelText("Current password"), {
+      target: { value: "old-password" },
+    });
+    fireEvent.change(screen.getByLabelText("New password"), {
+      target: { value: "short" },
+    });
     expect(screen.getByText(/at least 8 characters/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "a-new-password" } });
-    fireEvent.change(screen.getByLabelText("Confirm new password"), { target: { value: "a-new-passwordX" } });
+    fireEvent.change(screen.getByLabelText("New password"), {
+      target: { value: "a-new-password" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirm new password"), {
+      target: { value: "a-new-passwordX" },
+    });
     expect(screen.getByText("The new passwords don't match.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Change password" })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText("Confirm new password"), { target: { value: "a-new-password" } });
+    fireEvent.change(screen.getByLabelText("Confirm new password"), {
+      target: { value: "a-new-password" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Change password" }));
-    expect(await screen.findByRole("status")).toHaveTextContent("Your password is changed.");
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Your password is changed."
+    );
     expect(client.changePassword).toHaveBeenCalledWith("old-password", "a-new-password");
   });
 
   it("shows the friendly message when the current password is wrong", async () => {
     const { client } = fakeAuth(alice);
-    vi.mocked(client.changePassword).mockRejectedValue(new AuthError("Incorrect email or password.", "auth/invalid-credential"));
+    vi.mocked(client.changePassword).mockRejectedValue(
+      new AuthError("Incorrect email or password.", "auth/invalid-credential")
+    );
     renderWith(client, <SecurityPanel />);
-    fireEvent.change(await screen.findByLabelText("Current password"), { target: { value: "wrong-one" } });
-    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "a-new-password" } });
-    fireEvent.change(screen.getByLabelText("Confirm new password"), { target: { value: "a-new-password" } });
+    fireEvent.change(await screen.findByLabelText("Current password"), {
+      target: { value: "wrong-one" },
+    });
+    fireEvent.change(screen.getByLabelText("New password"), {
+      target: { value: "a-new-password" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirm new password"), {
+      target: { value: "a-new-password" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Change password" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect email or password.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Incorrect email or password."
+    );
   });
 
   it("emails a reset link to the signed-in address", async () => {
@@ -165,7 +227,9 @@ describe("security", () => {
 describe("delete everything", () => {
   const open = async () => {
     fireEvent.click(await screen.findByRole("button", { name: "Delete everything…" }));
-    fireEvent.change(screen.getByLabelText(/to confirm/), { target: { value: DELETE_PHRASE } });
+    fireEvent.change(screen.getByLabelText(/to confirm/), {
+      target: { value: DELETE_PHRASE },
+    });
     fireEvent.change(screen.getByLabelText("Your password"), { target: { value: "pw" } });
   };
 
@@ -173,7 +237,9 @@ describe("delete everything", () => {
     const { client } = fakeAuth(alice);
     renderWith(client, <DataPanel />);
     fireEvent.click(await screen.findByRole("button", { name: "Delete everything…" }));
-    fireEvent.change(screen.getByLabelText(/to confirm/), { target: { value: "delete my data" } });
+    fireEvent.change(screen.getByLabelText(/to confirm/), {
+      target: { value: "delete my data" },
+    });
     fireEvent.change(screen.getByLabelText("Your password"), { target: { value: "pw" } });
     expect(screen.getByRole("button", { name: "Permanently delete" })).toBeDisabled();
   });
@@ -181,29 +247,39 @@ describe("delete everything", () => {
   it("checks the password first, then deletes the data, then the sign-in account, and clears this browser", async () => {
     const { client } = fakeAuth(alice);
     const order: string[] = [];
-    vi.mocked(client.verifyPassword).mockImplementation(async () => void order.push("verify"));
+    vi.mocked(client.verifyPassword).mockImplementation(
+      async () => void order.push("verify")
+    );
     mocked.deleteAccountData.mockImplementation(async () => {
       order.push("data");
       return { deleted: true, removed: {} };
     });
-    vi.mocked(client.deleteAccount).mockImplementation(async () => void order.push("account"));
+    vi.mocked(client.deleteAccount).mockImplementation(
+      async () => void order.push("account")
+    );
     saveDraft("alice", "answer:s1:CL-001", "assess-L1-question", "half an answer");
     renderWith(client, <DataPanel />);
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Permanently delete" }));
     await waitFor(() => expect(order).toEqual(["verify", "data", "account"]));
     expect(mocked.deleteAccountData).toHaveBeenCalledWith(DELETE_PHRASE);
-    await waitFor(() => expect(loadDraft("alice", "answer:s1:CL-001", "assess-L1-question")).toBeNull());
+    await waitFor(() =>
+      expect(loadDraft("alice", "answer:s1:CL-001", "assess-L1-question")).toBeNull()
+    );
     expect(await screen.findByTestId("where")).toHaveTextContent(/^\/\|null$/);
   });
 
   it("touches nothing when the password is wrong", async () => {
     const { client } = fakeAuth(alice);
-    vi.mocked(client.verifyPassword).mockRejectedValue(new AuthError("Incorrect email or password.", "auth/invalid-credential"));
+    vi.mocked(client.verifyPassword).mockRejectedValue(
+      new AuthError("Incorrect email or password.", "auth/invalid-credential")
+    );
     renderWith(client, <DataPanel />);
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Permanently delete" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Incorrect email or password.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Incorrect email or password."
+    );
     expect(mocked.deleteAccountData).not.toHaveBeenCalled();
     expect(client.deleteAccount).not.toHaveBeenCalled();
   });
@@ -211,11 +287,18 @@ describe("delete everything", () => {
   it("says so plainly if the data went but the sign-in account could not be removed", async () => {
     const { client } = fakeAuth(alice);
     mocked.deleteAccountData.mockResolvedValue({ deleted: true, removed: {} });
-    vi.mocked(client.deleteAccount).mockRejectedValue(new AuthError("For your security, sign out and sign in again, then retry.", "auth/requires-recent-login"));
+    vi.mocked(client.deleteAccount).mockRejectedValue(
+      new AuthError(
+        "For your security, sign out and sign in again, then retry.",
+        "auth/requires-recent-login"
+      )
+    );
     renderWith(client, <DataPanel />);
     await open();
     fireEvent.click(screen.getByRole("button", { name: "Permanently delete" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/Your data is deleted, but the sign-in account could not be removed: For your security/);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Your data is deleted, but the sign-in account could not be removed: For your security/
+    );
   });
 });
 
@@ -232,6 +315,8 @@ describe("signing out", () => {
     renderWith(client, <p>private page</p>);
     await screen.findByText("private page");
     emit(null);
-    expect(await screen.findByTestId("where")).toHaveTextContent('/login|{"from":"/settings"}');
+    expect(await screen.findByTestId("where")).toHaveTextContent(
+      '/login|{"from":"/settings"}'
+    );
   });
 });

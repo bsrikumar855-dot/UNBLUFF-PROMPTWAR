@@ -25,8 +25,12 @@ try {
   const out = resolve(arg("out") ?? "data/code/suites.json");
   const catalogue = arg("catalogue") ? Catalogue.fromPath(resolve(arg("catalogue")!)) : undefined;
   const existing = existsSync(out) ? parseSuiteFile(JSON.parse(readFileSync(out, "utf8"))) : null;
-  const { file, report } = mergeSuites(existing, JSON.parse(readFileSync(resolve(input), "utf8")), { catalogue });
-  console.log(`added ${report.added.length}, updated ${report.updated.length}, unchanged ${report.unchanged.length}`);
+  const { file, report } = mergeSuites(existing, JSON.parse(readFileSync(resolve(input), "utf8")), {
+    catalogue,
+  });
+  console.log(
+    `added ${report.added.length}, updated ${report.updated.length}, unchanged ${report.unchanged.length}`,
+  );
   if (!report.changed) console.log("No changes: the suites file is already up to date.");
   else if (process.argv.includes("--dry-run")) console.log("Dry run: nothing written.");
   else {

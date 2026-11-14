@@ -1,0 +1,9 @@
+# Generated or byte-exact files that must not be reformatted.
+package-lock.json
+dist/
+coverage/
+# Byte-identical to the CONTRACT.md section 4 block (drift test).
+src/types/contract.ts
+# Deploy config is left untouched.
+vercel.json
+*.md

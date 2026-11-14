@@ -16,9 +16,13 @@ export async function evaluateGoals(
   now: Date,
 ): Promise<MemoryRecord[]> {
   const done: MemoryRecord[] = [];
-  const active = goals.filter((g) => g.type === "goal" && g.status === "active" && g.track !== null);
+  const active = goals.filter(
+    (g) => g.type === "goal" && g.status === "active" && g.track !== null,
+  );
   if (active.length === 0) return done;
-  const allStats = active.some((g) => g.track!.kind === "topic_practice") ? await deps.stats.listByOwner(uid, 5000) : [];
+  const allStats = active.some((g) => g.track!.kind === "topic_practice")
+    ? await deps.stats.listByOwner(uid, 5000)
+    : [];
 
   for (const g of active) {
     const t = g.track!;
@@ -30,10 +34,18 @@ export async function evaluateGoals(
       const r = await deps.revisions.get(uid, t.question_id);
       complete = r?.history.some((h) => h.event === "completed" && h.at >= g.created_at) ?? false;
     } else {
-      const count = allStats.filter((s) => s.topics.includes(t.topic)).reduce((n, s) => n + s.events.filter((e) => e.at >= g.created_at).length, 0);
+      const count = allStats
+        .filter((s) => s.topics.includes(t.topic))
+        .reduce((n, s) => n + s.events.filter((e) => e.at >= g.created_at).length, 0);
       complete = count >= t.target;
     }
-    if (complete) done.push({ ...g, status: "completed", completed_by: "verified_activity", updated_at: now.toISOString() });
+    if (complete)
+      done.push({
+        ...g,
+        status: "completed",
+        completed_by: "verified_activity",
+        updated_at: now.toISOString(),
+      });
   }
   return done;
 }

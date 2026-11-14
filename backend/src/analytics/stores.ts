@@ -41,7 +41,10 @@ class MemoryKeyed<T extends { owner_uid: string; question_id: string }> {
     this.rows.delete(key(uid, q));
   }
   async listByOwner(uid: string, limit: number): Promise<T[]> {
-    return [...this.rows.values()].filter((r) => r.owner_uid === uid).slice(0, limit).map((r) => structuredClone(r));
+    return [...this.rows.values()]
+      .filter((r) => r.owner_uid === uid)
+      .slice(0, limit)
+      .map((r) => structuredClone(r));
   }
 }
 
@@ -80,7 +83,10 @@ export class FirestoreStatsStore extends FirestoreKeyed<StatsRecord> implements 
     super(name, db);
   }
 }
-export class FirestoreRevisionStore extends FirestoreKeyed<RevisionRecord> implements RevisionStore {
+export class FirestoreRevisionStore
+  extends FirestoreKeyed<RevisionRecord>
+  implements RevisionStore
+{
   constructor(name = "unbluff_dsa_revision", db: Firestore = defaultDb()) {
     super(name, db);
   }

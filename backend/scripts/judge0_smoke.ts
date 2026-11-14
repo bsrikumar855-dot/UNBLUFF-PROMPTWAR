@@ -14,7 +14,13 @@
  */
 import "dotenv/config";
 import { Judge0Provider } from "../src/code/judge0.js";
-import { ALL_LANGUAGES, parseExpectedIds, redactor, runSmoke, smokeConfigProblems } from "../src/code/smoke.js";
+import {
+  ALL_LANGUAGES,
+  parseExpectedIds,
+  redactor,
+  runSmoke,
+  smokeConfigProblems,
+} from "../src/code/smoke.js";
 import type { CodeLanguageId } from "../src/types.js";
 
 function flag(name: string): string | undefined {
@@ -31,11 +37,17 @@ async function main(): Promise<number> {
   } catch (err) {
     problems.push((err as Error).message);
   }
-  const requested = flag("languages")?.split(",").map((s) => s.trim()).filter(Boolean);
-  if (requested?.some((l) => !ALL_LANGUAGES.includes(l as CodeLanguageId))) problems.push(`--languages must be a list of: ${ALL_LANGUAGES.join(", ")}`);
+  const requested = flag("languages")
+    ?.split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (requested?.some((l) => !ALL_LANGUAGES.includes(l as CodeLanguageId)))
+    problems.push(`--languages must be a list of: ${ALL_LANGUAGES.join(", ")}`);
   if (problems.length > 0) {
     console.error("Smoke test not run. Fix the configuration:\n  - " + problems.join("\n  - "));
-    console.error("\nExample:\n  EXECUTION_PROVIDER=judge0 JUDGE0_URL=https://<your-judge0-host> JUDGE0_AUTH_TOKEN=<token> npm run smoke:judge0");
+    console.error(
+      "\nExample:\n  EXECUTION_PROVIDER=judge0 JUDGE0_URL=https://<your-judge0-host> JUDGE0_AUTH_TOKEN=<token> npm run smoke:judge0",
+    );
     return 2;
   }
 
@@ -52,7 +64,9 @@ async function main(): Promise<number> {
 
   if (!json) {
     console.log(`Service host: ${url.host} (${url.protocol.replace(":", "")})`);
-    console.log(`Credential:   ${token ? `sent in the ${process.env.JUDGE0_AUTH_HEADER ?? "X-Auth-Token"} header (value hidden)` : "none configured (works only if the service has authentication disabled)"}`);
+    console.log(
+      `Credential:   ${token ? `sent in the ${process.env.JUDGE0_AUTH_HEADER ?? "X-Auth-Token"} header (value hidden)` : "none configured (works only if the service has authentication disabled)"}`,
+    );
   }
 
   const report = await runSmoke(provider, {
@@ -65,11 +79,14 @@ async function main(): Promise<number> {
   if (json) {
     console.log(JSON.stringify({ ...report, host: url.host }, null, 2));
   } else {
-    for (const c of report.checks) console.log(`${c.ok ? "PASS" : c.required ? "FAIL" : "info"}  ${c.name}: ${c.detail}`);
+    for (const c of report.checks)
+      console.log(`${c.ok ? "PASS" : c.required ? "FAIL" : "info"}  ${c.name}: ${c.detail}`);
     console.log(`\nRESULT: ${report.ok ? "PASS" : "FAIL"}`);
     if (report.ok) {
       console.log("The service answered the Judge0 protocol and executed the programs above.");
-      console.log("EXECUTION_PROVIDER_VERIFIED was NOT changed. Confirm through your hosting configuration that this endpoint is the intended deployment, then set it yourself.");
+      console.log(
+        "EXECUTION_PROVIDER_VERIFIED was NOT changed. Confirm through your hosting configuration that this endpoint is the intended deployment, then set it yourself.",
+      );
     }
   }
   return report.ok ? 0 : 1;

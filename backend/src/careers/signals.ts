@@ -1,4 +1,9 @@
-import type { CareerPreferences, CodeLanguageId, PlacementProfile, SkillAssessment } from "../types.js";
+import type {
+  CareerPreferences,
+  CodeLanguageId,
+  PlacementProfile,
+  SkillAssessment,
+} from "../types.js";
 import type { CareerSignals } from "./match.js";
 
 /**
@@ -57,7 +62,12 @@ const INTERVIEW_SKILLS: Record<string, string[]> = {
   linux_shell: ["linux"],
 };
 
-const LANGUAGE_SKILL: Record<CodeLanguageId, string> = { python: "python", javascript: "javascript", cpp: "cpp", java: "java" } as Record<CodeLanguageId, string>;
+const LANGUAGE_SKILL: Record<CodeLanguageId, string> = {
+  python: "python",
+  javascript: "javascript",
+  cpp: "cpp",
+  java: "java",
+} as Record<CodeLanguageId, string>;
 
 export interface SignalInputs {
   profile: PlacementProfile | null;
@@ -79,7 +89,11 @@ export interface DerivedProfile {
 export function verifiedSkillSlugs(skills: SkillAssessment[]): string[] {
   const out = new Set<string>();
   for (const s of skills) {
-    if (s.evidence.provenance !== "verified" || (s.status !== "strong" && s.status !== "developing")) continue;
+    if (
+      s.evidence.provenance !== "verified" ||
+      (s.status !== "strong" && s.status !== "developing")
+    )
+      continue;
     if (s.area === "dbms") out.add("sql"); // a passed DBMS quiz is verified knowledge of databases and SQL
     const m = /^interview:[a-z0-9_]+:([a-z0-9_]+)$/.exec(s.area);
     if (m) for (const slug of INTERVIEW_SKILLS[m[1]!] ?? []) out.add(slug);
@@ -92,14 +106,17 @@ export function deriveSignals(input: SignalInputs): DerivedProfile {
   const notes: string[] = [];
 
   const primary = new Set<string>();
-  for (const id of profile?.role_ids ?? []) for (const c of ROLE_CATEGORIES[id] ?? []) primary.add(c);
+  for (const id of profile?.role_ids ?? [])
+    for (const c of ROLE_CATEGORIES[id] ?? []) primary.add(c);
   for (const c of prefs?.categories ?? []) primary.add(c);
   const related = new Set<string>();
-  for (const c of primary) for (const r of RELATED_CATEGORIES[c] ?? []) if (!primary.has(r)) related.add(r);
+  for (const c of primary)
+    for (const r of RELATED_CATEGORIES[c] ?? []) if (!primary.has(r)) related.add(r);
 
   const verified = new Set(skills ? verifiedSkillSlugs(skills) : []);
   const self = new Set<string>(prefs?.skills ?? []);
-  if (profile?.preferred_language && LANGUAGE_SKILL[profile.preferred_language]) self.add(LANGUAGE_SKILL[profile.preferred_language]);
+  if (profile?.preferred_language && LANGUAGE_SKILL[profile.preferred_language])
+    self.add(LANGUAGE_SKILL[profile.preferred_language]);
   const resume = new Set<string>(resumeSkills);
   for (const v of verified) {
     self.delete(v); // a skill is counted once, under the strongest evidence behind it
@@ -107,13 +124,28 @@ export function deriveSignals(input: SignalInputs): DerivedProfile {
   }
   for (const r of resume) self.delete(r);
 
-  if (!profile) notes.push("You have not set placement goals, so your target role and experience level are unknown.");
-  else if (!profile.experience_level) notes.push("Your experience level is not set, so early-career roles are assumed.");
-  if (primary.size === 0) notes.push("No target role category: choose one in your career preferences.");
-  if (verified.size === 0 && self.size === 0 && resume.size === 0) notes.push("No skills to compare yet: upload your resume in Memory, add skills in your career preferences, or practise to build verified results.");
-  if (skills === null) notes.push("Your practice results could not be read just now, so verified skills are not included.");
-  if (!prefs) notes.push("You have not saved career preferences (location, work mode, employment type).");
-  if (!prefs?.countries.length && !prefs?.cities.length) notes.push("Showing jobs in India until you choose a country or city in your career preferences.");
+  if (!profile)
+    notes.push(
+      "You have not set placement goals, so your target role and experience level are unknown.",
+    );
+  else if (!profile.experience_level)
+    notes.push("Your experience level is not set, so early-career roles are assumed.");
+  if (primary.size === 0)
+    notes.push("No target role category: choose one in your career preferences.");
+  if (verified.size === 0 && self.size === 0 && resume.size === 0)
+    notes.push(
+      "No skills to compare yet: upload your resume in Memory, add skills in your career preferences, or practise to build verified results.",
+    );
+  if (skills === null)
+    notes.push(
+      "Your practice results could not be read just now, so verified skills are not included.",
+    );
+  if (!prefs)
+    notes.push("You have not saved career preferences (location, work mode, employment type).");
+  if (!prefs?.countries.length && !prefs?.cities.length)
+    notes.push(
+      "Showing jobs in India until you choose a country or city in your career preferences.",
+    );
 
   return {
     signals: {

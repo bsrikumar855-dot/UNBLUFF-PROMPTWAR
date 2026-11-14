@@ -48,23 +48,46 @@ function dependentTopics(topic: string, graph: LearningGraph): Set<string> {
   return out;
 }
 
-function diffStatuses(before: readonly PathStep[], after: readonly PathStep[], graph: LearningGraph): StatusChange[] {
+function diffStatuses(
+  before: readonly PathStep[],
+  after: readonly PathStep[],
+  graph: LearningGraph,
+): StatusChange[] {
   const was = new Map(before.map((s) => [s.id, s.status]));
   return after
     .filter((s) => was.get(s.id) !== s.status)
-    .map((s) => ({ step_id: s.id, label: s.kind === "remedial" ? `Revisit: ${s.concept}` : topicName(s.skill_id, graph), from: was.get(s.id) ?? null, to: s.status }));
+    .map((s) => ({
+      step_id: s.id,
+      label: s.kind === "remedial" ? `Revisit: ${s.concept}` : topicName(s.skill_id, graph),
+      from: was.get(s.id) ?? null,
+      to: s.status,
+    }));
 }
 
-function remedialConcept(role: Role, topic: string, graph: LearningGraph, previous: number, missing: readonly string[] | undefined): string {
+function remedialConcept(
+  role: Role,
+  topic: string,
+  graph: LearningGraph,
+  previous: number,
+  missing: readonly string[] | undefined,
+): string {
   const skill = role.skills.find((s) => topicsOf(s, graph).some((t) => t.topic === topic));
   if (!skill) return `${FALLBACK_CONCEPT} of ${topicName(topic, graph)}`;
   const named = missing?.find((c) => skill.prerequisites.includes(c));
   return named ?? skill.prerequisites[previous % skill.prerequisites.length]!;
 }
 
-function upsertState(states: readonly LearnerSkillState[], topic: string, score: number): LearnerSkillState[] {
+function upsertState(
+  states: readonly LearnerSkillState[],
+  topic: string,
+  score: number,
+): LearnerSkillState[] {
   const next = states.filter((s) => s.skill_id !== topic).map((s) => ({ ...s }));
-  next.push({ skill_id: topic, declared: states.find((s) => s.skill_id === topic)?.declared ?? false, verified_proficiency: score / 100 });
+  next.push({
+    skill_id: topic,
+    declared: states.find((s) => s.skill_id === topic)?.declared ?? false,
+    verified_proficiency: score / 100,
+  });
   return next.sort((a, b) => a.skill_id.localeCompare(b.skill_id));
 }
 
@@ -82,14 +105,17 @@ export function adaptOnAssessment(
   now: Date,
 ): { path: LearningPath; change: PathChange } {
   assertKnownTopic(result.skill_id, graph);
-  if (!Number.isFinite(result.score) || result.score < 0 || result.score > 100) throw new Error("score must be between 0 and 100");
+  if (!Number.isFinite(result.score) || result.score < 0 || result.score > 100)
+    throw new Error("score must be between 0 and 100");
   const topic = result.skill_id;
   const label = topicName(topic, graph);
   const before = path.steps.map((s) => ({ ...s, blocked_by: [...s.blocked_by] }));
   let steps = before.map((s) => ({ ...s, blocked_by: [...s.blocked_by] }));
   const states = upsertState(path.states, topic, result.score);
   const target = steps.find((s) => s.kind === "core" && s.skill_id === topic);
-  const openRemedial = steps.find((s) => s.kind === "remedial" && s.skill_id === topic && s.status !== "done");
+  const openRemedial = steps.find(
+    (s) => s.kind === "remedial" && s.skill_id === topic && s.status !== "done",
+  );
   const added: ChangeItem[] = [];
   let pace = path.pace;
   let reason: string;
@@ -116,9 +142,17 @@ export function adaptOnAssessment(
         concept,
       };
       const dependents = dependentTopics(topic, graph);
-      steps = steps.map((s) => (s.kind === "core" && s.status !== "done" && (s.skill_id === topic || dependents.has(s.skill_id)) ? { ...s, blocked_by: [...s.blocked_by, remedial.id] } : s));
+      steps = steps.map((s) =>
+        s.kind === "core" &&
+        s.status !== "done" &&
+        (s.skill_id === topic || dependents.has(s.skill_id))
+          ? { ...s, blocked_by: [...s.blocked_by, remedial.id] }
+          : s,
+      );
       steps.push(remedial);
-      const paused = steps.filter((s) => s.blocked_by.includes(remedial.id)).map((s) => topicName(s.skill_id, graph));
+      const paused = steps
+        .filter((s) => s.blocked_by.includes(remedial.id))
+        .map((s) => topicName(s.skill_id, graph));
       added.push({ skill_id: topic, label: `Revisit: ${concept}`, reason: remedial.reason });
       reason = `Scored ${result.score}% on ${label} (below ${PASS_SCORE}%). Added a remedial step on "${concept}"${paused.length > 0 ? ` and paused ${paused.length} step(s) until it is done: ${paused.join(", ")}` : ""}. Pace set to slow.`;
     }
@@ -133,18 +167,43 @@ export function adaptOnAssessment(
       result.score >= STRONG_SCORE
         ? `Scored ${result.score}% on ${label}: marked done${closed}.`
         : `Scored ${result.score}% on ${label}: marked done${closed}, flagged to review later (below ${STRONG_SCORE}%).`;
-    if (result.score >= STRONG_SCORE && !steps.some((s) => s.kind === "remedial" && s.status !== "done")) pace = "normal";
+    if (
+      result.score >= STRONG_SCORE &&
+      !steps.some((s) => s.kind === "remedial" && s.status !== "done")
+    )
+      pace = "normal";
   }
 
   const normalized = normalizeSteps(steps);
-  const advanced = result.score >= PASS_SCORE ? normalized.find((s) => s.status === "active") : undefined;
+  const advanced =
+    result.score >= PASS_SCORE ? normalized.find((s) => s.status === "active") : undefined;
   const status_changes = diffStatuses(before, normalized, graph);
-  const unblocked = status_changes.filter((c) => c.from === "blocked" && c.to !== "blocked" && c.to !== "done").map((c) => c.label);
+  const unblocked = status_changes
+    .filter((c) => c.from === "blocked" && c.to !== "blocked" && c.to !== "done")
+    .map((c) => c.label);
   if (unblocked.length > 0) reason += ` Unblocked: ${unblocked.join(", ")}.`;
-  if (advanced && status_changes.some((c) => c.step_id === advanced.id)) reason += ` Next up: ${topicName(advanced.skill_id, graph)}.`;
-  const change: PathChange = { at: now.toISOString(), kind: "assessment", reason, added, removed: [], reordered: [], kept: [], status_changes };
+  if (advanced && status_changes.some((c) => c.step_id === advanced.id))
+    reason += ` Next up: ${topicName(advanced.skill_id, graph)}.`;
+  const change: PathChange = {
+    at: now.toISOString(),
+    kind: "assessment",
+    reason,
+    added,
+    removed: [],
+    reordered: [],
+    kept: [],
+    status_changes,
+  };
   return {
-    path: { ...path, steps: normalized, states, pace, version: path.version + 1, created_from: "assessment", history: [...path.history, change] },
+    path: {
+      ...path,
+      steps: normalized,
+      states,
+      pace,
+      version: path.version + 1,
+      created_from: "assessment",
+      history: [...path.history, change],
+    },
     change,
   };
 }
@@ -169,36 +228,87 @@ export function adaptOnGoalChange(
 
   // Carry over done steps for topics the new role also needs.
   const carried = oldDone.filter((s) => roleTopics.has(s.skill_id) && !freshTopics.has(s.skill_id));
-  const merged = normalizeSteps([...fresh.steps.map((s) => ({ ...s })), ...carried.map((s, i) => ({ ...s, blocked_by: [], order: -carried.length + i }))]);
+  const merged = normalizeSteps([
+    ...fresh.steps.map((s) => ({ ...s })),
+    ...carried.map((s, i) => ({ ...s, blocked_by: [], order: -carried.length + i })),
+  ]);
 
   const label = (t: string): string => topicName(t, graph);
   const kept: ChangeItem[] = [];
   for (const s of states) {
-    if (roleTopics.has(s.skill_id) && !freshTopics.has(s.skill_id) && (s.verified_proficiency !== null || s.declared)) {
+    if (
+      roleTopics.has(s.skill_id) &&
+      !freshTopics.has(s.skill_id) &&
+      (s.verified_proficiency !== null || s.declared)
+    ) {
       const verified = s.verified_proficiency !== null;
-      kept.push({ skill_id: s.skill_id, label: label(s.skill_id), reason: `${label(s.skill_id)} already ${verified ? "verified" : `declared (counts as ${Math.round(DECLARED_MASTERY * 100)}% until verified)`}; it counts towards ${newRole.name}` });
+      kept.push({
+        skill_id: s.skill_id,
+        label: label(s.skill_id),
+        reason: `${label(s.skill_id)} already ${verified ? "verified" : `declared (counts as ${Math.round(DECLARED_MASTERY * 100)}% until verified)`}; it counts towards ${newRole.name}`,
+      });
     }
   }
   const oldTopics = new Set(oldOpen.map((s) => s.skill_id));
   for (const s of fresh.steps) {
-    if (oldTopics.has(s.skill_id)) kept.push({ skill_id: s.skill_id, label: label(s.skill_id), reason: `${label(s.skill_id)} is still required by ${newRole.name}` });
+    if (oldTopics.has(s.skill_id))
+      kept.push({
+        skill_id: s.skill_id,
+        label: label(s.skill_id),
+        reason: `${label(s.skill_id)} is still required by ${newRole.name}`,
+      });
   }
   const removed: ChangeItem[] = oldOpen
     .filter((s) => !freshTopics.has(s.skill_id))
-    .map((s) => ({ skill_id: s.skill_id, label: label(s.skill_id), reason: roleTopics.has(s.skill_id) ? `${label(s.skill_id)} no longer needs a step: it is already covered for ${newRole.name}` : `${label(s.skill_id)} is not required by ${newRole.name}` }));
-  const added: ChangeItem[] = fresh.steps.filter((s) => !oldTopics.has(s.skill_id)).map((s) => ({ skill_id: s.skill_id, label: label(s.skill_id), reason: s.reason }));
+    .map((s) => ({
+      skill_id: s.skill_id,
+      label: label(s.skill_id),
+      reason: roleTopics.has(s.skill_id)
+        ? `${label(s.skill_id)} no longer needs a step: it is already covered for ${newRole.name}`
+        : `${label(s.skill_id)} is not required by ${newRole.name}`,
+    }));
+  const added: ChangeItem[] = fresh.steps
+    .filter((s) => !oldTopics.has(s.skill_id))
+    .map((s) => ({ skill_id: s.skill_id, label: label(s.skill_id), reason: s.reason }));
 
   const oldRank = new Map(oldOpen.map((s, i) => [s.skill_id, i]));
   const common = fresh.steps.filter((s) => oldTopics.has(s.skill_id));
   const reordered: ChangeItem[] = common
-    .map((s, i) => ({ s, from: [...common].sort((a, b) => oldRank.get(a.skill_id)! - oldRank.get(b.skill_id)!).findIndex((c) => c.skill_id === s.skill_id), to: i }))
+    .map((s, i) => ({
+      s,
+      from: [...common]
+        .sort((a, b) => oldRank.get(a.skill_id)! - oldRank.get(b.skill_id)!)
+        .findIndex((c) => c.skill_id === s.skill_id),
+      to: i,
+    }))
     .filter((x) => x.from !== x.to)
-    .map((x) => ({ skill_id: x.s.skill_id, label: label(x.s.skill_id), reason: `${label(x.s.skill_id)} moved from position ${x.from + 1} to ${x.to + 1} among the steps kept` }));
+    .map((x) => ({
+      skill_id: x.s.skill_id,
+      label: label(x.s.skill_id),
+      reason: `${label(x.s.skill_id)} moved from position ${x.from + 1} to ${x.to + 1} among the steps kept`,
+    }));
 
   const reason = `Switched goal to ${newRole.name}: kept ${kept.length}, added ${added.length}, removed ${removed.length}, reordered ${reordered.length}.`;
-  const change: PathChange = { at: now.toISOString(), kind: "goal_change", reason, added, removed, reordered, kept, status_changes: [] };
+  const change: PathChange = {
+    at: now.toISOString(),
+    kind: "goal_change",
+    reason,
+    added,
+    removed,
+    reordered,
+    kept,
+    status_changes: [],
+  };
   return {
-    path: { role_id: newRole.id, steps: merged, version: path.version + 1, created_from: "goal_change", history: [...path.history, change], states, pace: path.pace },
+    path: {
+      role_id: newRole.id,
+      steps: merged,
+      version: path.version + 1,
+      created_from: "goal_change",
+      history: [...path.history, change],
+      states,
+      pace: path.pace,
+    },
     change,
   };
 }

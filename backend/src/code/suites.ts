@@ -8,7 +8,13 @@ import { LANGUAGE_IDS } from "./languages.js";
  * Hidden tests are never part of any response: `publicExercise` copies just the visible parts.
  */
 
-export const SUITE_LICENSES = ["own_work", "licensed", "permission_granted", "public_domain", "development_fixture"] as const;
+export const SUITE_LICENSES = [
+  "own_work",
+  "licensed",
+  "permission_granted",
+  "public_domain",
+  "development_fixture",
+] as const;
 export const MIN_ELIGIBLE_TESTS = 5;
 export const DEFAULT_LIMITS = { cpu_time_seconds: 2, memory_mb: 128 } as const;
 
@@ -28,7 +34,12 @@ const SuiteSchema = z.strictObject({
   }),
   samples: z.array(testCase).max(5),
   tests: z.array(testCase).min(1).max(50),
-  limits: z.strictObject({ cpu_time_seconds: z.number().min(0.5).max(15), memory_mb: z.number().min(16).max(512) }).default({ ...DEFAULT_LIMITS }),
+  limits: z
+    .strictObject({
+      cpu_time_seconds: z.number().min(0.5).max(15),
+      memory_mb: z.number().min(16).max(512),
+    })
+    .default({ ...DEFAULT_LIMITS }),
   starter_code: z.partialRecord(z.enum(LANGUAGE_IDS), z.string().max(5000)).default({}),
   /**
    * Whether judged submissions on this suite may count toward real analytics, and why. Absent means "not
@@ -36,10 +47,16 @@ const SuiteSchema = z.strictObject({
    */
   eligibility: z
     .strictObject({ analytics_eligible: z.boolean(), reason: z.string().trim().min(1).max(500) })
-    .default({ analytics_eligible: false, reason: "No eligibility declared; treated as not eligible." }),
+    .default({
+      analytics_eligible: false,
+      reason: "No eligibility declared; treated as not eligible.",
+    }),
 });
 
-export const SuiteFileSchema = z.strictObject({ schema_version: z.literal(1), suites: z.array(SuiteSchema).max(2000) });
+export const SuiteFileSchema = z.strictObject({
+  schema_version: z.literal(1),
+  suites: z.array(SuiteSchema).max(2000),
+});
 export type Suite = z.infer<typeof SuiteSchema>;
 export type SuiteFile = z.infer<typeof SuiteFileSchema>;
 
@@ -54,14 +71,30 @@ export function parseSuiteFile(raw: unknown): SuiteFile {
     seen.add(s.question_id);
     // Hidden tests must be independent of what students can see.
     const visible = new Set(s.samples.map((x) => x.input));
-    if (s.tests.every((t) => visible.has(t.input))) problems.push(`question "${s.question_id}": every hidden test is also a visible sample`);
+    if (s.tests.every((t) => visible.has(t.input)))
+      problems.push(`question "${s.question_id}": every hidden test is also a visible sample`);
     if (s.eligibility.analytics_eligible) {
-      if (s.is_demonstration || s.source.license_status === "development_fixture") problems.push(`question "${s.question_id}": a demonstration or fixture suite cannot be analytics-eligible`);
-      if (s.tests.length < MIN_ELIGIBLE_TESTS) problems.push(`question "${s.question_id}": an analytics-eligible suite needs at least ${MIN_ELIGIBLE_TESTS} hidden tests (has ${s.tests.length})`);
-      if (s.samples.length < 1) problems.push(`question "${s.question_id}": an analytics-eligible suite needs at least one visible sample`);
+      if (s.is_demonstration || s.source.license_status === "development_fixture")
+        problems.push(
+          `question "${s.question_id}": a demonstration or fixture suite cannot be analytics-eligible`,
+        );
+      if (s.tests.length < MIN_ELIGIBLE_TESTS)
+        problems.push(
+          `question "${s.question_id}": an analytics-eligible suite needs at least ${MIN_ELIGIBLE_TESTS} hidden tests (has ${s.tests.length})`,
+        );
+      if (s.samples.length < 1)
+        problems.push(
+          `question "${s.question_id}": an analytics-eligible suite needs at least one visible sample`,
+        );
     }
-    if (s.is_demonstration && s.source.license_status !== "development_fixture" && s.source.license_status !== "own_work") {
-      problems.push(`question "${s.question_id}": a demonstration exercise must be own_work or development_fixture`);
+    if (
+      s.is_demonstration &&
+      s.source.license_status !== "development_fixture" &&
+      s.source.license_status !== "own_work"
+    ) {
+      problems.push(
+        `question "${s.question_id}": a demonstration exercise must be own_work or development_fixture`,
+      );
     }
   }
   if (JSON.stringify(file).length > MAX_FILE_BYTES) problems.push("suite file is larger than 5 MB");
@@ -70,7 +103,9 @@ export function parseSuiteFile(raw: unknown): SuiteFile {
 }
 
 export const isAnalyticsEligible = (s: Suite): boolean =>
-  s.eligibility.analytics_eligible && !s.is_demonstration && s.source.license_status !== "development_fixture";
+  s.eligibility.analytics_eligible &&
+  !s.is_demonstration &&
+  s.source.license_status !== "development_fixture";
 
 export class SuiteRegistry {
   private readonly byQuestion = new Map<string, Suite>();
@@ -105,7 +140,11 @@ export class SuiteRegistry {
         gradable: false,
         hidden_test_count: 0,
         test_revision: null,
-        limits: { ...DEFAULT_LIMITS, cpu_time_seconds: DEFAULT_LIMITS.cpu_time_seconds, memory_mb: DEFAULT_LIMITS.memory_mb },
+        limits: {
+          ...DEFAULT_LIMITS,
+          cpu_time_seconds: DEFAULT_LIMITS.cpu_time_seconds,
+          memory_mb: DEFAULT_LIMITS.memory_mb,
+        },
       };
     }
     return {

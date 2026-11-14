@@ -32,15 +32,27 @@ function runLadder(grades: RawGrade[], start: Cursor = startCursor("assess", 1))
 
 describe("interrogation ladder (required cases)", () => {
   it("1. all three levels pass → defended, proficiency 0.85", () => {
-    const { turns, outcome } = runLadder([rawGrade(ALL, QUOTE), rawGrade(ALL, QUOTE), rawGrade(ALL, QUOTE)]);
+    const { turns, outcome } = runLadder([
+      rawGrade(ALL, QUOTE),
+      rawGrade(ALL, QUOTE),
+      rawGrade(ALL, QUOTE),
+    ]);
     expect(turns).toEqual(["question", "question", "done"]);
-    expect(resolveAssess(outcome)).toEqual({ verdict: "defended", levels_passed: 3, proficiency: 0.85 });
+    expect(resolveAssess(outcome)).toEqual({
+      verdict: "defended",
+      levels_passed: 3,
+      proficiency: 0.85,
+    });
   });
 
   it("2. L2 fails → shaky with levels_passed 1", () => {
     const { outcome } = runLadder([rawGrade(ALL, QUOTE), rawGrade(["accuracy"], QUOTE)]);
     expect(outcome).toEqual({ kind: "failed", level: 2 });
-    expect(resolveAssess(outcome)).toEqual({ verdict: "shaky", levels_passed: 1, proficiency: 0.25 });
+    expect(resolveAssess(outcome)).toEqual({
+      verdict: "shaky",
+      levels_passed: 1,
+      proficiency: 0.25,
+    });
   });
 
   it("3. admits_gap → honest_gap immediately", () => {
@@ -51,7 +63,12 @@ describe("interrogation ladder (required cases)", () => {
 
   it("4. clarify is used once per level, then the answer passes", () => {
     const vague = rawGrade(["specificity", "ownership"], QUOTE, { needs_clarification: true });
-    const { turns, outcome } = runLadder([vague, rawGrade(ALL, QUOTE), rawGrade(ALL, QUOTE), rawGrade(ALL, QUOTE)]);
+    const { turns, outcome } = runLadder([
+      vague,
+      rawGrade(ALL, QUOTE),
+      rawGrade(ALL, QUOTE),
+      rawGrade(ALL, QUOTE),
+    ]);
     expect(turns).toEqual(["clarify", "question", "question", "done"]);
     expect(resolveAssess(outcome).verdict).toBe("defended");
   });
@@ -65,7 +82,13 @@ describe("interrogation ladder (required cases)", () => {
 
   it("4c. the clarify slot resets on the next level", () => {
     const vague = rawGrade(["specificity"], QUOTE, { needs_clarification: true });
-    const { turns } = runLadder([vague, rawGrade(ALL, QUOTE), vague, rawGrade(ALL, QUOTE), rawGrade(ALL, QUOTE)]);
+    const { turns } = runLadder([
+      vague,
+      rawGrade(ALL, QUOTE),
+      vague,
+      rawGrade(ALL, QUOTE),
+      rawGrade(ALL, QUOTE),
+    ]);
     expect(turns).toEqual(["clarify", "question", "clarify", "question", "done"]);
   });
 
@@ -80,7 +103,10 @@ describe("interrogation ladder (required cases)", () => {
   });
 
   it("needs_clarification on an answer that already passes just advances", () => {
-    const { turns } = runLadder([rawGrade(ALL, QUOTE, { needs_clarification: true }), rawGrade([], null)]);
+    const { turns } = runLadder([
+      rawGrade(ALL, QUOTE, { needs_clarification: true }),
+      rawGrade([], null),
+    ]);
     expect(turns).toEqual(["question", "done"]);
   });
 });
@@ -96,8 +122,16 @@ describe("levelsImplied / resolveAssess", () => {
   });
 
   it("two levels → shaky 0.60, zero → bluff 0", () => {
-    expect(resolveAssess({ kind: "failed", level: 3 })).toEqual({ verdict: "shaky", levels_passed: 2, proficiency: 0.6 });
-    expect(resolveAssess({ kind: "failed", level: 1 })).toEqual({ verdict: "bluff", levels_passed: 0, proficiency: 0 });
+    expect(resolveAssess({ kind: "failed", level: 3 })).toEqual({
+      verdict: "shaky",
+      levels_passed: 2,
+      proficiency: 0.6,
+    });
+    expect(resolveAssess({ kind: "failed", level: 1 })).toEqual({
+      verdict: "bluff",
+      levels_passed: 0,
+      proficiency: 0,
+    });
   });
 });
 
@@ -121,11 +155,20 @@ describe("resolveRetest", () => {
   it("partial improvement raises proficiency but keeps the verdict", () => {
     const r = resolveRetest(shaky, { kind: "failed", level: 3 });
     expect(r.verdict).toBe("shaky");
-    expect(r.retest).toEqual({ attempted: true, passed: true, before: 0.25, after: 0.6, interleaved_claims: 0 });
+    expect(r.retest).toEqual({
+      attempted: true,
+      passed: true,
+      before: 0.25,
+      after: 0.6,
+      interleaved_claims: 0,
+    });
   });
 
   it("failing again never lowers proficiency", () => {
-    const r = resolveRetest({ verdict: "shaky", levels_passed: 2, proficiency: 0.6 }, { kind: "failed", level: 1 as Level });
+    const r = resolveRetest(
+      { verdict: "shaky", levels_passed: 2, proficiency: 0.6 },
+      { kind: "failed", level: 1 as Level },
+    );
     expect(r.proficiency).toBe(0.6);
     expect(r.levels_passed).toBe(2);
     expect(r.retest.passed).toBe(false);

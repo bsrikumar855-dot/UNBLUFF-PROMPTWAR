@@ -20,7 +20,11 @@ const LOG_EVERY_MS = 10_000;
  * use the API. `monitor` verifies and logs failures without refusing anything, so it can be watched in production before
  * switching to `enforce`. Mount on the /api router before every other router.
  */
-export function appCheckGuard(mode: AppCheckMode, verifier: AppCheckVerifier | null, logger: Logger): RequestHandler {
+export function appCheckGuard(
+  mode: AppCheckMode,
+  verifier: AppCheckVerifier | null,
+  logger: Logger,
+): RequestHandler {
   let lastLog = -Infinity;
   const report = (reason: string) => {
     const now = Date.now();
@@ -44,6 +48,11 @@ export function appCheckGuard(mode: AppCheckMode, verifier: AppCheckVerifier | n
     if (reason === null) return next();
     report(reason);
     if (mode === "monitor") return next();
-    next(new ApiError("APP_CHECK_FAILED", "This request didn't come from the UNBLUFF app. Reload the page and try again."));
+    next(
+      new ApiError(
+        "APP_CHECK_FAILED",
+        "This request didn't come from the UNBLUFF app. Reload the page and try again.",
+      ),
+    );
   };
 }

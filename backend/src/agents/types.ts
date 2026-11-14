@@ -1,11 +1,22 @@
 /**
  * Shared types for the SkillForge agents: the Agent interface, the context each agent reads and writes, and the facts handed to the Mentor. Kept separate so agents depend on types, not on each other.
  */
-import type { AssessmentSource, LearnerSkillState, LearningGraph, Resource } from "../core/pathTypes.js";
+import type {
+  AssessmentSource,
+  LearnerSkillState,
+  LearningGraph,
+  Resource,
+} from "../core/pathTypes.js";
 import type { InterviewEvidence } from "../placement/evidence.js";
 import type { RoleRegistry } from "../services/roles.js";
 
-export type AgentName = "profiler" | "skill_analyst" | "career_matcher" | "curriculum_planner" | "progress_evaluator" | "mentor";
+export type AgentName =
+  | "profiler"
+  | "skill_analyst"
+  | "career_matcher"
+  | "curriculum_planner"
+  | "progress_evaluator"
+  | "mentor";
 export type EventType = "PROFILE_SUBMITTED" | "ASSESSMENT_SUBMITTED" | "GOAL_CHANGED";
 export type DecidedBy = "deterministic" | "llm";
 

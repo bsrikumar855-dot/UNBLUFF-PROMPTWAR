@@ -63,8 +63,20 @@ describe("Firestore emulator: session confirmed_at", () => {
   it("survives a save and reload, and is absent on sessions saved without it", async () => {
     const sessions = new FirestoreStore(names.sessions, db);
     const base: Session = {
-      id: `s_${randomUUID()}`, owner_uid: "acct-a", role_id: "frontend_developer", mode: "prepare", created_at: "2026-10-22T10:00:00.000Z",
-      resume_text: null, declared_skills: ["React"], claims: [], next_seq: 1, cursors: {}, history: [], guard_flips: 0, completions: 0, schedule: {},
+      id: `s_${randomUUID()}`,
+      owner_uid: "acct-a",
+      role_id: "frontend_developer",
+      mode: "prepare",
+      created_at: "2026-10-22T10:00:00.000Z",
+      resume_text: null,
+      declared_skills: ["React"],
+      claims: [],
+      next_seq: 1,
+      cursors: {},
+      history: [],
+      guard_flips: 0,
+      completions: 0,
+      schedule: {},
     };
     await sessions.save(base);
     expect((await sessions.get(base.id))?.confirmed_at).toBeUndefined();

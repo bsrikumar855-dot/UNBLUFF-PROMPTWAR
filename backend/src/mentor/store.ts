@@ -67,14 +67,18 @@ export class MemoryMentorStore implements MentorStore {
     this.conversations.set(r.id, structuredClone(r));
   }
   async listConversations(uid: string, limit: number) {
-    return [...this.conversations.values()].filter((c) => c.owner_uid === uid).slice(0, limit).map((c) => structuredClone(c));
+    return [...this.conversations.values()]
+      .filter((c) => c.owner_uid === uid)
+      .slice(0, limit)
+      .map((c) => structuredClone(c));
   }
   async deleteConversation(id: string) {
     this.conversations.delete(id);
   }
   async deleteConversationsByOwner(uid: string) {
     let n = 0;
-    for (const [id, c] of this.conversations) if (c.owner_uid === uid && this.conversations.delete(id)) n++;
+    for (const [id, c] of this.conversations)
+      if (c.owner_uid === uid && this.conversations.delete(id)) n++;
     return n;
   }
 
@@ -87,7 +91,10 @@ export class MemoryMentorStore implements MentorStore {
     this.memories.set(r.id, structuredClone(r));
   }
   async listMemories(uid: string, limit: number) {
-    return [...this.memories.values()].filter((m) => m.owner_uid === uid).slice(0, limit).map((m) => structuredClone(m));
+    return [...this.memories.values()]
+      .filter((m) => m.owner_uid === uid)
+      .slice(0, limit)
+      .map((m) => structuredClone(m));
   }
   async deleteMemory(id: string) {
     this.memories.delete(id);
@@ -108,7 +115,10 @@ export class FirestoreMentorStore implements MentorStore {
   private readonly memories;
   private readonly db: Firestore;
 
-  constructor(names = { conversations: "unbluff_mentor_conversations", memories: "unbluff_mentor_memories" }, db: Firestore = new Firestore({ ignoreUndefinedProperties: true })) {
+  constructor(
+    names = { conversations: "unbluff_mentor_conversations", memories: "unbluff_mentor_memories" },
+    db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
+  ) {
     this.db = db;
     this.conversations = db.collection(names.conversations);
     this.memories = db.collection(names.memories);
@@ -155,7 +165,10 @@ export class FirestoreMentorStore implements MentorStore {
   }
 
   /** Deletes this student's documents in batches of 400 until none are left. */
-  private async deleteAll(collection: ReturnType<Firestore["collection"]>, uid: string): Promise<number> {
+  private async deleteAll(
+    collection: ReturnType<Firestore["collection"]>,
+    uid: string,
+  ): Promise<number> {
     let total = 0;
     for (;;) {
       const snap = await collection.where("owner_uid", "==", uid).limit(400).get();

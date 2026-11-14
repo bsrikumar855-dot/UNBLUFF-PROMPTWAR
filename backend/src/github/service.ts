@@ -60,9 +60,16 @@ export class GithubService {
     return this.deps.oauth !== null && this.deps.vault !== null;
   }
 
-  private requireConfigured(): { oauth: NonNullable<GithubDeps["oauth"]>; vault: NonNullable<GithubDeps["vault"]> } {
+  private requireConfigured(): {
+    oauth: NonNullable<GithubDeps["oauth"]>;
+    vault: NonNullable<GithubDeps["vault"]>;
+  } {
     const { oauth, vault } = this.deps;
-    if (!oauth || !vault) throw new ApiError("GITHUB_NOT_CONFIGURED", "GitHub connection is not set up on this server.");
+    if (!oauth || !vault)
+      throw new ApiError(
+        "GITHUB_NOT_CONFIGURED",
+        "GitHub connection is not set up on this server.",
+      );
     return { oauth, vault };
   }
 
@@ -76,7 +83,10 @@ export class GithubService {
     const now = this.now();
     const freshness = this.freshness(c?.last_synced_at ?? null, now);
     const status = !this.configured && !c ? "not_configured" : !c ? "disconnected" : c.status;
-    const allowed = c?.next_sync_allowed_at && Date.parse(c.next_sync_allowed_at) > now.getTime() ? c.next_sync_allowed_at : null;
+    const allowed =
+      c?.next_sync_allowed_at && Date.parse(c.next_sync_allowed_at) > now.getTime()
+        ? c.next_sync_allowed_at
+        : null;
     return {
       status,
       login: c?.login ?? null,
@@ -95,7 +105,10 @@ export class GithubService {
   }
 
   private syncing(c: ConnectionRecord | null, now: Date): boolean {
-    return (c !== null && c.sync_lock_until !== null && Date.parse(c.sync_lock_until) > now.getTime()) || (c !== null && this.running.has(c.owner_uid));
+    return (
+      (c !== null && c.sync_lock_until !== null && Date.parse(c.sync_lock_until) > now.getTime()) ||
+      (c !== null && this.running.has(c.owner_uid))
+    );
   }
 
   private freshness(syncedAt: string | null, now: Date): GithubFreshness {
@@ -109,13 +122,22 @@ export class GithubService {
   async startConnect(uid: string): Promise<GithubConnectResponse> {
     const { oauth } = this.requireConfigured();
     const existing = await this.deps.store.getConnection(uid);
-    if (existing?.status === "connected") throw new ApiError("BAD_REQUEST", "A GitHub account is already connected. Disconnect it first to link a different one.");
+    if (existing?.status === "connected")
+      throw new ApiError(
+        "BAD_REQUEST",
+        "A GitHub account is already connected. Disconnect it first to link a different one.",
+      );
     const now = this.now();
     const state = newState();
     const pkce = newPkce();
     const expires = new Date(now.getTime() + STATE_TTL_MS).toISOString();
     await this.deps.store.pruneStates(uid, now.toISOString(), MAX_PENDING_STATES - 1);
-    await this.deps.store.saveState(sha256Hex(state), { owner_uid: uid, code_verifier: pkce.verifier, created_at: now.toISOString(), expires_at: expires });
+    await this.deps.store.saveState(sha256Hex(state), {
+      owner_uid: uid,
+      code_verifier: pkce.verifier,
+      created_at: now.toISOString(),
+      expires_at: expires,
+    });
     return { authorize_url: oauth.authorizeUrl(state, pkce.challenge), expires_at: expires };
   }
 
@@ -125,13 +147,22 @@ export class GithubService {
    * Handles GitHub's redirect. There is no bearer token on this request, so the student is identified ONLY by the
    * server-side record the one-time `state` points to. Returns the URL to send the browser to; never throws.
    */
-  async completeCallback(params: { code?: string; state?: string; error?: string }): Promise<string> {
+  async completeCallback(params: {
+    code?: string;
+    state?: string;
+    error?: string;
+  }): Promise<string> {
     try {
       await this.callbackInner(params);
       return this.redirect(null);
     } catch (err) {
-      const reason: GithubCallbackReason = err instanceof CallbackFailure ? err.reason : "exchange_failed";
-      if (!(err instanceof CallbackFailure)) this.deps.logger.error({ error: err instanceof Error ? err.name : "unknown" }, "github callback failed unexpectedly");
+      const reason: GithubCallbackReason =
+        err instanceof CallbackFailure ? err.reason : "exchange_failed";
+      if (!(err instanceof CallbackFailure))
+        this.deps.logger.error(
+          { error: err instanceof Error ? err.name : "unknown" },
+          "github callback failed unexpectedly",
+        );
       else this.deps.logger.info({ reason }, "github connection not completed");
       return this.redirect(reason);
     }
@@ -155,7 +186,8 @@ export class GithubService {
     if (Date.parse(rec.expires_at) <= now.getTime()) throw new CallbackFailure("expired_state");
     const uid = rec.owner_uid;
 
-    if (p.error) throw new CallbackFailure(p.error === "access_denied" ? "access_denied" : "exchange_failed");
+    if (p.error)
+      throw new CallbackFailure(p.error === "access_denied" ? "access_denied" : "exchange_failed");
     if (!p.code) throw new CallbackFailure("exchange_failed");
 
     let granted: { token: string; scopes: string[] };
@@ -176,7 +208,11 @@ export class GithubService {
       viewer = (await this.deps.gql.query(granted.token, VIEWER_QUERY, {}, ViewerData)).data.viewer;
     } catch (err) {
       await oauth.revokeToken(granted.token);
-      throw new CallbackFailure(err instanceof GithubApiError && err.kind !== "invalid_response" ? "github_unavailable" : "exchange_failed");
+      throw new CallbackFailure(
+        err instanceof GithubApiError && err.kind !== "invalid_response"
+          ? "github_unavailable"
+          : "exchange_failed",
+      );
     }
     const githubId = String(viewer.databaseId);
 
@@ -190,7 +226,12 @@ export class GithubService {
     const previous = await store.getConnection(uid);
     if (previous && previous.github_user_id !== githubId) await this.removeLocal(uid, previous);
 
-    await store.saveCredential({ owner_uid: uid, github_user_id: githubId, sealed: vault.seal(granted.token, uid, githubId), created_at: now.toISOString() });
+    await store.saveCredential({
+      owner_uid: uid,
+      github_user_id: githubId,
+      sealed: vault.seal(granted.token, uid, githubId),
+      created_at: now.toISOString(),
+    });
     await store.saveConnection({
       owner_uid: uid,
       github_user_id: githubId,
@@ -260,10 +301,29 @@ export class GithubService {
     const nowIso = now.toISOString();
 
     if (conn.next_sync_allowed_at && Date.parse(conn.next_sync_allowed_at) > now.getTime()) {
-      return { outcome: "cached", connection: this.toConnection(conn), unavailable_sections: [], rate_limit_remaining: null };
+      return {
+        outcome: "cached",
+        connection: this.toConnection(conn),
+        unavailable_sections: [],
+        rate_limit_remaining: null,
+      };
     }
-    if (!(await store.acquireSyncLock(uid, nowIso, new Date(now.getTime() + SYNC_LOCK_MS).toISOString()))) {
-      return { outcome: "in_progress", connection: this.toConnection({ ...conn, sync_lock_until: new Date(now.getTime() + SYNC_LOCK_MS).toISOString() }), unavailable_sections: [], rate_limit_remaining: null };
+    if (
+      !(await store.acquireSyncLock(
+        uid,
+        nowIso,
+        new Date(now.getTime() + SYNC_LOCK_MS).toISOString(),
+      ))
+    ) {
+      return {
+        outcome: "in_progress",
+        connection: this.toConnection({
+          ...conn,
+          sync_lock_until: new Date(now.getTime() + SYNC_LOCK_MS).toISOString(),
+        }),
+        unavailable_sections: [],
+        rate_limit_remaining: null,
+      };
     }
 
     try {
@@ -287,7 +347,16 @@ export class GithubService {
           await this.markReauth(uid, conn, nowIso);
           throw reauth();
         }
-        const failure: GithubSyncFailure = err.kind === "rate_limited" ? "rate_limited" : err.kind === "timeout" ? "timeout" : err.kind === "invalid_response" ? "invalid_response" : err.kind === "forbidden" ? "unauthorized" : "unavailable";
+        const failure: GithubSyncFailure =
+          err.kind === "rate_limited"
+            ? "rate_limited"
+            : err.kind === "timeout"
+              ? "timeout"
+              : err.kind === "invalid_response"
+                ? "invalid_response"
+                : err.kind === "forbidden"
+                  ? "unauthorized"
+                  : "unavailable";
         await this.recordFailure(uid, failure, nowIso, err.resetAt);
         logger.warn({ failure }, "github sync failed");
         throw this.apiError(failure, err.resetAt);
@@ -296,10 +365,17 @@ export class GithubService {
       // A disconnect while we were fetching wins: do not resurrect anything.
       const current = await store.getConnection(uid);
       if (!current || current.github_user_id !== conn.github_user_id) {
-        return { outcome: "cached", connection: this.toConnection(current), unavailable_sections: [], rate_limit_remaining: null };
+        return {
+          outcome: "cached",
+          connection: this.toConnection(current),
+          unavailable_sections: [],
+          rate_limit_remaining: null,
+        };
       }
 
-      const fetched = (["contributions", "repositories", "activity"] as GithubSection[]).filter((s) => result[s] !== undefined);
+      const fetched = (["contributions", "repositories", "activity"] as GithubSection[]).filter(
+        (s) => result[s] !== undefined,
+      );
       if (fetched.length === 0) {
         const failure = result.failure ?? "unavailable";
         await this.recordFailure(uid, failure, nowIso, result.resetAt);
@@ -328,12 +404,24 @@ export class GithubService {
         ...current,
         last_synced_at: nowIso,
         last_attempt_at: nowIso,
-        next_sync_allowed_at: new Date(now.getTime() + (result.failure === "rate_limited" && result.resetAt ? Math.max(this.minSyncMs, Date.parse(result.resetAt) - now.getTime()) : this.minSyncMs)).toISOString(),
+        next_sync_allowed_at: new Date(
+          now.getTime() +
+            (result.failure === "rate_limited" && result.resetAt
+              ? Math.max(this.minSyncMs, Date.parse(result.resetAt) - now.getTime())
+              : this.minSyncMs),
+        ).toISOString(),
         last_error: result.failure,
         last_error_at: result.failure ? nowIso : null,
         status: "connected",
       });
-      logger.info({ sections: fetched.length, unavailable: result.unavailable.length, remaining: result.remaining }, "github sync complete");
+      logger.info(
+        {
+          sections: fetched.length,
+          unavailable: result.unavailable.length,
+          remaining: result.remaining,
+        },
+        "github sync complete",
+      );
       return {
         outcome: partial ? "partial" : "synced",
         connection: this.toConnection(await store.getConnection(uid)),
@@ -351,21 +439,52 @@ export class GithubService {
     const cur = await store.getConnection(uid);
     if (!cur || cur.github_user_id !== conn.github_user_id) return;
     await store.deleteCredential(uid); // a dead token has no use, so it is not kept
-    await store.saveConnection({ ...cur, status: "reauthorization_required", last_attempt_at: nowIso, last_error: "unauthorized", last_error_at: nowIso, sync_lock_until: null });
+    await store.saveConnection({
+      ...cur,
+      status: "reauthorization_required",
+      last_attempt_at: nowIso,
+      last_error: "unauthorized",
+      last_error_at: nowIso,
+      sync_lock_until: null,
+    });
   }
 
-  private async recordFailure(uid: string, failure: GithubSyncFailure, nowIso: string, resetAt: string | null): Promise<void> {
+  private async recordFailure(
+    uid: string,
+    failure: GithubSyncFailure,
+    nowIso: string,
+    resetAt: string | null,
+  ): Promise<void> {
     const { store } = this.deps;
     const c = await store.getConnection(uid);
     if (!c || c.status !== "connected") return;
-    const wait = resetAt ? Math.min(60 * 60_000, Math.max(FAILURE_RETRY_MS, Date.parse(resetAt) - Date.parse(nowIso))) : FAILURE_RETRY_MS;
-    await store.saveConnection({ ...c, last_attempt_at: nowIso, last_error: failure, last_error_at: nowIso, next_sync_allowed_at: new Date(Date.parse(nowIso) + wait).toISOString() });
+    const wait = resetAt
+      ? Math.min(60 * 60_000, Math.max(FAILURE_RETRY_MS, Date.parse(resetAt) - Date.parse(nowIso)))
+      : FAILURE_RETRY_MS;
+    await store.saveConnection({
+      ...c,
+      last_attempt_at: nowIso,
+      last_error: failure,
+      last_error_at: nowIso,
+      next_sync_allowed_at: new Date(Date.parse(nowIso) + wait).toISOString(),
+    });
   }
 
   private apiError(failure: GithubSyncFailure, resetAt: string | null): ApiError {
-    if (failure === "rate_limited") return new ApiError("GITHUB_RATE_LIMITED", `GitHub's rate limit is used up${resetAt ? `; it resets at ${resetAt}` : ""}. Your saved data is unchanged.`);
-    if (failure === "unauthorized") return new ApiError("GITHUB_UNAVAILABLE", "GitHub did not allow access to some of this data. Your saved data is unchanged.");
-    return new ApiError("GITHUB_UNAVAILABLE", "GitHub could not be reached or answered unexpectedly. Your saved data is unchanged; try again later.");
+    if (failure === "rate_limited")
+      return new ApiError(
+        "GITHUB_RATE_LIMITED",
+        `GitHub's rate limit is used up${resetAt ? `; it resets at ${resetAt}` : ""}. Your saved data is unchanged.`,
+      );
+    if (failure === "unauthorized")
+      return new ApiError(
+        "GITHUB_UNAVAILABLE",
+        "GitHub did not allow access to some of this data. Your saved data is unchanged.",
+      );
+    return new ApiError(
+      "GITHUB_UNAVAILABLE",
+      "GitHub could not be reached or answered unexpectedly. Your saved data is unchanged; try again later.",
+    );
   }
 
   // ---------------- reads (always from the cache) ----------------
@@ -373,20 +492,38 @@ export class GithubService {
   private async requireConnection(uid: string): Promise<ConnectionRecord> {
     this.requireConfigured();
     const conn = await this.deps.store.getConnection(uid);
-    if (!conn || conn.owner_uid !== uid) throw new ApiError("GITHUB_NOT_CONNECTED", "Connect your GitHub account first.");
+    if (!conn || conn.owner_uid !== uid)
+      throw new ApiError("GITHUB_NOT_CONNECTED", "Connect your GitHub account first.");
     return conn;
   }
 
-  private async loadInsights(uid: string): Promise<{ conn: ConnectionRecord; insights: InsightsRecord | null }> {
+  private async loadInsights(
+    uid: string,
+  ): Promise<{ conn: ConnectionRecord; insights: InsightsRecord | null }> {
     const conn = await this.requireConnection(uid);
     const insights = await this.deps.store.getInsights(uid);
     // Never serve a cache that belongs to another account or student.
-    const own = insights && insights.owner_uid === uid && insights.github_user_id === conn.github_user_id ? insights : null;
+    const own =
+      insights && insights.owner_uid === uid && insights.github_user_id === conn.github_user_id
+        ? insights
+        : null;
     return { conn, insights: own };
   }
 
-  private source(conn: ConnectionRecord, syncedAt: string | null, from: string | null, to: string | null): GithubSourceInfo {
-    return { login: conn.login, synced_at: syncedAt, from, to, freshness: this.freshness(syncedAt, this.now()), cached: true };
+  private source(
+    conn: ConnectionRecord,
+    syncedAt: string | null,
+    from: string | null,
+    to: string | null,
+  ): GithubSourceInfo {
+    return {
+      login: conn.login,
+      synced_at: syncedAt,
+      from,
+      to,
+      freshness: this.freshness(syncedAt, this.now()),
+      cached: true,
+    };
   }
 
   async contributions(uid: string): Promise<GithubContributionsResponse> {
@@ -394,7 +531,19 @@ export class GithubService {
     const snap = insights?.contributions;
     const data = snap?.data as StoredContributions | undefined;
     if (!snap || !data) {
-      return { source: this.source(conn, null, null, null), available: false, total: null, weeks: [], weekly: [], monthly: [], breakdown: null, restricted_count: null, active_days: null, longest_streak_days: null, notice: NOTICE };
+      return {
+        source: this.source(conn, null, null, null),
+        available: false,
+        total: null,
+        weeks: [],
+        weekly: [],
+        monthly: [],
+        breakdown: null,
+        restricted_count: null,
+        active_days: null,
+        longest_streak_days: null,
+        notice: NOTICE,
+      };
     }
     const s = summarizeCalendar(data.weeks);
     return {
@@ -416,20 +565,55 @@ export class GithubService {
     const { conn, insights } = await this.loadInsights(uid);
     const snap = insights?.repositories;
     const data = snap?.data as StoredRepositories | undefined;
-    if (!snap || !data) return { source: this.source(conn, null, null, null), available: false, repositories: [], total_public_repositories: null, truncated: false, checklist: [] };
-    return { source: this.source(conn, snap.synced_at, null, null), available: true, repositories: data.repositories, total_public_repositories: data.total_public, truncated: data.truncated, checklist: data.checklist };
+    if (!snap || !data)
+      return {
+        source: this.source(conn, null, null, null),
+        available: false,
+        repositories: [],
+        total_public_repositories: null,
+        truncated: false,
+        checklist: [],
+      };
+    return {
+      source: this.source(conn, snap.synced_at, null, null),
+      available: true,
+      repositories: data.repositories,
+      total_public_repositories: data.total_public,
+      truncated: data.truncated,
+      checklist: data.checklist,
+    };
   }
 
   async activity(uid: string): Promise<GithubActivityResponse> {
     const { conn, insights } = await this.loadInsights(uid);
     const snap = insights?.activity;
     const data = snap?.data as StoredActivity | undefined;
-    if (!snap || !data) return { source: this.source(conn, null, null, null), available: false, pull_requests_total: null, issues_total: null, items: [] };
-    return { source: this.source(conn, snap.synced_at, null, null), available: true, pull_requests_total: data.pull_requests_total, issues_total: data.issues_total, items: data.items };
+    if (!snap || !data)
+      return {
+        source: this.source(conn, null, null, null),
+        available: false,
+        pull_requests_total: null,
+        issues_total: null,
+        items: [],
+      };
+    return {
+      source: this.source(conn, snap.synced_at, null, null),
+      available: true,
+      pull_requests_total: data.pull_requests_total,
+      issues_total: data.issues_total,
+      items: data.items,
+    };
   }
 
   /** The cached sections the mentor may summarise. Null when GitHub is not connected or nothing was ever synchronised. */
-  async cachedForMentor(uid: string): Promise<{ login: string; syncedAt: string; stale: boolean; contributions?: StoredContributions; repositories?: StoredRepositories; activity?: StoredActivity } | null> {
+  async cachedForMentor(uid: string): Promise<{
+    login: string;
+    syncedAt: string;
+    stale: boolean;
+    contributions?: StoredContributions;
+    repositories?: StoredRepositories;
+    activity?: StoredActivity;
+  } | null> {
     if (!this.configured) return null;
     try {
       const { conn, insights } = await this.loadInsights(uid);
@@ -454,4 +638,8 @@ class CallbackFailure extends Error {
   }
 }
 
-const reauth = () => new ApiError("GITHUB_REAUTH_REQUIRED", "GitHub no longer accepts the saved connection. Connect your account again.");
+const reauth = () =>
+  new ApiError(
+    "GITHUB_REAUTH_REQUIRED",
+    "GitHub no longer accepts the saved connection. Connect your account again.",
+  );

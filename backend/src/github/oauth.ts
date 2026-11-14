@@ -67,7 +67,11 @@ export class GithubOAuth {
     try {
       res = await this.fetchImpl(TOKEN_URL, {
         method: "POST",
-        headers: { Accept: "application/json", "Content-Type": "application/json", "User-Agent": "unbluff-placement-os" },
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "unbluff-placement-os",
+        },
         body: JSON.stringify({
           client_id: this.cfg.clientId,
           client_secret: this.cfg.clientSecret,
@@ -89,8 +93,15 @@ export class GithubOAuth {
       throw new GithubOAuthError("exchange_failed");
     }
     const o = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
-    if (!res.ok || typeof o.access_token !== "string" || o.access_token === "" || typeof o.error === "string") throw new GithubOAuthError("exchange_failed");
-    const scopes = typeof o.scope === "string" ? o.scope.split(/[,\s]+/).filter((s) => s !== "") : [];
+    if (
+      !res.ok ||
+      typeof o.access_token !== "string" ||
+      o.access_token === "" ||
+      typeof o.error === "string"
+    )
+      throw new GithubOAuthError("exchange_failed");
+    const scopes =
+      typeof o.scope === "string" ? o.scope.split(/[,\s]+/).filter((s) => s !== "") : [];
     return { token: o.access_token, scopes };
   }
 
@@ -107,19 +118,22 @@ export class GithubOAuth {
   /** True when GitHub confirmed (204) or says it is already gone (404). False when GitHub could not be reached. */
   private async revoke(kind: "grant" | "token", token: string): Promise<boolean> {
     try {
-      const res = await this.fetchImpl(`${API}/applications/${encodeURIComponent(this.cfg.clientId)}/${kind}`, {
-        method: "DELETE",
-        headers: {
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-          "Content-Type": "application/json",
-          "User-Agent": "unbluff-placement-os",
-          Authorization: `Basic ${Buffer.from(`${this.cfg.clientId}:${this.cfg.clientSecret}`).toString("base64")}`,
+      const res = await this.fetchImpl(
+        `${API}/applications/${encodeURIComponent(this.cfg.clientId)}/${kind}`,
+        {
+          method: "DELETE",
+          headers: {
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Content-Type": "application/json",
+            "User-Agent": "unbluff-placement-os",
+            Authorization: `Basic ${Buffer.from(`${this.cfg.clientId}:${this.cfg.clientSecret}`).toString("base64")}`,
+          },
+          body: JSON.stringify({ access_token: token }),
+          signal: AbortSignal.timeout(this.timeoutMs),
+          redirect: "error",
         },
-        body: JSON.stringify({ access_token: token }),
-        signal: AbortSignal.timeout(this.timeoutMs),
-        redirect: "error",
-      });
+      );
       return res.status === 204 || res.status === 404;
     } catch {
       return false;

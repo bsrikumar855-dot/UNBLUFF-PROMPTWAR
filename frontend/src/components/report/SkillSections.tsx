@@ -72,7 +72,10 @@ export const PlanList: React.FC<{ plan: PlanItem[] }> = ({ plan }) => {
   const days = Array.from(new Set(plan.map((p) => p.day)));
   return (
     <section aria-labelledby="plan-heading" className={cn(GLASS, "p-5 sm:p-6")}>
-      <h2 id="plan-heading" className="mb-4 serif text-heading font-medium text-ink-primary">
+      <h2
+        id="plan-heading"
+        className="mb-4 serif text-heading font-medium text-ink-primary"
+      >
         7-day plan
       </h2>
       {plan.length === 0 ? (

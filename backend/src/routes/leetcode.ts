@@ -7,14 +7,18 @@ import { formatIssues } from "../middleware/validate.js";
 
 const noStore = { "Cache-Control": "no-store" };
 
-const LinkBody = z.strictObject({ profile: z.string().max(300, "That is too long to be a LeetCode username or profile address.") });
+const LinkBody = z.strictObject({
+  profile: z.string().max(300, "That is too long to be a LeetCode username or profile address."),
+});
 // The content is bounded again, in bytes, by the importer. This only stops absurd bodies early.
 const ImportBody = z.strictObject({
   format: z.enum(["json", "csv"]),
   origin: z.enum(["manual", "file"]),
   content: z.string().max(90_000, "The data is too large."),
 });
-const ConfirmBody = ImportBody.extend({ content_hash: z.string().regex(/^[a-f0-9]{32}$/, "content_hash must come from the preview") });
+const ConfirmBody = ImportBody.extend({
+  content_hash: z.string().regex(/^[a-f0-9]{32}$/, "content_hash must come from the preview"),
+});
 const UnlinkQuery = z.strictObject({ mode: z.enum(["link", "all"]).default("link") });
 const SnapshotId = z.string().regex(/^[a-f0-9]{32}$/, "invalid snapshot id");
 
@@ -29,7 +33,10 @@ function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
  * always the token's uid: no body, query or file can name another owner. LeetCode is contacted only by the optional
  * lookup, and only when the operator enabled it.
  */
-export function leetcodeRouter(leetcode: LeetCodeService, limiters: { read: RequestHandler; write: RequestHandler }): Router {
+export function leetcodeRouter(
+  leetcode: LeetCodeService,
+  limiters: { read: RequestHandler; write: RequestHandler },
+): Router {
   const router = Router();
 
   router.get("/leetcode/connection", limiters.read, async (_req, res) => {

@@ -44,7 +44,14 @@ describe("Landing — demo report flow", () => {
 
   it("shows the loading state, then routes to the report with real data on success", async () => {
     // A short delay, so the loading state can be observed before the report arrives.
-    global.fetch = vi.fn().mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(jsonResponse(mockReport)), 60)));
+    global.fetch = vi
+      .fn()
+      .mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(jsonResponse(mockReport)), 60)
+          )
+      );
     render(<App />);
 
     const demoButtons = screen.getAllByRole("button", { name: "View Demo Report" });
@@ -52,17 +59,23 @@ describe("Landing — demo report flow", () => {
 
     expect(await screen.findByText(/Preparing demo report…/i)).toBeInTheDocument();
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Readiness report" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Readiness report" })
+    ).toBeInTheDocument();
     expect(screen.getByText("Demo data")).toBeInTheDocument();
     expect(screen.getByText(/Frontend Developer/)).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "Readiness 52 out of 100" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Readiness 52 out of 100" })
+    ).toBeInTheDocument();
     expect(global.fetch).toHaveBeenCalledTimes(1); // the report handed over via router state is not refetched
   });
 
   it("shows a safe error message and retries the same request on failure", async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      jsonResponse({ error: { code: "INTERNAL", message: "boom" } }, false, 500)
-    );
+    global.fetch = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ error: { code: "INTERNAL", message: "boom" } }, false, 500)
+      );
     render(<App />);
 
     const demoButtons = screen.getAllByRole("button", { name: "View Demo Report" });

@@ -24,5 +24,7 @@ export function isCountable(r: SubmissionRecord): boolean {
   if (!Number.isInteger(r.passed) || r.passed < 0 || r.passed > r.total) return false;
   if (r.verdict === "judge_error") return false;
   if (r.verdict === "accepted") return r.passed === r.total && r.failed_test === null;
-  return r.passed < r.total && r.failed_test !== null && r.failed_test >= 1 && r.failed_test <= r.total;
+  return (
+    r.passed < r.total && r.failed_test !== null && r.failed_test >= 1 && r.failed_test <= r.total
+  );
 }

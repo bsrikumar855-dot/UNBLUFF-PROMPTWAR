@@ -77,10 +77,12 @@ const warmer = (input: string): string => {
 };
 const warmerCheck = (input: string): string => {
   const t = nums(lines(input)[1]!);
-  return t.map((x, i) => {
-    for (let j = i + 1; j < t.length; j++) if (t[j]! > x) return j - i;
-    return 0;
-  }).join(" ");
+  return t
+    .map((x, i) => {
+      for (let j = i + 1; j < t.length; j++) if (t[j]! > x) return j - i;
+      return 0;
+    })
+    .join(" ");
 };
 
 // ---------- 32. Balance Point ----------
@@ -158,7 +160,8 @@ const fewestCoins = (input: string): string => {
   const coins = nums(l[1]!);
   const dp = new Array<number>(amount + 1).fill(Infinity);
   dp[0] = 0;
-  for (let s = 1; s <= amount; s++) for (const c of coins) if (c <= s) dp[s] = Math.min(dp[s]!, dp[s - c]! + 1);
+  for (let s = 1; s <= amount; s++)
+    for (const c of coins) if (c <= s) dp[s] = Math.min(dp[s]!, dp[s - c]! + 1);
   return String(dp[amount] === Infinity ? -1 : dp[amount]);
 };
 const fewestCoinsCheck = (input: string): string => {
@@ -253,7 +256,11 @@ const mostFrequent = (input: string): string => {
   const k = Number(l[0]!.split(" ")[1]);
   const m = new Map<number, number>();
   for (const v of nums(l[1]!)) m.set(v, (m.get(v) ?? 0) + 1);
-  return [...m.entries()].sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, k).map((e) => e[0]).join(" ");
+  return [...m.entries()]
+    .sort((x, y) => y[1] - x[1] || x[0] - y[0])
+    .slice(0, k)
+    .map((e) => e[0])
+    .join(" ");
 };
 const mostFrequentCheck = (input: string): string => {
   const l = lines(input);
@@ -266,7 +273,8 @@ const mostFrequentCheck = (input: string): string => {
     let best: number | null = null;
     for (const v of distinct) {
       if (picked.includes(v)) continue;
-      if (best === null || count(v) > count(best) || (count(v) === count(best) && v < best)) best = v;
+      if (best === null || count(v) > count(best) || (count(v) === count(best) && v < best))
+        best = v;
     }
     picked.push(best!);
   }
@@ -291,12 +299,15 @@ const busiest = (input: string): string => {
   return String(best);
 };
 const busiestCheck = (input: string): string => {
-  const iv = lines(input).slice(1).map((r) => nums(r) as [number, number]);
+  const iv = lines(input)
+    .slice(1)
+    .map((r) => nums(r) as [number, number]);
   let best = 0;
   for (const [x] of iv) best = Math.max(best, iv.filter(([s, e]) => s <= x && x < e).length);
   return String(best);
 };
-const intervalsInput = (iv: [number, number][]) => line(iv.length) + iv.map(([s, e]) => line(s, e)).join("");
+const intervalsInput = (iv: [number, number][]) =>
+  line(iv.length) + iv.map(([s, e]) => line(s, e)).join("");
 
 // ---------- 40. Friend Groups ----------
 const groups = (input: string): string => {
@@ -339,23 +350,29 @@ const groupsCheck = (input: string): string => {
     const queue = [s];
     seen[s] = true;
     for (let h = 0; h < queue.length; h++) {
-      for (const t of adj[queue[h]!]!) if (!seen[t]) {
-        seen[t] = true;
-        queue.push(t);
-      }
+      for (const t of adj[queue[h]!]!)
+        if (!seen[t]) {
+          seen[t] = true;
+          queue.push(t);
+        }
     }
   }
   return String(comps);
 };
-const pairsInput = (n: number, e: [number, number][]) => line(n, e.length) + e.map(([a, b]) => line(a, b)).join("");
-const randomPairs = (r: (n: number) => number, n: number, m: number): [number, number][] => Array.from({ length: m }, () => [1 + r(n), 1 + r(n)] as [number, number]);
+const pairsInput = (n: number, e: [number, number][]) =>
+  line(n, e.length) + e.map(([a, b]) => line(a, b)).join("");
+const randomPairs = (r: (n: number) => number, n: number, m: number): [number, number][] =>
+  Array.from({ length: m }, () => [1 + r(n), 1 + r(n)] as [number, number]);
 
 // ---------- 41. Longest Mirror ----------
 const longestMirror = (input: string): string => {
   const s = lines(input)[0]!;
   let best = 1;
   for (let c = 0; c < s.length; c++) {
-    for (const [a, b] of [[c, c], [c, c + 1]] as const) {
+    for (const [a, b] of [
+      [c, c],
+      [c, c + 1],
+    ] as const) {
       let i = a;
       let j = b;
       while (i >= 0 && j < s.length && s[i] === s[j]) {
@@ -435,7 +452,8 @@ const fewestJumpsCheck = (input: string): string => {
   dp[0] = 0;
   for (let i = 0; i < a.length; i++) {
     if (dp[i] === Infinity) continue;
-    for (let j = i + 1; j <= Math.min(a.length - 1, i + a[i]!); j++) dp[j] = Math.min(dp[j]!, dp[i]! + 1);
+    for (let j = i + 1; j <= Math.min(a.length - 1, i + a[i]!); j++)
+      dp[j] = Math.min(dp[j]!, dp[i]! + 1);
   }
   const last = dp[a.length - 1]!;
   return String(last === Infinity ? -1 : last);
@@ -446,7 +464,8 @@ const targetSubsets = (input: string): string => {
   const l = lines(input);
   const target = Number(l[0]!.split(" ")[1]);
   const a = nums(l[1]!);
-  const go = (i: number, sum: number): number => (i === a.length ? (sum === target ? 1 : 0) : go(i + 1, sum) + go(i + 1, sum + a[i]!));
+  const go = (i: number, sum: number): number =>
+    i === a.length ? (sum === target ? 1 : 0) : go(i + 1, sum) + go(i + 1, sum + a[i]!);
   return String(go(0, 0));
 };
 const targetSubsetsCheck = (input: string): string => {
@@ -501,15 +520,21 @@ const spoilage = (input: string): string => {
   const { r, c, grid } = gridLines(input);
   let fresh = 0;
   let queue: [number, number][] = [];
-  for (let y = 0; y < r; y++) for (let x = 0; x < c; x++) {
-    if (grid[y]![x] === 1) fresh++;
-    else if (grid[y]![x] === 2) queue.push([y, x]);
-  }
+  for (let y = 0; y < r; y++)
+    for (let x = 0; x < c; x++) {
+      if (grid[y]![x] === 1) fresh++;
+      else if (grid[y]![x] === 2) queue.push([y, x]);
+    }
   let minutes = 0;
   while (fresh > 0 && queue.length > 0) {
     const next: [number, number][] = [];
     for (const [y, x] of queue) {
-      for (const [dy, dx] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
+      for (const [dy, dx] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ] as const) {
         const ny = y + dy;
         const nx = x + dx;
         if (ny >= 0 && ny < r && nx >= 0 && nx < c && grid[ny]![nx] === 1) {
@@ -530,11 +555,17 @@ const spoilageCheck = (input: string): string => {
   let minutes = 0;
   while (has1()) {
     const turn: [number, number][] = [];
-    for (let y = 0; y < r; y++) for (let x = 0; x < c; x++) {
-      if (grid[y]![x] !== 1) continue;
-      const touches = [[y + 1, x], [y - 1, x], [y, x + 1], [y, x - 1]].some(([a, b]) => grid[a!]?.[b!] === 2);
-      if (touches) turn.push([y, x]);
-    }
+    for (let y = 0; y < r; y++)
+      for (let x = 0; x < c; x++) {
+        if (grid[y]![x] !== 1) continue;
+        const touches = [
+          [y + 1, x],
+          [y - 1, x],
+          [y, x + 1],
+          [y, x - 1],
+        ].some(([a, b]) => grid[a!]?.[b!] === 2);
+        if (touches) turn.push([y, x]);
+      }
     if (turn.length === 0) return "-1";
     for (const [y, x] of turn) grid[y]![x] = 2;
     minutes++;
@@ -542,19 +573,29 @@ const spoilageCheck = (input: string): string => {
   return String(minutes);
 };
 const gridInput = (g: number[][]) => line(g.length, g[0]!.length) + g.map(arr).join("");
-const randomCells = (r: (n: number) => number, h: number, w: number, weights: [number, number, number]) => {
+const randomCells = (
+  r: (n: number) => number,
+  h: number,
+  w: number,
+  weights: [number, number, number],
+) => {
   const total = weights[0] + weights[1] + weights[2];
-  return Array.from({ length: h }, () => Array.from({ length: w }, () => {
-    const v = r(total);
-    return v < weights[0] ? 0 : v < weights[0] + weights[1] ? 1 : 2;
-  }));
+  return Array.from({ length: h }, () =>
+    Array.from({ length: w }, () => {
+      const v = r(total);
+      return v < weights[0] ? 0 : v < weights[0] + weights[1] ? 1 : 2;
+    }),
+  );
 };
 
 // ---------- 47. Cheapest Network ----------
 const cheapestNetwork = (input: string): string => {
   const l = lines(input);
   const [n, m] = nums(l[0]!) as [number, number];
-  const edges = l.slice(1, 1 + m).map((row) => nums(row) as [number, number, number]).sort((x, y) => x[2] - y[2]);
+  const edges = l
+    .slice(1, 1 + m)
+    .map((row) => nums(row) as [number, number, number])
+    .sort((x, y) => x[2] - y[2]);
   const parent = Array.from({ length: n + 1 }, (_v, i) => i);
   const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x]!)));
   let total = 0;
@@ -595,8 +636,14 @@ const cheapestNetworkCheck = (input: string): string => {
   }
   return String(total);
 };
-const weighted = (n: number, e: [number, number, number][]) => line(n, e.length) + e.map(([a, b, c]) => line(a, b, c)).join("");
-const randomConnected = (r: (n: number) => number, n: number, extra: number, maxW: number): [number, number, number][] => {
+const weighted = (n: number, e: [number, number, number][]) =>
+  line(n, e.length) + e.map(([a, b, c]) => line(a, b, c)).join("");
+const randomConnected = (
+  r: (n: number) => number,
+  n: number,
+  extra: number,
+  maxW: number,
+): [number, number, number][] => {
   const e: [number, number, number][] = [];
   for (let v = 2; v <= n; v++) e.push([1 + r(v - 1), v, 1 + r(maxW)]);
   for (let i = 0; i < extra; i++) e.push([1 + r(n), 1 + r(n), 1 + r(maxW)]);
@@ -637,7 +684,8 @@ const sharedLength = (input: string): string => {
   let prev = new Array<number>(b.length + 1).fill(0);
   for (let i = 1; i <= a.length; i++) {
     const cur = new Array<number>(b.length + 1).fill(0);
-    for (let j = 1; j <= b.length; j++) cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1]! + 1 : Math.max(prev[j]!, cur[j - 1]!);
+    for (let j = 1; j <= b.length; j++)
+      cur[j] = a[i - 1] === b[j - 1] ? prev[j - 1]! + 1 : Math.max(prev[j]!, cur[j - 1]!);
     prev = cur;
   }
   return String(prev[b.length]);
@@ -675,11 +723,13 @@ const runningMedian = (input: string): string => {
 const runningMedianCheck = (input: string): string => {
   const a = nums(lines(input)[1]!);
   const sorted: number[] = [];
-  return a.map((v) => {
-    sorted.push(v);
-    sorted.sort((x, y) => x - y);
-    return sorted[Math.floor((sorted.length - 1) / 2)];
-  }).join(" ");
+  return a
+    .map((v) => {
+      sorted.push(v);
+      sorted.sort((x, y) => x - y);
+      return sorted[Math.floor((sorted.length - 1) / 2)];
+    })
+    .join(" ");
 };
 
 export function threeExercises(): Exercise[] {
@@ -771,7 +821,19 @@ export function threeExercises(): Exercise[] {
       topics: ["Bit Manipulation", "Math"],
       statement: `One line has n (1 <= n <= 1000000). Write each whole number from 1 to n in binary. Print the total number of 1 digits across all of them. ${limitsNote}`,
       samples: ["5\n", "1\n"],
-      tests: ["2\n", "3\n", "7\n", "8\n", "10\n", "255\n", "256\n", "1000\n", "65535\n", "123456\n", "1000000\n"],
+      tests: [
+        "2\n",
+        "3\n",
+        "7\n",
+        "8\n",
+        "10\n",
+        "255\n",
+        "256\n",
+        "1000\n",
+        "65535\n",
+        "123456\n",
+        "1000000\n",
+      ],
       solve: bitTotal,
     },
     {
@@ -864,17 +926,62 @@ export function threeExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Intervals", "Sorting"],
       statement: `The first line has n (1 <= n <= 1000). Each of the next n lines has two integers s and e (0 <= s < e <= 1000000): a meeting that starts at time s and ends at time e. A meeting is running from s up to, but not including, e, so a meeting that ends at time t does not overlap one that starts at time t. Print the greatest number of meetings running at the same time. ${limitsNote}`,
-      samples: [intervalsInput([[0, 30], [5, 10], [15, 20]]), intervalsInput([[1, 2], [2, 3]])],
+      samples: [
+        intervalsInput([
+          [0, 30],
+          [5, 10],
+          [15, 20],
+        ]),
+        intervalsInput([
+          [1, 2],
+          [2, 3],
+        ]),
+      ],
       tests: [
         intervalsInput([[0, 1]]),
-        intervalsInput([[1, 5], [1, 5], [1, 5]]),
-        intervalsInput([[1, 3], [3, 5], [5, 7]]),
-        intervalsInput([[0, 100], [10, 20], [15, 30], [25, 40]]),
-        intervalsInput([[5, 6], [1, 10], [2, 3], [4, 8]]),
-        intervalsInput(Array.from({ length: 30 }, () => { const s = r39(50); return [s, s + 1 + r39(20)] as [number, number]; })),
-        intervalsInput(Array.from({ length: 300 }, () => { const s = r39(1000); return [s, s + 1 + r39(200)] as [number, number]; })),
-        intervalsInput(Array.from({ length: 1000 }, () => { const s = r39(999000); return [s, s + 1 + r39(1000)] as [number, number]; })),
-        intervalsInput(Array.from({ length: 1000 }, (_v, i) => [i, 1000000 - i] as [number, number])),
+        intervalsInput([
+          [1, 5],
+          [1, 5],
+          [1, 5],
+        ]),
+        intervalsInput([
+          [1, 3],
+          [3, 5],
+          [5, 7],
+        ]),
+        intervalsInput([
+          [0, 100],
+          [10, 20],
+          [15, 30],
+          [25, 40],
+        ]),
+        intervalsInput([
+          [5, 6],
+          [1, 10],
+          [2, 3],
+          [4, 8],
+        ]),
+        intervalsInput(
+          Array.from({ length: 30 }, () => {
+            const s = r39(50);
+            return [s, s + 1 + r39(20)] as [number, number];
+          }),
+        ),
+        intervalsInput(
+          Array.from({ length: 300 }, () => {
+            const s = r39(1000);
+            return [s, s + 1 + r39(200)] as [number, number];
+          }),
+        ),
+        intervalsInput(
+          Array.from({ length: 1000 }, () => {
+            const s = r39(999000);
+            return [s, s + 1 + r39(1000)] as [number, number];
+          }),
+        ),
+        intervalsInput(
+          Array.from({ length: 1000 }, (_v, i) => [i, 1000000 - i] as [number, number]),
+        ),
       ],
       solve: busiest,
     },
@@ -884,18 +991,43 @@ export function threeExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Graphs", "Union Find"],
       statement: `The first line has n and m (1 <= n <= 1000, 0 <= m <= 1500). People are numbered 1 to n. Each of the next m lines has two numbers a and b, meaning a and b are friends (a person may be listed as their own friend, and pairs may repeat). Friendship spreads: a friend of a friend is in the same group. Print how many separate groups there are. ${limitsNote}`,
-      samples: [pairsInput(5, [[1, 2], [2, 3], [4, 5]]), pairsInput(3, [])],
+      samples: [
+        pairsInput(5, [
+          [1, 2],
+          [2, 3],
+          [4, 5],
+        ]),
+        pairsInput(3, []),
+      ],
       tests: [
         pairsInput(1, []),
         pairsInput(1, [[1, 1]]),
-        pairsInput(4, [[1, 2], [1, 2], [2, 1]]),
-        pairsInput(6, [[1, 2], [3, 4], [5, 6], [2, 3], [4, 5]]),
-        pairsInput(10, [[1, 10], [10, 5], [2, 9], [9, 8]]),
+        pairsInput(4, [
+          [1, 2],
+          [1, 2],
+          [2, 1],
+        ]),
+        pairsInput(6, [
+          [1, 2],
+          [3, 4],
+          [5, 6],
+          [2, 3],
+          [4, 5],
+        ]),
+        pairsInput(10, [
+          [1, 10],
+          [10, 5],
+          [2, 9],
+          [9, 8],
+        ]),
         pairsInput(50, randomPairs(r40, 50, 20)),
         pairsInput(500, randomPairs(r40, 500, 300)),
         pairsInput(1000, randomPairs(r40, 1000, 500)),
         pairsInput(1000, randomPairs(r40, 1000, 1500)),
-        pairsInput(1000, Array.from({ length: 999 }, (_v, i) => [i + 1, i + 2] as [number, number])),
+        pairsInput(
+          1000,
+          Array.from({ length: 999 }, (_v, i) => [i + 1, i + 2] as [number, number]),
+        ),
       ],
       solve: groups,
     },
@@ -1014,19 +1146,33 @@ export function threeExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Breadth-First Search", "Matrix"],
       statement: `The first line has r and c (1 <= r, c <= 50). Each of the next r lines has c numbers: 0 is an empty cell, 1 is fresh fruit and 2 is spoiled fruit. Every minute, each fresh fruit that touches a spoiled fruit above, below, left or right becomes spoiled. Print how many minutes pass until no fresh fruit is left, 0 if there was none to begin with, or -1 if some fresh fruit can never spoil. ${limitsNote}`,
-      samples: [gridInput([[2, 1, 1], [1, 1, 0], [0, 1, 1]]), gridInput([[0, 2]])],
+      samples: [
+        gridInput([
+          [2, 1, 1],
+          [1, 1, 0],
+          [0, 1, 1],
+        ]),
+        gridInput([[0, 2]]),
+      ],
       tests: [
         gridInput([[0]]),
         gridInput([[1]]),
         gridInput([[2]]),
         gridInput([[2, 1, 1, 1, 1]]),
         gridInput([[2, 0, 1]]),
-        gridInput([[1, 2], [2, 1]]),
+        gridInput([
+          [1, 2],
+          [2, 1],
+        ]),
         gridInput(randomCells(r46, 5, 5, [2, 6, 1])),
         gridInput(randomCells(r46, 20, 25, [2, 10, 1])),
         gridInput(randomCells(r46, 50, 50, [1, 20, 1])),
         gridInput(randomCells(r46, 50, 50, [3, 12, 1])),
-        gridInput([[2, ...new Array<number>(49).fill(1)]].concat(Array.from({ length: 49 }, () => new Array<number>(50).fill(1)))),
+        gridInput(
+          [[2, ...new Array<number>(49).fill(1)]].concat(
+            Array.from({ length: 49 }, () => new Array<number>(50).fill(1)),
+          ),
+        ),
       ],
       solve: spoilage,
     },
@@ -1036,13 +1182,38 @@ export function threeExercises(): Exercise[] {
       difficulty: "hard",
       topics: ["Graphs", "Union Find", "Greedy"],
       statement: `The first line has n and m (1 <= n <= 500, 0 <= m <= 1200). Towns are numbered 1 to n. Each of the next m lines has a, b and w (1 <= w <= 1000): a cable that can join towns a and b at cost w (several cables may join the same pair). Choose cables so that every town can reach every other town, spending as little as possible. Print the total cost, or -1 if the towns cannot all be connected. ${limitsNote}`,
-      samples: [weighted(4, [[1, 2, 1], [2, 3, 2], [3, 4, 3], [1, 4, 10]]), weighted(3, [[1, 2, 5]])],
+      samples: [
+        weighted(4, [
+          [1, 2, 1],
+          [2, 3, 2],
+          [3, 4, 3],
+          [1, 4, 10],
+        ]),
+        weighted(3, [[1, 2, 5]]),
+      ],
       tests: [
         weighted(1, []),
-        weighted(2, [[1, 2, 7], [1, 2, 3]]),
-        weighted(3, [[1, 1, 1], [1, 2, 4], [2, 3, 6], [1, 3, 5]]),
-        weighted(4, [[1, 2, 1], [3, 4, 1]]),
-        weighted(5, [[1, 2, 2], [2, 3, 2], [3, 4, 2], [4, 5, 2], [5, 1, 1]]),
+        weighted(2, [
+          [1, 2, 7],
+          [1, 2, 3],
+        ]),
+        weighted(3, [
+          [1, 1, 1],
+          [1, 2, 4],
+          [2, 3, 6],
+          [1, 3, 5],
+        ]),
+        weighted(4, [
+          [1, 2, 1],
+          [3, 4, 1],
+        ]),
+        weighted(5, [
+          [1, 2, 2],
+          [2, 3, 2],
+          [3, 4, 2],
+          [4, 5, 2],
+          [5, 1, 1],
+        ]),
         weighted(30, randomConnected(r47, 30, 20, 20)),
         weighted(200, randomConnected(r47, 200, 400, 1000)),
         weighted(500, randomConnected(r47, 500, 700, 1000)),

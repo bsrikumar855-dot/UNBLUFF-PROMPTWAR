@@ -19,9 +19,12 @@ export function rng(seed: number): (n: number) => number {
     return Math.floor((s / 4294967296) * n);
   };
 }
-export const ints = (r: (n: number) => number, n: number, lo: number, hi: number) => Array.from({ length: n }, () => lo + r(hi - lo + 1));
-export const str = (r: (n: number) => number, n: number, alphabet: string) => Array.from({ length: n }, () => alphabet[r(alphabet.length)]).join("");
-export const lines = (input: string) => input.split("\n").filter((l, i, a) => !(i === a.length - 1 && l === ""));
+export const ints = (r: (n: number) => number, n: number, lo: number, hi: number) =>
+  Array.from({ length: n }, () => lo + r(hi - lo + 1));
+export const str = (r: (n: number) => number, n: number, alphabet: string) =>
+  Array.from({ length: n }, () => alphabet[r(alphabet.length)]).join("");
+export const lines = (input: string) =>
+  input.split("\n").filter((l, i, a) => !(i === a.length - 1 && l === ""));
 
 export const line = (...parts: (string | number)[]) => `${parts.join(" ")}\n`;
 export const arr = (a: number[]) => `${a.join(" ")}\n`;

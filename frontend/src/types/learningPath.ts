@@ -1,7 +1,13 @@
 /** SkillForge learning path: mirrors the "SkillForge learning path" section of CONTRACT.md. */
 
 export type StepStatus = "pending" | "active" | "done" | "blocked" | "remedial";
-export type AgentName = "profiler" | "skill_analyst" | "career_matcher" | "curriculum_planner" | "progress_evaluator" | "mentor";
+export type AgentName =
+  | "profiler"
+  | "skill_analyst"
+  | "career_matcher"
+  | "curriculum_planner"
+  | "progress_evaluator"
+  | "mentor";
 
 export interface LearnerProject {
   name: string;
@@ -125,13 +131,28 @@ export interface LearningPathView {
   unrecognized_skills: string[];
   /** Per certification entered: the topics it counts for (as declared skills, never verified). Empty `topics` means no skills mapped. */
   certification_skills: { cert: string; topics: string[] }[];
-  career_match: { role_id: string; percent: number; alternatives: { role_id: string; name: string; match_percent: number }[] };
+  career_match: {
+    role_id: string;
+    percent: number;
+    alternatives: { role_id: string; name: string; match_percent: number }[];
+  };
   analysis: { gaps: GapRow[]; strengths: GapRow[] };
   path: LearningPath;
-  upcoming: { step_id: string; label: string; status: string; resources: { title: string; url: string; type: string; est_minutes: number }[] }[];
+  upcoming: {
+    step_id: string;
+    label: string;
+    status: string;
+    resources: { title: string; url: string; type: string; est_minutes: number }[];
+  }[];
   progress: {
     percent_complete: number;
-    skill_bars: { skill_id: string; name: string; weight: number; mastery: number; unverified: boolean }[];
+    skill_bars: {
+      skill_id: string;
+      name: string;
+      weight: number;
+      mastery: number;
+      unverified: boolean;
+    }[];
     next_step: PathStep | null;
   };
   mentor: { message: string; source: "ai" | "template"; at: string };

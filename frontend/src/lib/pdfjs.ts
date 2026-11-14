@@ -7,7 +7,10 @@ let workerConfigured = false;
 export async function loadPdfjs() {
   const pdfjsLib = await import("pdfjs-dist");
   if (!workerConfigured) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+      "pdfjs-dist/build/pdf.worker.min.mjs",
+      import.meta.url
+    ).toString();
     workerConfigured = true;
   }
   return pdfjsLib;

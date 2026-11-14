@@ -37,11 +37,15 @@ export const FlowShell: React.FC<{
           <h1 className="serif text-title font-medium text-ink-primary">{title}</h1>
         </Enter>
         {description && (
-          <p className="mt-3 max-w-2xl leading-relaxed text-ink-secondary">{description}</p>
+          <p className="mt-3 max-w-2xl leading-relaxed text-ink-secondary">
+            {description}
+          </p>
         )}
         <div className="mt-6">{children}</div>
       </div>
-      {aside && <aside className="flex min-w-0 flex-col gap-5 xl:pt-[4.5rem]">{aside}</aside>}
+      {aside && (
+        <aside className="flex min-w-0 flex-col gap-5 xl:pt-[4.5rem]">{aside}</aside>
+      )}
     </div>
   </div>
 );

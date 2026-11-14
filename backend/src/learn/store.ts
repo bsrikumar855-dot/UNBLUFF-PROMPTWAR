@@ -37,7 +37,10 @@ export class MemoryLearnStore implements LearnStore {
 
 export class FirestoreLearnStore implements LearnStore {
   private readonly col;
-  constructor(db: Firestore = new Firestore({ ignoreUndefinedProperties: true }), name = "unbluff_learn_progress") {
+  constructor(
+    db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
+    name = "unbluff_learn_progress",
+  ) {
     this.col = db.collection(name);
   }
   async get(uid: string) {

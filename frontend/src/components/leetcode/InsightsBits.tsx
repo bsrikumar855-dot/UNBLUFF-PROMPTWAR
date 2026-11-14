@@ -14,10 +14,7 @@ const DIFFICULTY_NAME = { easy: "Easy", medium: "Medium", hard: "Hard" } as cons
 export const SourceBanner: React.FC<{
   source: NonNullable<LeetCodeInsightsResponse["source"]>;
 }> = ({ source }) => (
-  <div
-    role="note"
-    className={cn(TILE, "px-4 py-3 text-sm text-ink-secondary")}
-  >
+  <div role="note" className={cn(TILE, "px-4 py-3 text-sm text-ink-secondary")}>
     <p>
       <span className="font-medium text-ink-primary">{source.label}.</span> Captured{" "}
       {formatWhen(source.captured_at)} as you stated, imported{" "}
@@ -180,7 +177,10 @@ export const SnapshotList: React.FC<{
       {snapshots.map((s) => (
         <li
           key={s.id}
-          className={cn(TILE, "flex flex-wrap items-center justify-between gap-2 px-4 py-3")}
+          className={cn(
+            TILE,
+            "flex flex-wrap items-center justify-between gap-2 px-4 py-3"
+          )}
         >
           <span className="text-ink-primary">
             <span className="num font-medium">{s.solved}</span> solved · captured{" "}
@@ -212,7 +212,12 @@ export const SnapshotList: React.FC<{
               >
                 {busy === s.id ? "Removing…" : "Yes, remove"}
               </Button>
-              <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setAsking(null)}>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="rounded-full"
+                onClick={() => setAsking(null)}
+              >
                 Keep
               </Button>
             </span>

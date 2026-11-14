@@ -1,6 +1,6 @@
-import { Toaster as Sonner } from "sonner"
+import { Toaster as Sonner } from "sonner";
 
-type ToasterProps = React.ComponentProps<typeof Sonner>
+type ToasterProps = React.ComponentProps<typeof Sonner>;
 
 /**
  * shadcn/ui's Sonner toaster, themed for the product (light only: there is no dark theme, so the next-themes
@@ -21,6 +21,6 @@ const Toaster = ({ ...props }: ToasterProps) => (
     }}
     {...props}
   />
-)
+);
 
-export { Toaster }
+export { Toaster };

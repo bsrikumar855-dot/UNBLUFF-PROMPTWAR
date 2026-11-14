@@ -32,7 +32,8 @@ const blocked = (m: string) => {
   process.exit(2);
 };
 if (!project) blocked("set FIREBASE_PROJECT_ID to the non-production project id.");
-if (process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIRESTORE_EMULATOR_HOST) blocked("an emulator address is set.");
+if (process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIRESTORE_EMULATOR_HOST)
+  blocked("an emulator address is set.");
 if (!webKey) blocked("VITE_FIREBASE_API_KEY is not set.");
 if (!judge0Url) blocked("set JUDGE0_URL.");
 
@@ -127,7 +128,11 @@ async function startBackend(): Promise<void> {
     DSA_CATALOGUE_PATH: join(root, "data", "dsa", "practice-pack.json"),
     CODE_SUITES_PATH: join(root, "data", "code", "practice-suites.json"),
   };
-  child = spawn(process.execPath, ["--import", "tsx", "src/server.ts"], { cwd: root, env, stdio: ["ignore", "pipe", "pipe"] });
+  child = spawn(process.execPath, ["--import", "tsx", "src/server.ts"], {
+    cwd: root,
+    env,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
   child.stdout?.on("data", (d: Buffer) => logs.push(String(d)));
   child.stderr?.on("data", (d: Buffer) => logs.push(String(d)));
   for (let i = 0; i < 60; i++) {
@@ -147,7 +152,8 @@ async function stopBackend(): Promise<void> {
   child = undefined;
   await new Promise<void>((resolve) => {
     c.once("exit", () => resolve());
-    if (process.platform === "win32" && c.pid) spawn("taskkill", ["/pid", String(c.pid), "/t", "/f"]);
+    if (process.platform === "win32" && c.pid)
+      spawn("taskkill", ["/pid", String(c.pid), "/t", "/f"]);
     else c.kill();
     setTimeout(resolve, 5000);
   });
@@ -156,10 +162,18 @@ async function stopBackend(): Promise<void> {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any;
 const tokens: Record<string, string> = {};
-const call = async (method: string, path: string, who: string | null, body?: unknown): Promise<{ status: number; body: Json }> => {
+const call = async (
+  method: string,
+  path: string,
+  who: string | null,
+  body?: unknown,
+): Promise<{ status: number; body: Json }> => {
   const r = await fetch(`${base}${path}`, {
     method,
-    headers: { ...(who ? { Authorization: `Bearer ${tokens[who]}` } : {}), ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+    headers: {
+      ...(who ? { Authorization: `Bearer ${tokens[who]}` } : {}),
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await r.text();
@@ -172,46 +186,107 @@ const call = async (method: string, path: string, who: string | null, body?: unk
   return { status: r.status, body: json };
 };
 const signUp = async (label: string) => {
-  const r = await fetch(`${idt}/accounts:signUp?key=${webKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: `live-j0-${label}-${tag}@example.test`, password: `Pw-${randomBytes(12).toString("base64url")}`, returnSecureToken: true }) });
+  const r = await fetch(`${idt}/accounts:signUp?key=${webKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: `live-j0-${label}-${tag}@example.test`,
+      password: `Pw-${randomBytes(12).toString("base64url")}`,
+      returnSecureToken: true,
+    }),
+  });
   const b = (await r.json()) as { idToken?: string };
   if (!r.ok || !b.idToken) throw new Error("test-user sign-up failed");
   tokens[label] = b.idToken;
 };
 
 async function main() {
-  console.log(`Project: ${project}. Judge0: ${new URL(judge0Url).host} (REAL). Firebase: REAL. EXECUTION_PROVIDER_VERIFIED=${verified ? "true (set by you)" : "not set"}.`);
+  console.log(
+    `Project: ${project}. Judge0: ${new URL(judge0Url).host} (REAL). Firebase: REAL. EXECUTION_PROVIDER_VERIFIED=${verified ? "true (set by you)" : "not set"}.`,
+  );
   try {
     await signUp("a");
     await signUp("b");
     check("created two throwaway Firebase test users", Boolean(tokens.a && tokens.b));
     await startBackend();
-    check("backend started with the real Judge0 provider and the first-party practice suites", true, `port ${PORT}`);
+    check(
+      "backend started with the real Judge0 provider and the first-party practice suites",
+      true,
+      `port ${PORT}`,
+    );
 
     // exercise projection
     const ex = await call("GET", `/code/exercises/${QID}`, null);
-    check("the exercise is a gradable first-party exercise", ex.status === 200 && ex.body?.gradable === true && ex.body?.is_demonstration === false, `hidden tests: ${ex.body?.hidden_test_count}`);
-    check("the public exercise exposes no hidden test cases (only a count)", !("tests" in (ex.body ?? {})) && typeof ex.body?.hidden_test_count === "number" && (ex.body?.samples?.length ?? 0) >= 1);
+    check(
+      "the exercise is a gradable first-party exercise",
+      ex.status === 200 && ex.body?.gradable === true && ex.body?.is_demonstration === false,
+      `hidden tests: ${ex.body?.hidden_test_count}`,
+    );
+    check(
+      "the public exercise exposes no hidden test cases (only a count)",
+      !("tests" in (ex.body ?? {})) &&
+        typeof ex.body?.hidden_test_count === "number" &&
+        (ex.body?.samples?.length ?? 0) >= 1,
+    );
     const langs = await call("GET", "/code/languages", null);
-    check("the service reports the four supported languages", ["python", "javascript", "cpp", "java"].every((l) => JSON.stringify(langs.body).includes(l)));
+    check(
+      "the service reports the four supported languages",
+      ["python", "javascript", "cpp", "java"].every((l) => JSON.stringify(langs.body).includes(l)),
+    );
 
     // sample run: real execution, not stored, not counted
-    const run = await call("POST", "/code/run", "a", { language: "python", source: SOLUTIONS.python, question_id: QID, sample_index: 0 });
-    check("a sample run executed in the real sandbox and matched the sample output", run.status === 200 && /accepted|passed|completed/i.test(JSON.stringify(run.body)), `status ${run.status}`);
-    check("a sample run is not stored", ((await call("GET", "/code/submissions", "a")).body?.submissions ?? []).length === 0);
+    const run = await call("POST", "/code/run", "a", {
+      language: "python",
+      source: SOLUTIONS.python,
+      question_id: QID,
+      sample_index: 0,
+    });
+    check(
+      "a sample run executed in the real sandbox and matched the sample output",
+      run.status === 200 && /accepted|passed|completed/i.test(JSON.stringify(run.body)),
+      `status ${run.status}`,
+    );
+    check(
+      "a sample run is not stored",
+      ((await call("GET", "/code/submissions", "a")).body?.submissions ?? []).length === 0,
+    );
 
     // 1. two wrong answers first: counted failures create ONE revision item (only when the provider is verified)
-    const revItems = async (who: string) => (await call("GET", "/me/dsa-revision?view=all", who)).body?.items ?? [];
-    const overview = async (who: string) => (await call("GET", "/me/dsa-analytics", who)).body?.totals ?? {};
+    const revItems = async (who: string) =>
+      (await call("GET", "/me/dsa-revision?view=all", who)).body?.items ?? [];
+    const overview = async (who: string) =>
+      (await call("GET", "/me/dsa-analytics", who)).body?.totals ?? {};
     const wantStatus = verified ? "counted" : "excluded_unverified_provider";
     for (let i = 1; i <= 2; i++) {
-      const wrong = await call("POST", "/code/submit", "a", { question_id: QID, language: "python", source: WRONG_PY });
-      check(`wrong answer #${i} is judged wrong_answer with a failed-test number only`, wrong.status === 200 && wrong.body?.verdict === "wrong_answer" && typeof wrong.body?.failed_test === "number" && wrong.body?.analytics_status === wantStatus, `verdict ${wrong.body?.verdict}, analytics ${wrong.body?.analytics_status}`);
+      const wrong = await call("POST", "/code/submit", "a", {
+        question_id: QID,
+        language: "python",
+        source: WRONG_PY,
+      });
+      check(
+        `wrong answer #${i} is judged wrong_answer with a failed-test number only`,
+        wrong.status === 200 &&
+          wrong.body?.verdict === "wrong_answer" &&
+          typeof wrong.body?.failed_test === "number" &&
+          wrong.body?.analytics_status === wantStatus,
+        `verdict ${wrong.body?.verdict}, analytics ${wrong.body?.analytics_status}`,
+      );
     }
     if (verified) {
       const items = await revItems("a");
-      check("two counted failures created exactly one revision item (pending, due now)", items.length === 1 && items[0]?.question_id === QID && items[0]?.status === "pending", `${items.length} item(s), status ${items[0]?.status}`);
-      check("analytics: 2 eligible attempts, nothing solved yet", (await overview("a")).eligible_attempts === 2 && (await overview("a")).solved_unique === 0);
-      check("progress is not marked solved by wrong answers", !JSON.stringify((await call("GET", "/me/dsa-progress", "a")).body).includes('"solved"'));
+      check(
+        "two counted failures created exactly one revision item (pending, due now)",
+        items.length === 1 && items[0]?.question_id === QID && items[0]?.status === "pending",
+        `${items.length} item(s), status ${items[0]?.status}`,
+      );
+      check(
+        "analytics: 2 eligible attempts, nothing solved yet",
+        (await overview("a")).eligible_attempts === 2 && (await overview("a")).solved_unique === 0,
+      );
+      check(
+        "progress is not marked solved by wrong answers",
+        !JSON.stringify((await call("GET", "/me/dsa-progress", "a")).body).includes('"solved"'),
+      );
     } else {
       check("uncounted failures create no revision item", (await revItems("a")).length === 0);
     }
@@ -219,62 +294,148 @@ async function main() {
     // 2. accepted submissions in every language
     let firstAccepted = true;
     for (const lang of ["python", "javascript", "cpp", "java"]) {
-      const r = await call("POST", "/code/submit", "a", { question_id: QID, language: lang, source: SOLUTIONS[lang] });
-      check(`judged ${lang} submission against the hidden tests: accepted`, r.status === 200 && r.body?.verdict === "accepted", `verdict ${r.body?.verdict}, ${r.body?.passed}/${r.body?.total}`);
-      check(`${lang}: the response shows no hidden test input or expected output`, !/expected_output|"input"/.test(JSON.stringify(r.body)));
-      check(`${lang}: analytics status is ${wantStatus}`, r.body?.analytics_status === wantStatus, `status ${r.body?.analytics_status}`);
+      const r = await call("POST", "/code/submit", "a", {
+        question_id: QID,
+        language: lang,
+        source: SOLUTIONS[lang],
+      });
+      check(
+        `judged ${lang} submission against the hidden tests: accepted`,
+        r.status === 200 && r.body?.verdict === "accepted",
+        `verdict ${r.body?.verdict}, ${r.body?.passed}/${r.body?.total}`,
+      );
+      check(
+        `${lang}: the response shows no hidden test input or expected output`,
+        !/expected_output|"input"/.test(JSON.stringify(r.body)),
+      );
+      check(
+        `${lang}: analytics status is ${wantStatus}`,
+        r.body?.analytics_status === wantStatus,
+        `status ${r.body?.analytics_status}`,
+      );
       if (verified && firstAccepted) {
         firstAccepted = false;
-        check("the first accepted submission updated this student's progress", r.body?.progress_updated === true);
+        check(
+          "the first accepted submission updated this student's progress",
+          r.body?.progress_updated === true,
+        );
         const items = await revItems("a");
-        check("the revision item became spaced review (scheduled, due later), not a second item", items.length === 1 && items[0]?.status === "scheduled", `${items.length} item(s), status ${items[0]?.status}, stage ${items[0]?.stage}`);
+        check(
+          "the revision item became spaced review (scheduled, due later), not a second item",
+          items.length === 1 && items[0]?.status === "scheduled",
+          `${items.length} item(s), status ${items[0]?.status}, stage ${items[0]?.stage}`,
+        );
       }
     }
-    const ce = await call("POST", "/code/submit", "a", { question_id: QID, language: "cpp", source: BROKEN_CPP });
-    check("broken C++ is reported as a compile error", ce.status === 200 && /compil/i.test(String(ce.body?.verdict)), `verdict ${ce.body?.verdict}`);
+    const ce = await call("POST", "/code/submit", "a", {
+      question_id: QID,
+      language: "cpp",
+      source: BROKEN_CPP,
+    });
+    check(
+      "broken C++ is reported as a compile error",
+      ce.status === 200 && /compil/i.test(String(ce.body?.verdict)),
+      `verdict ${ce.body?.verdict}`,
+    );
 
     // 3. storage, ownership, progress, analytics
     const mine = (await call("GET", "/code/submissions", "a")).body?.submissions ?? [];
-    check("all seven judged submissions are stored for the owner (this also proves the composite index)", mine.length === 7, `${mine.length} stored`);
-    check("another student cannot list or open them", ((await call("GET", "/code/submissions", "b")).body?.submissions ?? []).length === 0 && (await call("GET", `/code/submissions/${mine[0]?.id}`, "b")).status === 404);
+    check(
+      "all seven judged submissions are stored for the owner (this also proves the composite index)",
+      mine.length === 7,
+      `${mine.length} stored`,
+    );
+    check(
+      "another student cannot list or open them",
+      ((await call("GET", "/code/submissions", "b")).body?.submissions ?? []).length === 0 &&
+        (await call("GET", `/code/submissions/${mine[0]?.id}`, "b")).status === 404,
+    );
     const totals = await overview("a");
     if (verified) {
-      check("analytics: 1 question solved, 4 accepted attempts, 7 eligible attempts", totals.solved_unique === 1 && totals.accepted_attempts === 4 && totals.eligible_attempts === 7, JSON.stringify(totals));
+      check(
+        "analytics: 1 question solved, 4 accepted attempts, 7 eligible attempts",
+        totals.solved_unique === 1 &&
+          totals.accepted_attempts === 4 &&
+          totals.eligible_attempts === 7,
+        JSON.stringify(totals),
+      );
       const prog = (await call("GET", "/me/dsa-progress", "a")).body;
-      check("the question is recorded as solved for this student only", JSON.stringify(prog).includes(QID) && JSON.stringify(prog).includes("solved") && !JSON.stringify((await call("GET", "/me/dsa-progress", "b")).body).includes(QID));
+      check(
+        "the question is recorded as solved for this student only",
+        JSON.stringify(prog).includes(QID) &&
+          JSON.stringify(prog).includes("solved") &&
+          !JSON.stringify((await call("GET", "/me/dsa-progress", "b")).body).includes(QID),
+      );
       const after = await revItems("a");
-      check("still exactly one revision item after all submissions (no duplicates)", after.length === 1, `${after.length} item(s), status ${after[0]?.status}`);
-      check("student B has no revision items and no analytics", (await revItems("b")).length === 0 && (await overview("b")).eligible_attempts === 0);
+      check(
+        "still exactly one revision item after all submissions (no duplicates)",
+        after.length === 1,
+        `${after.length} item(s), status ${after[0]?.status}`,
+      );
+      check(
+        "student B has no revision items and no analytics",
+        (await revItems("b")).length === 0 && (await overview("b")).eligible_attempts === 0,
+      );
     } else {
-      check("no result was counted: zero eligible attempts and nothing solved", totals.eligible_attempts === 0 && totals.solved_unique === 0, JSON.stringify(totals));
+      check(
+        "no result was counted: zero eligible attempts and nothing solved",
+        totals.eligible_attempts === 0 && totals.solved_unique === 0,
+        JSON.stringify(totals),
+      );
       check("student B's analytics are untouched", (await overview("b")).eligible_attempts === 0);
     }
 
     // cleanup
     for (const s of mine) await call("DELETE", `/code/submissions/${s.id}`, "a");
-    check("the test submissions were deleted", ((await call("GET", "/code/submissions", "a")).body?.submissions ?? []).length === 0);
+    check(
+      "the test submissions were deleted",
+      ((await call("GET", "/code/submissions", "a")).body?.submissions ?? []).length === 0,
+    );
     const log = logs.join("");
-    check("backend logs contain no token or submitted source code", !Object.values(tokens).some((t) => log.includes(t)) && !log.includes("std::getline") && !log.includes("ArrayDeque"));
+    check(
+      "backend logs contain no token or submitted source code",
+      !Object.values(tokens).some((t) => log.includes(t)) &&
+        !log.includes("std::getline") &&
+        !log.includes("ArrayDeque"),
+    );
   } finally {
     await stopBackend();
     // remove what this test created (owner_uid is the throwaway user's own id), then prove nothing is left
-    const db = (initializeApp({ credential: applicationDefault(), projectId: project }), getFirestore());
+    const db =
+      (initializeApp({ credential: applicationDefault(), projectId: project }), getFirestore());
     let left = 0;
     for (const t of Object.values(tokens)) {
-      const uid = (JSON.parse(Buffer.from(t.split(".")[1]!, "base64url").toString()) as { user_id: string }).user_id;
-      for (const col of ["unbluff_code_submissions", "unbluff_dsa_progress", "unbluff_dsa_revision", "unbluff_dsa_stats"]) {
+      const uid = (
+        JSON.parse(Buffer.from(t.split(".")[1]!, "base64url").toString()) as { user_id: string }
+      ).user_id;
+      for (const col of [
+        "unbluff_code_submissions",
+        "unbluff_dsa_progress",
+        "unbluff_dsa_revision",
+        "unbluff_dsa_stats",
+      ]) {
         const snap = await db.collection(col).where("owner_uid", "==", uid).get();
         await Promise.all(snap.docs.map((d) => d.ref.delete()));
         left += (await db.collection(col).where("owner_uid", "==", uid).get()).size;
       }
     }
-    if (Object.keys(tokens).length > 0) check("no records created by this test are left in Firestore", left === 0, `${left} left`);
+    if (Object.keys(tokens).length > 0)
+      check("no records created by this test are left in Firestore", left === 0, `${left} left`);
     let removed = 0;
     for (const t of Object.values(tokens)) {
-      const del = await fetch(`${idt}/accounts:delete?key=${webKey}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ idToken: t }) }).catch(() => null);
+      const del = await fetch(`${idt}/accounts:delete?key=${webKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: t }),
+      }).catch(() => null);
       if (del?.ok) removed += 1;
     }
-    if (Object.keys(tokens).length > 0) check("test users were deleted from Firebase Auth", removed === Object.keys(tokens).length, `${removed}/${Object.keys(tokens).length}`);
+    if (Object.keys(tokens).length > 0)
+      check(
+        "test users were deleted from Firebase Auth",
+        removed === Object.keys(tokens).length,
+        `${removed}/${Object.keys(tokens).length}`,
+      );
   }
 }
 

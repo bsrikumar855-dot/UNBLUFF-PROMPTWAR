@@ -15,7 +15,14 @@ describe("choosing the model provider", () => {
   });
 
   it("LLM_MODE=live selects the real Gemini provider, never the mock", () => {
-    const p = createProvider(loadConfig({ LLM_MODE: "live", GEMINI_API_KEY: "test-key-not-real", GEMINI_MODEL: "gemini-test-model" }), logger);
+    const p = createProvider(
+      loadConfig({
+        LLM_MODE: "live",
+        GEMINI_API_KEY: "test-key-not-real",
+        GEMINI_MODEL: "gemini-test-model",
+      }),
+      logger,
+    );
     expect(p).toBeInstanceOf(GeminiProvider);
     expect(p).not.toBeInstanceOf(MockProvider);
     expect(p.mode).toBe("live");

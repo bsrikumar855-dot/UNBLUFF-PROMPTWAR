@@ -73,7 +73,9 @@ export const ClaimSchema = z.strictObject({
   levels_passed: LevelsPassed,
   proficiency: unit,
   missing_concepts: z.array(z.string()),
-  evidence: z.array(z.strictObject({ level: Level, criterion: Criterion, passed: z.boolean(), quote: z.string() })),
+  evidence: z.array(
+    z.strictObject({ level: Level, criterion: Criterion, passed: z.boolean(), quote: z.string() }),
+  ),
   qa: z.array(QA),
   retest: RetestSchema.nullable(),
   fix_task: FixTask.nullable(),
@@ -107,19 +109,43 @@ export const ReportSchema = z.strictObject({
       state: SkillState,
       proficiency: unit,
       claim_ids: z.array(z.string()),
-      history: z.array(z.strictObject({ at: z.iso.datetime(), mode: Mode, claim_id: z.string(), proficiency: unit })),
+      history: z.array(
+        z.strictObject({
+          at: z.iso.datetime(),
+          mode: Mode,
+          claim_id: z.string(),
+          proficiency: unit,
+        }),
+      ),
     }),
   ),
   deprioritized_claim_ids: z.array(z.string()),
   blind_spots: z.array(BlindSpot),
   resume_lines: z.array(
-    z.strictObject({ index: z.number().int(), text: z.string(), verdict: Verdict.nullable(), claim_ids: z.array(z.string()) }),
+    z.strictObject({
+      index: z.number().int(),
+      text: z.string(),
+      verdict: Verdict.nullable(),
+      claim_ids: z.array(z.string()),
+    }),
   ),
   priorities: z.array(
-    z.strictObject({ rank: z.number().int().min(1).max(3), skill_id: z.string(), claim_id: z.string().nullable(), score: z.number(), reason: z.string() }),
+    z.strictObject({
+      rank: z.number().int().min(1).max(3),
+      skill_id: z.string(),
+      claim_id: z.string().nullable(),
+      score: z.number(),
+      reason: z.string(),
+    }),
   ),
   plan: z.array(
-    z.strictObject({ day: z.number().int().min(1).max(7), skill_id: z.string().nullable(), claim_id: z.string().nullable(), title: z.string(), task: z.string() }),
+    z.strictObject({
+      day: z.number().int().min(1).max(7),
+      skill_id: z.string().nullable(),
+      claim_id: z.string().nullable(),
+      title: z.string(),
+      task: z.string(),
+    }),
   ),
   progress: ProgressSchema,
 });

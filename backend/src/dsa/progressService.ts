@@ -20,7 +20,9 @@ export class DsaProgressService {
 
   async list(uid: string): Promise<DsaProgressListResponse> {
     const records = await this.store.listByOwner(uid);
-    return { progress: records.sort((a, b) => b.updated_at.localeCompare(a.updated_at)).map(toPublic) };
+    return {
+      progress: records.sort((a, b) => b.updated_at.localeCompare(a.updated_at)).map(toPublic),
+    };
   }
 
   /** Creates or updates the single record for (uid, question). Omitted fields keep their current value. */

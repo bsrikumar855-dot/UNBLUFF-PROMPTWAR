@@ -34,7 +34,10 @@ export class MemoryAccountStore implements AccountStore {
 
 export class FirestoreAccountStore implements AccountStore {
   private readonly col;
-  constructor(db: Firestore = new Firestore({ ignoreUndefinedProperties: true }), name = "unbluff_profiles") {
+  constructor(
+    db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
+    name = "unbluff_profiles",
+  ) {
     this.col = db.collection(name);
   }
   async get(uid: string) {

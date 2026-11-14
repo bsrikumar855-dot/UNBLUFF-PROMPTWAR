@@ -48,7 +48,12 @@ export function levelPassed(level: Level, criteria: Record<Criterion, CriterionR
 }
 
 /** Evidence guard first, then the deterministic level rule; root_cause must be a listed prerequisite. */
-export function finalizeGrade(raw: RawGrade, answer: string, level: Level, prerequisites: readonly string[] = []): Grade {
+export function finalizeGrade(
+  raw: RawGrade,
+  answer: string,
+  level: Level,
+  prerequisites: readonly string[] = [],
+): Grade {
   const { criteria, flips } = applyEvidenceGuard(raw.criteria, answer);
   const passed = !raw.admits_gap && levelPassed(level, criteria);
   return {

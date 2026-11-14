@@ -34,19 +34,35 @@ export function makeClaim(overrides: Partial<Claim> = {}): Claim {
 }
 
 export function makeProgress(overrides: Partial<Progress> = {}): Progress {
-  return { claims_total: 3, claims_done: 0, next_claim_id: "CL-001", next_mode: "assess", ...overrides };
+  return {
+    claims_total: 3,
+    claims_done: 0,
+    next_claim_id: "CL-001",
+    next_mode: "assess",
+    ...overrides,
+  };
 }
 
-const CRITERIA: Criterion[] = ["accuracy", "specificity", "mechanism", "ownership", "tradeoff"];
+const CRITERIA: Criterion[] = [
+  "accuracy",
+  "specificity",
+  "mechanism",
+  "ownership",
+  "tradeoff",
+];
 
 export function makeGrade(levelPassed: boolean, overrides: Partial<Grade> = {}): Grade {
   const criteria = Object.fromEntries(
     CRITERIA.map((c): [Criterion, CriterionResult] => [
       c,
       levelPassed
-        ? { passed: true, evidence_quote: "I wrote the cart slice", missing_concept: null }
+        ? {
+            passed: true,
+            evidence_quote: "I wrote the cart slice",
+            missing_concept: null,
+          }
         : { passed: false, evidence_quote: null, missing_concept: `missing ${c}` },
-    ]),
+    ])
   ) as Record<Criterion, CriterionResult>;
   return {
     criteria,
@@ -60,7 +76,14 @@ export function makeGrade(levelPassed: boolean, overrides: Partial<Grade> = {}):
 }
 
 /** A TurnResponse with the aliases filled consistently from the canonical fields. */
-export function makeTurn(overrides: Partial<Omit<TurnResponse, "last_grade" | "verdict" | "levels_passed" | "next_claim_id" | "retest">> = {}): TurnResponse {
+export function makeTurn(
+  overrides: Partial<
+    Omit<
+      TurnResponse,
+      "last_grade" | "verdict" | "levels_passed" | "next_claim_id" | "retest"
+    >
+  > = {}
+): TurnResponse {
   const claim = overrides.claim ?? makeClaim();
   const progress = overrides.progress ?? makeProgress();
   const grade = overrides.grade ?? null;
@@ -85,7 +108,10 @@ export function makeTurn(overrides: Partial<Omit<TurnResponse, "last_grade" | "v
   };
 }
 
-export function makeClaimsResponse(claims: Claim[], overrides: Partial<ClaimsResponse> = {}): ClaimsResponse {
+export function makeClaimsResponse(
+  claims: Claim[],
+  overrides: Partial<ClaimsResponse> = {}
+): ClaimsResponse {
   return {
     session_id: "s_test",
     role_id: "frontend_developer",

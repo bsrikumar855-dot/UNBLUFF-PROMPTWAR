@@ -235,13 +235,11 @@ describe("API client authentication", () => {
 
   it("reports an expired session when the server answers 401 to a signed request", async () => {
     const onUnauthorized = vi.fn();
-    global.fetch = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse(401, {
-          error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
-        })
-      );
+    global.fetch = vi.fn().mockResolvedValue(
+      jsonResponse(401, {
+        error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
+      })
+    );
     setAuthHooks({ getToken: async () => "token-123", onUnauthorized });
     await expect(apiClient("/sessions")).rejects.toMatchObject({
       code: "UNAUTHENTICATED",
@@ -252,13 +250,11 @@ describe("API client authentication", () => {
 
   it("signs the student out and explains why when the provider reports an expired token", async () => {
     const client = fakeClient({ uid: "u1", email: "a@b.co" });
-    global.fetch = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse(401, {
-          error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
-        })
-      );
+    global.fetch = vi.fn().mockResolvedValue(
+      jsonResponse(401, {
+        error: { code: "UNAUTHENTICATED", message: "Sign in to continue." },
+      })
+    );
     renderRoutes(client, "/login");
     await screen.findByText("HOME").catch(() => undefined); // signed-in users are bounced off /login
     await act(async () => {

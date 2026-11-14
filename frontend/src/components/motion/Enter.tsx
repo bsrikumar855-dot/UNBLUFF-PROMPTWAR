@@ -5,7 +5,16 @@ import { RISE, DUR, settle, stepDelay } from "./tokens";
 import { useSeen } from "./useSeen";
 
 type Tag = "div" | "section" | "p" | "li" | "ul" | "ol" | "header" | "span";
-const TAGS = { div: m.div, section: m.section, p: m.p, li: m.li, ul: m.ul, ol: m.ol, header: m.header, span: m.span } as const;
+const TAGS = {
+  div: m.div,
+  section: m.section,
+  p: m.p,
+  li: m.li,
+  ul: m.ul,
+  ol: m.ol,
+  header: m.header,
+  span: m.span,
+} as const;
 
 /**
  * A block rising into place when it enters the viewport (immediately, if it is already there). Content is in the page
@@ -27,7 +36,16 @@ export const Enter: React.FC<{
   "aria-label"?: string;
   "aria-live"?: "polite" | "assertive" | "off";
   "data-slug"?: string;
-}> = ({ children, as = "div", index = 0, delay = 0, y = RISE.md, duration = DUR.base, className, ...rest }) => {
+}> = ({
+  children,
+  as = "div",
+  index = 0,
+  delay = 0,
+  y = RISE.md,
+  duration = DUR.base,
+  className,
+  ...rest
+}) => {
   const ref = useRef<HTMLElement>(null);
   const animated = canObserve();
   const seen = useSeen(ref as React.RefObject<Element>, "0px 0px -6% 0px");

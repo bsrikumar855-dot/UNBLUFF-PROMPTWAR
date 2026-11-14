@@ -14,7 +14,12 @@ const list = (max: number, item: z.ZodType<string>) =>
   z
     .string()
     .max(600)
-    .transform((s) => s.split(",").map((x) => x.trim()).filter(Boolean))
+    .transform((s) =>
+      s
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean),
+    )
     .pipe(z.array(item).max(max) as unknown as z.ZodType<string[], string[]>);
 const slug = z.string().regex(/^[a-z0-9][a-z0-9_.+#-]{0,63}$/, "invalid value");
 const bool = z.enum(["true", "false", "1", "0"]).transform((v) => v === "true" || v === "1");
@@ -44,15 +49,22 @@ const FeedQuery = z.strictObject({
 
 const TrackerBody = z.strictObject({
   saved: z.boolean().optional(),
-  status: z.enum(["saved", "interested", "applied", "interviewing", "offer", "rejected", "withdrawn"]).nullable().optional(),
+  status: z
+    .enum(["saved", "interested", "applied", "interviewing", "offer", "rejected", "withdrawn"])
+    .nullable()
+    .optional(),
   applied_on: z.string().max(10).nullable().optional(),
   follow_up_on: z.string().max(10).nullable().optional(),
   notes: z.string().max(2500).optional(),
 });
-const TrackedQuery = z.strictObject({ filter: z.enum(["saved", "applications", "all"]).default("all") });
+const TrackedQuery = z.strictObject({
+  filter: z.enum(["saved", "applications", "all"]).default("all"),
+});
 const DeleteQuery = z.strictObject({ mode: z.enum(["bookmark", "all"]).default("bookmark") });
 const ResumeText = z.strictObject({ text: z.string().max(60_000, "The resume text is too long.") });
-const ResumeSkillsBody = z.strictObject({ skills: z.array(z.string().regex(/^[a-z0-9][a-z0-9_.+#-]{0,63}$/, "invalid skill")).max(60) });
+const ResumeSkillsBody = z.strictObject({
+  skills: z.array(z.string().regex(/^[a-z0-9][a-z0-9_.+#-]{0,63}$/, "invalid skill")).max(60),
+});
 const Slug = z.string().regex(/^[A-Za-z0-9._-]{1,300}$/, "invalid listing id");
 
 function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
@@ -62,7 +74,10 @@ function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
 }
 
 /** Career discovery, matching and the private tracker. Every route needs a verified student; the owner is always the token's uid. */
-export function careerRouter(career: CareerService, limiters: { read: RequestHandler; write: RequestHandler }): Router {
+export function careerRouter(
+  career: CareerService,
+  limiters: { read: RequestHandler; write: RequestHandler },
+): Router {
   const router = Router();
 
   router.get("/career/preferences", limiters.read, async (_req, res) => {
@@ -79,7 +94,11 @@ export function careerRouter(career: CareerService, limiters: { read: RequestHan
     res.set(noStore).json(career.extractFromResume(parse(ResumeText, req.body ?? {}).text));
   });
   router.put("/career/resume-skills", limiters.write, async (req, res) => {
-    res.set(noStore).json(await career.saveResumeSkills(uidOf(res), parse(ResumeSkillsBody, req.body ?? {}).skills));
+    res
+      .set(noStore)
+      .json(
+        await career.saveResumeSkills(uidOf(res), parse(ResumeSkillsBody, req.body ?? {}).skills),
+      );
   });
   router.delete("/career/resume-skills", limiters.write, async (_req, res) => {
     await career.deleteResumeSkills(uidOf(res));
@@ -96,7 +115,9 @@ export function careerRouter(career: CareerService, limiters: { read: RequestHan
   });
   router.get("/career/facets", limiters.read, async (req, res) => {
     const { tab: _tab, offset: _o, limit: _l, ...rest } = parse(FeedQuery, req.query);
-    res.set({ "Cache-Control": "private, max-age=60" }).json(await career.facets(rest as FeedParams));
+    res
+      .set({ "Cache-Control": "private, max-age=60" })
+      .json(await career.facets(rest as FeedParams));
   });
   router.get("/career/jobs/:slug", limiters.read, async (req, res) => {
     res.set(noStore).json(await career.job(uidOf(res), parse(Slug, req.params.slug)));

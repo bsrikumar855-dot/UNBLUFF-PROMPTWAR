@@ -78,7 +78,8 @@ export async function apiClient<T>(
   if (token) (defaultHeaders as Record<string, string>).Authorization = `Bearer ${token}`;
   try {
     const appCheck = (await authHooks?.getAppCheckToken?.()) ?? null;
-    if (appCheck) (defaultHeaders as Record<string, string>)["X-Firebase-AppCheck"] = appCheck;
+    if (appCheck)
+      (defaultHeaders as Record<string, string>)["X-Firebase-AppCheck"] = appCheck;
   } catch {
     // no App Check token: the backend decides
   }
@@ -139,11 +140,7 @@ export async function apiClient<T>(
     }
 
     if (err instanceof DOMException && err.name === "AbortError") {
-      throw new ApiError(
-        "Request timed out after 30 seconds",
-        "LLM_TIMEOUT",
-        504
-      );
+      throw new ApiError("Request timed out after 30 seconds", "LLM_TIMEOUT", 504);
     }
 
     const message = err instanceof Error ? err.message : "Network error";

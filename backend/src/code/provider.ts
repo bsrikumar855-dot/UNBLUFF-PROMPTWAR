@@ -21,7 +21,8 @@ export interface ExecuteInput {
 }
 
 /** What happened to the program itself. Comparing output with an expectation is the caller's job. */
-export type Outcome = "completed" | "compile_error" | "runtime_error" | "time_limit_exceeded" | "internal_error";
+export type Outcome =
+  "completed" | "compile_error" | "runtime_error" | "time_limit_exceeded" | "internal_error";
 
 export interface ExecuteResult {
   outcome: Outcome;

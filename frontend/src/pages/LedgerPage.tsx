@@ -33,13 +33,20 @@ export const LedgerPage: React.FC = () => {
     return (
       <FlowShell current={2} eyebrow="Evidence" title={TITLE}>
         <p className="mb-4 text-ink-secondary">
-          No session open. Start by adding your resume, or pick up a session you already started.
+          No session open. Start by adding your resume, or pick up a session you already
+          started.
         </p>
         <div className="flex flex-wrap gap-2">
-          <Link to={routes.setup} className={buttonClasses("primary", "md", "rounded-full")}>
+          <Link
+            to={routes.setup}
+            className={buttonClasses("primary", "md", "rounded-full")}
+          >
             Go to setup
           </Link>
-          <Link to={routes.sessions} className={buttonClasses("secondary", "md", "rounded-full bg-white/70")}>
+          <Link
+            to={routes.sessions}
+            className={buttonClasses("secondary", "md", "rounded-full bg-white/70")}
+          >
             My sessions
           </Link>
         </div>
@@ -52,7 +59,10 @@ export const LedgerPage: React.FC = () => {
         {error !== null ? (
           <>
             <ErrorState error={error} className="mb-4" />
-            <Link to={routes.sessions} className={buttonClasses("secondary", "sm", "rounded-full")}>
+            <Link
+              to={routes.sessions}
+              className={buttonClasses("secondary", "sm", "rounded-full")}
+            >
               My sessions
             </Link>
           </>
@@ -120,7 +130,6 @@ const Ledger: React.FC<{ sessionId: string }> = ({ sessionId }) => {
       title={TITLE}
       description="Check what we extracted. Edit wording, fix the skill, or delete anything you don’t want probed."
     >
-
       {state.blindSpots.length > 0 && (
         <GlassCard
           id="blind"
@@ -165,7 +174,11 @@ const Ledger: React.FC<{ sessionId: string }> = ({ sessionId }) => {
         onClick={confirm}
         disabled={!canStart}
         aria-busy={busy}
-        className={buttonClasses("primary", "md", "rounded-full bg-redline px-6 text-surface-50 hover:bg-redline-dark")}
+        className={buttonClasses(
+          "primary",
+          "md",
+          "rounded-full bg-redline px-6 text-surface-50 hover:bg-redline-dark"
+        )}
       >
         {busy ? "Saving your claims…" : "Start interrogation"}
         {!busy && <ArrowRight aria-hidden="true" />}

@@ -11,6 +11,12 @@ let value = input;
 for (const token of path.match(/[^.[\]]+/g) ?? []) {
   value = value?.[/^\d+$/.test(token) ? Number(token) : token];
 }
-if (pipe === "length") value = Array.isArray(value) || typeof value === "string" ? value.length : Object.keys(value ?? {}).length;
+if (pipe === "length")
+  value =
+    Array.isArray(value) || typeof value === "string"
+      ? value.length
+      : Object.keys(value ?? {}).length;
 
-process.stdout.write(typeof value === "string" ? `${value}\n` : `${JSON.stringify(value, null, 2)}\n`);
+process.stdout.write(
+  typeof value === "string" ? `${value}\n` : `${JSON.stringify(value, null, 2)}\n`,
+);

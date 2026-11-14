@@ -48,7 +48,9 @@ export class RoleRegistry {
   /** Loads and validates every role JSON in `dir` once at startup (fail fast). */
   static fromDirectory(dir: string): RoleRegistry {
     const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
-    return new RoleRegistry(files.map((f) => parseRole(JSON.parse(readFileSync(join(dir, f), "utf8")))));
+    return new RoleRegistry(
+      files.map((f) => parseRole(JSON.parse(readFileSync(join(dir, f), "utf8")))),
+    );
   }
 
   get(id: string): Role | undefined {

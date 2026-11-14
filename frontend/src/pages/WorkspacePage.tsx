@@ -48,14 +48,20 @@ const WorkspacePage: React.FC = () => {
     if (state.mode !== "prepare" || !state.roleId || role?.id === state.roleId) return;
     Promise.resolve()
       .then(() => api.getRole(state.roleId as string))
-      .then((r) => r && setRole(r), () => undefined);
+      .then(
+        (r) => r && setRole(r),
+        () => undefined
+      );
   }, [state.mode, state.roleId, role?.id]);
 
   /** Keep the session's claim list and progress in sync with each response (merged in the reducer, never from a stale copy). */
   const applyTurn = useCallback(
     (t: TurnResponse) => {
       setTurn(t);
-      dispatch({ type: "UPSERT_CLAIM", payload: { claim: t.claim, progress: t.progress } });
+      dispatch({
+        type: "UPSERT_CLAIM",
+        payload: { claim: t.claim, progress: t.progress },
+      });
     },
     [dispatch]
   );
@@ -137,7 +143,12 @@ const WorkspacePage: React.FC = () => {
   const done = turn?.turn === "done";
   // Teach me: show the skill primer once before the first (level 1, fresh) question of a claim.
   const primerSkill =
-    state.mode === "prepare" && turn && !done && turn.mode === "assess" && turn.level === 1 && !primed.has(turn.claim_id)
+    state.mode === "prepare" &&
+    turn &&
+    !done &&
+    turn.mode === "assess" &&
+    turn.level === 1 &&
+    !primed.has(turn.claim_id)
       ? (role?.skills.find((sk) => sk.id === turn.claim.skill_id) ?? null)
       : null;
   const nextId = progress?.next_claim_id ?? null;
@@ -158,10 +169,7 @@ const WorkspacePage: React.FC = () => {
       <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-4 lg:grid-cols-[17rem_minmax(0,1fr)_15rem]">
         <ClaimList claims={state.claims} activeId={turn?.claim_id ?? null} />
 
-        <section
-          aria-label="Question"
-          className={cn(GLASS, "p-5 sm:p-7")}
-        >
+        <section aria-label="Question" className={cn(GLASS, "p-5 sm:p-7")}>
           {turn?.mode === "retest" && !done && (
             <p className="mb-4 flex items-center gap-2 rounded-2xl bg-redline-soft/60 px-4 py-2.5 text-sm text-ink-primary">
               <RotateCcw size={16} aria-hidden="true" />
@@ -239,7 +247,10 @@ const WorkspacePage: React.FC = () => {
                       {nextMode === "retest" ? "Start retest →" : "Next claim →"}
                     </Button>
                   ) : (
-                    <Button className="rounded-full" onClick={() => navigate(routes.report(sessionId))}>
+                    <Button
+                      className="rounded-full"
+                      onClick={() => navigate(routes.report(sessionId))}
+                    >
                       See my report →
                     </Button>
                   )}

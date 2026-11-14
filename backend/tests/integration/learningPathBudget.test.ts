@@ -16,7 +16,12 @@ function setup(coach: (() => Promise<string | null>) | undefined) {
   const app = testApp({
     autoAuth: false,
     llm: provider.llm,
-    coach: coach ? async () => { coachCalls++; return coach(); } : undefined,
+    coach: coach
+      ? async () => {
+          coachCalls++;
+          return coach();
+        }
+      : undefined,
   });
   return { app, providerCalls: provider.total, coachCalls: () => coachCalls };
 }
@@ -24,9 +29,21 @@ function setup(coach: (() => Promise<string | null>) | undefined) {
 async function runScenario(app: ReturnType<typeof testApp>) {
   const created = await request(app).post("/api/learning-path").set(as).send(PS).expect(201);
   const id = created.body.id as string;
-  await request(app).post(`/api/learning-path/${id}/assessment`).set(as).send({ source: "simulation", skill: "JavaScript", score: 40 }).expect(200);
-  await request(app).post(`/api/learning-path/${id}/assessment`).set(as).send({ source: "simulation", skill: "JavaScript", score: 90 }).expect(200);
-  await request(app).post(`/api/learning-path/${id}/goal`).set(as).send({ role_id: "data_analyst" }).expect(200);
+  await request(app)
+    .post(`/api/learning-path/${id}/assessment`)
+    .set(as)
+    .send({ source: "simulation", skill: "JavaScript", score: 40 })
+    .expect(200);
+  await request(app)
+    .post(`/api/learning-path/${id}/assessment`)
+    .set(as)
+    .send({ source: "simulation", skill: "JavaScript", score: 90 })
+    .expect(200);
+  await request(app)
+    .post(`/api/learning-path/${id}/goal`)
+    .set(as)
+    .send({ role_id: "data_analyst" })
+    .expect(200);
   await request(app).get(`/api/learning-path/${id}`).set(as).expect(200);
   await request(app).get(`/api/learning-path/${id}/agent-log`).set(as).expect(200);
   return id;
@@ -48,10 +65,16 @@ describe("language-model calls per SkillForge event", () => {
   });
 
   it("still one attempt per event when the model fails, and the template is used instead", async () => {
-    const { app, coachCalls } = setup(async () => { throw new Error("quota"); });
+    const { app, coachCalls } = setup(async () => {
+      throw new Error("quota");
+    });
     const created = await request(app).post("/api/learning-path").set(as).send(PS).expect(201);
     expect(created.body.mentor.source).toBe("template");
-    const after = await request(app).post(`/api/learning-path/${created.body.id}/assessment`).set(as).send({ source: "simulation", skill: "JavaScript", score: 40 }).expect(200);
+    const after = await request(app)
+      .post(`/api/learning-path/${created.body.id}/assessment`)
+      .set(as)
+      .send({ source: "simulation", skill: "JavaScript", score: 40 })
+      .expect(200);
     expect(after.body.mentor.source).toBe("template");
     expect(coachCalls()).toBe(2);
   });

@@ -56,8 +56,17 @@ describe("State Management: Session & Interrogation Reducers", () => {
       level: null,
       question: null,
       teach_now: true,
-      claim: makeClaim({ verdict: "shaky", levels_passed: 1, proficiency: 0.25, missing_concepts: ["ARIA live regions"] }),
-      progress: makeProgress({ claims_done: 1, next_claim_id: "CL-002", next_mode: "retest" }),
+      claim: makeClaim({
+        verdict: "shaky",
+        levels_passed: 1,
+        proficiency: 0.25,
+        missing_concepts: ["ARIA live regions"],
+      }),
+      progress: makeProgress({
+        claims_done: 1,
+        next_claim_id: "CL-002",
+        next_mode: "retest",
+      }),
     });
 
     act(() => {

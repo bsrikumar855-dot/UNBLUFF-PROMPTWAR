@@ -50,7 +50,11 @@ function fakeAuth(initial: AuthUser | null) {
   return { client, emit: (u: AuthUser | null) => listener?.(u) };
 }
 
-const unverified: AuthUser = { uid: "carol", email: "carol@example.test", emailVerified: false };
+const unverified: AuthUser = {
+  uid: "carol",
+  email: "carol@example.test",
+  emailVerified: false,
+};
 
 function renderApp(client: AuthClient, path: string, extra: React.ReactNode = null) {
   return render(
@@ -83,7 +87,9 @@ describe("verified email gate", () => {
   it("holds private pages until the address is verified, and lets them through once it is", async () => {
     const { client, emit } = fakeAuth(unverified);
     renderApp(client, "/setup");
-    expect(await screen.findByRole("heading", { name: "Verify your email" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Verify your email" })
+    ).toBeInTheDocument();
     expect(screen.queryByText("setup page")).not.toBeInTheDocument();
     expect(screen.getByText("carol@example.test")).toBeInTheDocument();
 
@@ -109,13 +115,21 @@ describe("remember this device", () => {
   it("signing in with it off keeps the session to this tab and drafts in session storage", async () => {
     const { client } = fakeAuth(null);
     renderApp(client, "/login");
-    fireEvent.change(await screen.findByLabelText("Email"), { target: { value: "a@example.test" } });
-    fireEvent.change(screen.getByLabelText("Password"), { target: { value: "long-password" } });
-    const box = screen.getByRole("checkbox", { name: /Keep me signed in on this device/ });
+    fireEvent.change(await screen.findByLabelText("Email"), {
+      target: { value: "a@example.test" },
+    });
+    fireEvent.change(screen.getByLabelText("Password"), {
+      target: { value: "long-password" },
+    });
+    const box = screen.getByRole("checkbox", {
+      name: /Keep me signed in on this device/,
+    });
     expect(box).toBeChecked();
     fireEvent.click(box);
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    await waitFor(() => expect(client.signIn).toHaveBeenCalledWith("a@example.test", "long-password", false));
+    await waitFor(() =>
+      expect(client.signIn).toHaveBeenCalledWith("a@example.test", "long-password", false)
+    );
 
     saveDraft("u1", "q1", "python", "print(1)");
     expect(window.sessionStorage.getItem("unbluff:draft:u1:q1:python")).toBe("print(1)");
@@ -129,9 +143,15 @@ describe("remember this device", () => {
 describe("sign out of all devices", () => {
   it("revokes every session on the server, then signs out here too", async () => {
     mocked.signOutEverywhere.mockResolvedValue(undefined);
-    const { client } = fakeAuth({ uid: "alice", email: "alice@example.test", emailVerified: true });
+    const { client } = fakeAuth({
+      uid: "alice",
+      email: "alice@example.test",
+      emailVerified: true,
+    });
     renderApp(client, "/settings", <SecurityPanel />);
-    fireEvent.click(await screen.findByRole("button", { name: "Sign out of all devices…" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Sign out of all devices…" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere" }));
     await waitFor(() => expect(client.signOut).toHaveBeenCalled());
     expect(mocked.signOutEverywhere).toHaveBeenCalledTimes(1);
@@ -140,9 +160,15 @@ describe("sign out of all devices", () => {
 
   it("stays signed in and explains when the server could not do it", async () => {
     mocked.signOutEverywhere.mockRejectedValue(new ApiError("x", "INTERNAL", 500));
-    const { client } = fakeAuth({ uid: "alice", email: "alice@example.test", emailVerified: true });
+    const { client } = fakeAuth({
+      uid: "alice",
+      email: "alice@example.test",
+      emailVerified: true,
+    });
     renderApp(client, "/settings", <SecurityPanel />);
-    fireEvent.click(await screen.findByRole("button", { name: "Sign out of all devices…" }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Sign out of all devices…" })
+    );
     fireEvent.click(screen.getByRole("button", { name: "Sign out everywhere" }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(client.signOut).not.toHaveBeenCalled();
@@ -151,8 +177,17 @@ describe("sign out of all devices", () => {
 
 describe("AI allowance", () => {
   it("shows today's usage in Settings", async () => {
-    mocked.getUsage.mockResolvedValue({ date: "2026-10-22", used: 12, limit: 150, resets_at: "2026-10-23T00:00:00.000Z" });
-    const { client } = fakeAuth({ uid: "alice", email: "alice@example.test", emailVerified: true });
+    mocked.getUsage.mockResolvedValue({
+      date: "2026-10-22",
+      used: 12,
+      limit: 150,
+      resets_at: "2026-10-23T00:00:00.000Z",
+    });
+    const { client } = fakeAuth({
+      uid: "alice",
+      email: "alice@example.test",
+      emailVerified: true,
+    });
     renderApp(client, "/settings", <DataPanel />);
     const meter = await screen.findByRole("meter", { name: "AI allowance used today" });
     expect(meter).toHaveAttribute("aria-valuenow", "12");
@@ -160,9 +195,17 @@ describe("AI allowance", () => {
   });
 
   it("passes the server's 'resets in about N hours' message through", () => {
-    expect(getErrorMessage(new ApiError("You've used today's AI allowance. It resets in about 5 hours.", "DAILY_LIMIT_REACHED", 429))).toBe(
-      "You've used today's AI allowance. It resets in about 5 hours."
+    expect(
+      getErrorMessage(
+        new ApiError(
+          "You've used today's AI allowance. It resets in about 5 hours.",
+          "DAILY_LIMIT_REACHED",
+          429
+        )
+      )
+    ).toBe("You've used today's AI allowance. It resets in about 5 hours.");
+    expect(getErrorMessage(new ApiError("", "EMAIL_NOT_VERIFIED", 403))).toMatch(
+      /Verify your email/
     );
-    expect(getErrorMessage(new ApiError("", "EMAIL_NOT_VERIFIED", 403))).toMatch(/Verify your email/);
   });
 });

@@ -17,7 +17,12 @@ export interface VocabularyEntry {
   notFollowedBy?: RegExp;
 }
 
-const e = (slug: string, label: string, aliases: string[], extra: Partial<VocabularyEntry> = {}): VocabularyEntry => ({ slug, label, aliases, ...extra });
+const e = (
+  slug: string,
+  label: string,
+  aliases: string[],
+  extra: Partial<VocabularyEntry> = {},
+): VocabularyEntry => ({ slug, label, aliases, ...extra });
 
 export const SKILL_VOCABULARY: VocabularyEntry[] = [
   // languages
@@ -162,9 +167,13 @@ export interface ExtractedSkill {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
 // A skill must not touch a letter, digit or one of + # (so "c" never matches inside "c++" and "java" not inside "javascript").
-const compile = (alias: string, exactCase: boolean) => new RegExp(`(?<![A-Za-z0-9+#])${escapeRe(alias)}(?![A-Za-z0-9+#])`, exactCase ? "g" : "gi");
+const compile = (alias: string, exactCase: boolean) =>
+  new RegExp(`(?<![A-Za-z0-9+#])${escapeRe(alias)}(?![A-Za-z0-9+#])`, exactCase ? "g" : "gi");
 
-const PATTERNS = SKILL_VOCABULARY.map((v) => ({ v, res: v.aliases.map((a) => compile(a, v.exactCase === true)) }));
+const PATTERNS = SKILL_VOCABULARY.map((v) => ({
+  v,
+  res: v.aliases.map((a) => compile(a, v.exactCase === true)),
+}));
 
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const PHONE = /\+?\d[\d\s().-]{7,}\d/g;
@@ -206,7 +215,13 @@ export function extractResumeSkills(text: string): ExtractedSkill[] {
         if (first === null || m.index < first.start) first = { start: m.index, end };
       }
     }
-    if (mentions > 0 && first) found.push({ slug: v.slug, label: v.label, mentions, evidence: snippet(t, first.start, first.end) });
+    if (mentions > 0 && first)
+      found.push({
+        slug: v.slug,
+        label: v.label,
+        mentions,
+        evidence: snippet(t, first.start, first.end),
+      });
   }
   found.sort((a, b) => b.mentions - a.mentions || a.label.localeCompare(b.label));
   return found.slice(0, MAX_RESUME_SKILLS);

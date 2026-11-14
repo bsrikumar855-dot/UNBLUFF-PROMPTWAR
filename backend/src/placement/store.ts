@@ -1,5 +1,10 @@
 import { Firestore } from "@google-cloud/firestore";
-import type { PlacementChange, PlacementFeasibility, PlacementProfile, PlacementTask } from "../types.js";
+import type {
+  PlacementChange,
+  PlacementFeasibility,
+  PlacementProfile,
+  PlacementTask,
+} from "../types.js";
 
 /**
  * Storage for the placement planner. Everything is owned by one student (owner_uid, from the verified token).
@@ -70,7 +75,10 @@ export class MemoryPlacementStore implements PlacementStore {
     this.plans.set(rec.owner_uid, structuredClone(rec));
   }
   async listTasks(uid: string, limit: number) {
-    return [...this.tasks.values()].filter((t) => t.owner_uid === uid).slice(0, limit).map((t) => structuredClone(t));
+    return [...this.tasks.values()]
+      .filter((t) => t.owner_uid === uid)
+      .slice(0, limit)
+      .map((t) => structuredClone(t));
   }
   async saveTasks(recs: TaskRecord[]) {
     for (const r of recs) assert(SAFE_ID.test(r.id) && SAFE_UID.test(r.owner_uid));
@@ -97,7 +105,11 @@ export class FirestorePlacementStore implements PlacementStore {
 
   constructor(
     private readonly db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
-    names = { profiles: "unbluff_placement_profiles", plans: "unbluff_placement_plans", tasks: "unbluff_placement_tasks" },
+    names = {
+      profiles: "unbluff_placement_profiles",
+      plans: "unbluff_placement_plans",
+      tasks: "unbluff_placement_tasks",
+    },
   ) {
     this.profiles = db.collection(names.profiles);
     this.plans = db.collection(names.plans);

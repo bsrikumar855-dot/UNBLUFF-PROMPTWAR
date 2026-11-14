@@ -112,7 +112,13 @@ export const Sidebar: React.FC<{ onSearch: () => void }> = ({ onSearch }) => {
               }
               className="grid size-10 shrink-0 place-items-center rounded-full bg-white/75 font-mono text-sm font-bold text-ink-primary backdrop-blur-md shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8),inset_1px_1px_1px_rgba(255,255,255,1),0_4px_10px_-6px_rgba(24,24,27,0.3)] outline-none transition-transform duration-300 hover:scale-105 focus-visible:ring-2 focus-visible:ring-ink-primary"
             >
-              <img src="/brand/logo-mark.png" alt="" width={105} height={105} className="size-6 object-contain" />
+              <img
+                src="/brand/logo-mark.png"
+                alt=""
+                width={105}
+                height={105}
+                className="size-6 object-contain"
+              />
             </button>
             <Link
               to={routes.home}
@@ -120,7 +126,13 @@ export const Sidebar: React.FC<{ onSearch: () => void }> = ({ onSearch }) => {
               tabIndex={-1}
               className={cn(LABEL, "ml-2 flex-none")}
             >
-              <img src="/brand/logo-wordmark.png" alt="" width={216} height={74} className="h-8 w-auto" />
+              <img
+                src="/brand/logo-wordmark.png"
+                alt=""
+                width={216}
+                height={74}
+                className="h-8 w-auto"
+              />
             </Link>
           </div>
 
@@ -218,7 +230,10 @@ export const Sidebar: React.FC<{ onSearch: () => void }> = ({ onSearch }) => {
                   >
                     {name ?? email}
                   </p>
-                  <p className="eyebrow truncate text-[#3b0f0a]/65!" title={name ? email : undefined}>
+                  <p
+                    className="eyebrow truncate text-[#3b0f0a]/65!"
+                    title={name ? email : undefined}
+                  >
                     {name ? email : "Student"}
                   </p>
                 </div>

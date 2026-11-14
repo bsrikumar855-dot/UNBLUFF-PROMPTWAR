@@ -1,5 +1,10 @@
 import { initializeApp, type FirebaseApp } from "firebase/app";
-import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
+import {
+  getToken,
+  initializeAppCheck,
+  ReCaptchaEnterpriseProvider,
+  type AppCheck,
+} from "firebase/app-check";
 import {
   EmailAuthProvider,
   connectAuthEmulator,
@@ -45,7 +50,8 @@ const FRIENDLY: Record<string, string> = {
   "auth/too-many-requests": "Too many attempts. Wait a few minutes and try again.",
   "auth/network-request-failed": "Network problem. Check your connection and try again.",
   "auth/operation-not-allowed": "Email/password sign-in isn't enabled for this project.",
-  "auth/requires-recent-login": "For your security, sign out and sign in again, then retry.",
+  "auth/requires-recent-login":
+    "For your security, sign out and sign in again, then retry.",
 };
 
 /** Maps a Firebase error to copy that is safe to show (never the raw SDK message). */
@@ -68,8 +74,14 @@ function startAppCheck(app: FirebaseApp): AppCheck | null {
   const siteKey = import.meta.env.VITE_FIREBASE_APPCHECK_SITE_KEY;
   if (!siteKey) return null;
   const debug = import.meta.env.VITE_FIREBASE_APPCHECK_DEBUG_TOKEN;
-  if (debug) (self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string }).FIREBASE_APPCHECK_DEBUG_TOKEN = debug;
-  return initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true });
+  if (debug)
+    (
+      self as unknown as { FIREBASE_APPCHECK_DEBUG_TOKEN?: string }
+    ).FIREBASE_APPCHECK_DEBUG_TOKEN = debug;
+  return initializeAppCheck(app, {
+    provider: new ReCaptchaEnterpriseProvider(siteKey),
+    isTokenAutoRefreshEnabled: true,
+  });
 }
 
 function getFirebase(): Auth | null {
@@ -111,7 +123,10 @@ export const firebaseAuthClient: AuthClient = {
     const auth = getFirebase();
     if (!auth) throw NOT_CONFIGURED;
     try {
-      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+      await setPersistence(
+        auth,
+        remember ? browserLocalPersistence : browserSessionPersistence
+      );
       await signInWithEmailAndPassword(auth, email, password);
     } catch (err) {
       throw toAuthError(err);
@@ -122,7 +137,10 @@ export const firebaseAuthClient: AuthClient = {
     const auth = getFirebase();
     if (!auth) throw NOT_CONFIGURED;
     try {
-      await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
+      await setPersistence(
+        auth,
+        remember ? browserLocalPersistence : browserSessionPersistence
+      );
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
       await sendEmailVerification(user).catch(() => undefined); // can be resent from the verification screen
     } catch (err) {
@@ -174,11 +192,17 @@ export const firebaseAuthClient: AuthClient = {
     if (!user?.email) throw NOT_CONFIGURED;
     try {
       // Firebase requires a recent sign-in for sensitive changes; re-checking the password also proves it's the owner.
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
+      await reauthenticateWithCredential(
+        user,
+        EmailAuthProvider.credential(user.email, currentPassword)
+      );
       await updatePassword(user, newPassword);
       // Changing the password revokes every session, including the token this device holds (it keeps the old sign-in
       // time). Signing in again with the new password gives this device a fresh session; other devices stay signed out.
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, newPassword));
+      await reauthenticateWithCredential(
+        user,
+        EmailAuthProvider.credential(user.email, newPassword)
+      );
     } catch (err) {
       throw toAuthError(err);
     }
@@ -188,7 +212,10 @@ export const firebaseAuthClient: AuthClient = {
     const user = getFirebase()?.currentUser;
     if (!user?.email) throw NOT_CONFIGURED;
     try {
-      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+      await reauthenticateWithCredential(
+        user,
+        EmailAuthProvider.credential(user.email, password)
+      );
     } catch (err) {
       throw toAuthError(err);
     }

@@ -21,7 +21,12 @@ export const ProfilePanel: React.FC = () => {
   const auth = useAuth();
   const { profile, error: loadError, loading, reload } = useAccountProfile();
   const { roles } = useRoles();
-  const [form, setForm] = useState({ display_name: "", college: "", graduation_year: "", target_role_id: "" });
+  const [form, setForm] = useState({
+    display_name: "",
+    college: "",
+    graduation_year: "",
+    target_role_id: "",
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<unknown>(null);
   const [saved, setSaved] = useState(false);
@@ -37,13 +42,16 @@ export const ProfilePanel: React.FC = () => {
     });
   }, [profile]);
 
-  const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setSaved(false);
-    setForm((f) => ({ ...f, [k]: e.target.value }));
-  };
+  const set =
+    (k: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setSaved(false);
+      setForm((f) => ({ ...f, [k]: e.target.value }));
+    };
 
   const year = form.graduation_year.trim() === "" ? null : Number(form.graduation_year);
-  const yearInvalid = year !== null && (!Number.isInteger(year) || year < 1990 || year > 2100);
+  const yearInvalid =
+    year !== null && (!Number.isInteger(year) || year < 1990 || year > 2100);
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +76,12 @@ export const ProfilePanel: React.FC = () => {
   };
 
   return (
-    <GlassCard id="profile" icon={UserRound} title="Profile" sub="How UNBLUFF addresses you, and what you're preparing for.">
+    <GlassCard
+      id="profile"
+      icon={UserRound}
+      title="Profile"
+      sub="How UNBLUFF addresses you, and what you're preparing for."
+    >
       {loading && <LoadingState message="Loading your profile…" />}
       {loadError !== null && <ErrorState error={loadError} onRetry={reload} />}
       {!loading && loadError === null && (
@@ -77,13 +90,29 @@ export const ProfilePanel: React.FC = () => {
             <label htmlFor={ids.name} className={LABEL}>
               Display name
             </label>
-            <input id={ids.name} className={FIELD} value={form.display_name} onChange={set("display_name")} maxLength={60} autoComplete="name" placeholder="e.g. Asha Rao" />
+            <input
+              id={ids.name}
+              className={FIELD}
+              value={form.display_name}
+              onChange={set("display_name")}
+              maxLength={60}
+              autoComplete="name"
+              placeholder="e.g. Asha Rao"
+            />
           </div>
           <div>
             <label htmlFor={ids.college} className={LABEL}>
               College
             </label>
-            <input id={ids.college} className={FIELD} value={form.college} onChange={set("college")} maxLength={120} autoComplete="organization" placeholder="e.g. IIT Madras" />
+            <input
+              id={ids.college}
+              className={FIELD}
+              value={form.college}
+              onChange={set("college")}
+              maxLength={120}
+              autoComplete="organization"
+              placeholder="e.g. IIT Madras"
+            />
           </div>
           <div>
             <label htmlFor={ids.year} className={LABEL}>
@@ -109,7 +138,12 @@ export const ProfilePanel: React.FC = () => {
             <label htmlFor={ids.role} className={LABEL}>
               Target role
             </label>
-            <select id={ids.role} className={FIELD} value={form.target_role_id} onChange={set("target_role_id")}>
+            <select
+              id={ids.role}
+              className={FIELD}
+              value={form.target_role_id}
+              onChange={set("target_role_id")}
+            >
               <option value="">Not decided yet</option>
               {(roles ?? []).map((r) => (
                 <option key={r.id} value={r.id}>
@@ -119,7 +153,11 @@ export const ProfilePanel: React.FC = () => {
             </select>
           </div>
           <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
-            <Button type="submit" className="rounded-full" disabled={saving || yearInvalid}>
+            <Button
+              type="submit"
+              className="rounded-full"
+              disabled={saving || yearInvalid}
+            >
               {saving ? "Saving…" : "Save profile"}
             </Button>
             {saved && (
@@ -128,7 +166,9 @@ export const ProfilePanel: React.FC = () => {
               </p>
             )}
           </div>
-          {saveError !== null && <ErrorState error={saveError} className="sm:col-span-2" />}
+          {saveError !== null && (
+            <ErrorState error={saveError} className="sm:col-span-2" />
+          )}
         </form>
       )}
     </GlassCard>

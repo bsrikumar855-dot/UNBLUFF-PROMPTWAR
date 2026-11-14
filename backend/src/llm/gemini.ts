@@ -3,7 +3,16 @@ import { z } from "zod";
 import type { Logger } from "../logger.js";
 import type { RawGrade } from "../core/rules.js";
 import { LlmError, type LLMProvider } from "./provider.js";
-import { ExtractOutput, FixTaskOutput, PrimerOutput, GradeOutput, MentorChatOutput, MentorSummaryOutput, QuestionOutput, RewriteOutput } from "./schemas.js";
+import {
+  ExtractOutput,
+  FixTaskOutput,
+  PrimerOutput,
+  GradeOutput,
+  MentorChatOutput,
+  MentorSummaryOutput,
+  QuestionOutput,
+  RewriteOutput,
+} from "./schemas.js";
 import { clarifyPrompt } from "./prompts/clarify.js";
 import { extractPrompt } from "./prompts/extract.js";
 import { fixTaskPrompt } from "./prompts/fixTask.js";
@@ -15,7 +24,8 @@ import { rewritePrompt } from "./prompts/rewrite.js";
 import { SYSTEM_RULES } from "./prompts/shared.js";
 
 export const LLM_TIMEOUT_MS = 25_000;
-const RETRY_NOTE = "\n\nYour previous output was invalid JSON for the schema. Return only valid JSON.";
+const RETRY_NOTE =
+  "\n\nYour previous output was invalid JSON for the schema. Return only valid JSON.";
 
 const TEMPERATURE = { precise: 0.2, creative: 0.7 } as const;
 const TRANSIENT_BACKOFF_MS = 800;
@@ -66,7 +76,10 @@ export interface GeminiOptions {
 
 /** zod → JSON Schema for Gemini structured output (strip keywords the API doesn't accept). */
 function jsonSchema(schema: z.ZodType): unknown {
-  const { $schema: _ignored, ...rest } = z.toJSONSchema(schema, { target: "draft-7" }) as Record<string, unknown>;
+  const { $schema: _ignored, ...rest } = z.toJSONSchema(schema, { target: "draft-7" }) as Record<
+    string,
+    unknown
+  >;
   return rest;
 }
 
@@ -87,23 +100,46 @@ export class GeminiProvider implements LLMProvider {
     this.fallbackModel = opts.fallbackModel;
     this.logger = opts.logger;
     this.timeoutMs = opts.timeoutMs ?? LLM_TIMEOUT_MS;
-    this.mentor = { model: opts.mentorModel ?? opts.model, temperature: opts.mentorTemperature ?? 0.7, timeoutMs: opts.mentorTimeoutMs ?? 30_000 };
-    this.ai = opts.client ?? (opts.vertexai
-      ? new GoogleGenAI({ vertexai: true, apiKey: opts.apiKey, project: opts.project, location: opts.location })
-      : new GoogleGenAI({ apiKey: opts.apiKey }));
-    this.precise = { temperature: TEMPERATURE.precise, thinking: opts.gradeThinking ?? ThinkingLevel.LOW };
+    this.mentor = {
+      model: opts.mentorModel ?? opts.model,
+      temperature: opts.mentorTemperature ?? 0.7,
+      timeoutMs: opts.mentorTimeoutMs ?? 30_000,
+    };
+    this.ai =
+      opts.client ??
+      (opts.vertexai
+        ? new GoogleGenAI({
+            vertexai: true,
+            apiKey: opts.apiKey,
+            project: opts.project,
+            location: opts.location,
+          })
+        : new GoogleGenAI({ apiKey: opts.apiKey }));
+    this.precise = {
+      temperature: TEMPERATURE.precise,
+      thinking: opts.gradeThinking ?? ThinkingLevel.LOW,
+    };
   }
 
   private readonly precise: CallOptions;
-  private readonly creative: CallOptions = { temperature: TEMPERATURE.creative, thinking: ThinkingLevel.LOW };
+  private readonly creative: CallOptions = {
+    temperature: TEMPERATURE.creative,
+    thinking: ThinkingLevel.LOW,
+  };
 
   async extractClaims({ role, resumeText }: Parameters<LLMProvider["extractClaims"]>[0]) {
-    const out = await this.call("extract", extractPrompt(role, resumeText), ExtractOutput, this.precise);
+    const out = await this.call(
+      "extract",
+      extractPrompt(role, resumeText),
+      ExtractOutput,
+      this.precise,
+    );
     return out.claims;
   }
 
   async question(ctx: Parameters<LLMProvider["question"]>[0]) {
-    return (await this.call("question", questionPrompt(ctx), QuestionOutput, this.creative)).question;
+    return (await this.call("question", questionPrompt(ctx), QuestionOutput, this.creative))
+      .question;
   }
 
   async clarify(ctx: Parameters<LLMProvider["clarify"]>[0]) {
@@ -122,44 +158,85 @@ export class GeminiProvider implements LLMProvider {
     return this.call("primer", primerPrompt(role, skill, claim), PrimerOutput, this.creative);
   }
 
-  async fixTask({ role, claim, missingConcepts, rootCause }: Parameters<LLMProvider["fixTask"]>[0]) {
-    return this.call("fixtask", fixTaskPrompt(role, claim, missingConcepts, rootCause), FixTaskOutput, this.precise);
+  async fixTask({
+    role,
+    claim,
+    missingConcepts,
+    rootCause,
+  }: Parameters<LLMProvider["fixTask"]>[0]) {
+    return this.call(
+      "fixtask",
+      fixTaskPrompt(role, claim, missingConcepts, rootCause),
+      FixTaskOutput,
+      this.precise,
+    );
   }
 
   async rewrite({ claim, evidenceSummary }: Parameters<LLMProvider["rewrite"]>[0]) {
-    return (await this.call("rewrite", rewritePrompt(claim, evidenceSummary), RewriteOutput, this.precise)).rewrite;
+    return (
+      await this.call("rewrite", rewritePrompt(claim, evidenceSummary), RewriteOutput, this.precise)
+    ).rewrite;
   }
 
   async mentorChat({ system, prompt }: Parameters<LLMProvider["mentorChat"]>[0]) {
-    return this.call("mentor", prompt, MentorChatOutput, { temperature: this.mentor.temperature, thinking: ThinkingLevel.LOW }, { system, model: this.mentor.model, timeoutMs: this.mentor.timeoutMs });
+    return this.call(
+      "mentor",
+      prompt,
+      MentorChatOutput,
+      { temperature: this.mentor.temperature, thinking: ThinkingLevel.LOW },
+      { system, model: this.mentor.model, timeoutMs: this.mentor.timeoutMs },
+    );
   }
 
   async mentorSummarize({ system, prompt }: Parameters<LLMProvider["mentorSummarize"]>[0]) {
-    return this.call("mentor-summary", prompt, MentorSummaryOutput, { temperature: 0.2, thinking: ThinkingLevel.LOW }, { system, model: this.mentor.model, timeoutMs: this.mentor.timeoutMs });
+    return this.call(
+      "mentor-summary",
+      prompt,
+      MentorSummaryOutput,
+      { temperature: 0.2, thinking: ThinkingLevel.LOW },
+      { system, model: this.mentor.model, timeoutMs: this.mentor.timeoutMs },
+    );
   }
 
-  private async call<T>(name: string, prompt: string, schema: z.ZodType<T>, opts: CallOptions, extra: CallExtra = {}): Promise<T> {
+  private async call<T>(
+    name: string,
+    prompt: string,
+    schema: z.ZodType<T>,
+    opts: CallOptions,
+    extra: CallExtra = {},
+  ): Promise<T> {
     const responseJsonSchema = jsonSchema(schema);
     let invalidBefore = false;
     const primary = extra.model ?? this.model;
-    let model = this.fallbackModel && Date.now() < this.primaryCooldownUntil ? this.fallbackModel : primary;
+    let model =
+      this.fallbackModel && Date.now() < this.primaryCooldownUntil ? this.fallbackModel : primary;
     for (let attempt = 1; attempt <= 2; attempt++) {
       const started = performance.now();
       let text: string;
       try {
-        text = await this.generate(name, model, invalidBefore ? prompt + RETRY_NOTE : prompt, responseJsonSchema, opts, started, extra);
+        text = await this.generate(
+          name,
+          model,
+          invalidBefore ? prompt + RETRY_NOTE : prompt,
+          responseJsonSchema,
+          opts,
+          started,
+          extra,
+        );
       } catch (err) {
         if (err instanceof TransientError && attempt === 1) {
           if (model === primary && this.fallbackModel) {
             // A quota 429 says how long to wait; an overloaded or timed-out primary (503/504) gets a short default, so the next
             // calls go straight to the fallback instead of each waiting out the slow primary first.
-            this.primaryCooldownUntil = Date.now() + Math.min(err.retryAfterMs ?? OVERLOAD_COOLDOWN_MS, MAX_COOLDOWN_MS);
+            this.primaryCooldownUntil =
+              Date.now() + Math.min(err.retryAfterMs ?? OVERLOAD_COOLDOWN_MS, MAX_COOLDOWN_MS);
           }
           model = this.fallbackModel ?? primary;
           await new Promise((r) => setTimeout(r, TRANSIENT_BACKOFF_MS));
           continue;
         }
-        if (err instanceof TransientError) throw new LlmError("LLM_INVALID_OUTPUT", `${name}: service unavailable after retry`);
+        if (err instanceof TransientError)
+          throw new LlmError("LLM_INVALID_OUTPUT", `${name}: service unavailable after retry`);
         throw err;
       }
       const parsed = safeJson(text);
@@ -170,12 +247,23 @@ export class GeminiProvider implements LLMProvider {
         return result.data;
       }
       invalidBefore = true;
-      this.logger.warn({ prompt: name, model, attempt, ms, valid: false }, "llm call returned invalid output");
+      this.logger.warn(
+        { prompt: name, model, attempt, ms, valid: false },
+        "llm call returned invalid output",
+      );
     }
     throw new LlmError("LLM_INVALID_OUTPUT", `${name}: invalid output after retry`);
   }
 
-  private async generate(name: string, model: string, prompt: string, responseJsonSchema: unknown, opts: CallOptions, started: number, extra: CallExtra = {}): Promise<string> {
+  private async generate(
+    name: string,
+    model: string,
+    prompt: string,
+    responseJsonSchema: unknown,
+    opts: CallOptions,
+    started: number,
+    extra: CallExtra = {},
+  ): Promise<string> {
     const timeoutMs = extra.timeoutMs ?? this.timeoutMs;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);

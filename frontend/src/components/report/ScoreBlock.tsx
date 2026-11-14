@@ -15,7 +15,10 @@ export const ScoreBlock: React.FC<ScoreBlockProps> = ({ readiness, coverage }) =
   const dash = (Math.max(0, Math.min(100, readiness)) / 100) * CIRCUMFERENCE;
   return (
     <section aria-labelledby="score-heading" className={cn(GLASS, "p-5 sm:p-6")}>
-      <h2 id="score-heading" className="mb-4 serif text-heading font-medium text-ink-primary">
+      <h2
+        id="score-heading"
+        className="mb-4 serif text-heading font-medium text-ink-primary"
+      >
         Score
       </h2>
       <div className="flex flex-wrap items-center gap-6">

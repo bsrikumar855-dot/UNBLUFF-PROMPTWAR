@@ -1,7 +1,7 @@
 // @ts-nocheck -- vendored from React Bits (MIT + Commons Clause); written without this project's noUncheckedIndexedAccess
-'use client';
+"use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 export interface LiquidChromeProps {
   color?: string | number[];
@@ -275,18 +275,24 @@ void main() {
   fragColor = vec4(clamp(color, 0.0, 1.0) * alpha, alpha);
 }`;
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 const parseColor = (value: string | number[]): number[] => {
-  if (Array.isArray(value)) return [0, 1, 2].map(index => clamp(Number(value[index]) || 0, 0, 1));
-  const text = String(value || '').trim();
+  if (Array.isArray(value))
+    return [0, 1, 2].map((index) => clamp(Number(value[index]) || 0, 0, 1));
+  const text = String(value || "").trim();
   const hex = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(text);
   if (hex) {
-    const full = hex[1].length === 3 ? hex[1].replace(/./g, digit => digit + digit) : hex[1];
-    return [0, 2, 4].map(index => parseInt(full.slice(index, index + 2), 16) / 255);
+    const full =
+      hex[1].length === 3 ? hex[1].replace(/./g, (digit) => digit + digit) : hex[1];
+    return [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16) / 255);
   }
   const rgb = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/i.exec(text);
-  if (rgb) return [rgb[1], rgb[2], rgb[3]].map(channel => clamp(parseFloat(channel) / 255, 0, 1));
+  if (rgb)
+    return [rgb[1], rgb[2], rgb[3]].map((channel) =>
+      clamp(parseFloat(channel) / 255, 0, 1)
+    );
   return [1, 1, 1];
 };
 
@@ -322,7 +328,7 @@ const link = (gl: WebGL2RenderingContext, fragmentSource: string): Program | nul
     gl.deleteProgram(program);
     return null;
   }
-  const uniforms: Program['uniforms'] = {};
+  const uniforms: Program["uniforms"] = {};
   const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
   for (let index = 0; index < count; index++) {
     const info = gl.getActiveUniform(program, index);
@@ -332,7 +338,7 @@ const link = (gl: WebGL2RenderingContext, fragmentSource: string): Program | nul
 };
 
 const LiquidChrome = ({
-  color = '#ffffff',
+  color = "#ffffff",
   speed = 0.2,
   amplitude = 0.3,
   frequencyX = 3,
@@ -349,8 +355,8 @@ const LiquidChrome = ({
   intro = true,
   lightMode = false,
   maxDevicePixelRatio = 2,
-  className = '',
-  style
+  className = "",
+  style,
 }: LiquidChromeProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -358,7 +364,7 @@ const LiquidChrome = ({
   const [generation, setGeneration] = useState(0);
 
   const settings: Settings = {
-    tint: parseColor(color).map(channel => Math.pow(channel, 2.2)),
+    tint: parseColor(color).map((channel) => Math.pow(channel, 2.2)),
     speed: Math.max(0, speed),
     amplitude: clamp(amplitude, 0, 2),
     frequency: [Math.max(0.1, frequencyX), Math.max(0.1, frequencyY)],
@@ -373,7 +379,7 @@ const LiquidChrome = ({
     tilt: Math.max(0, tilt),
     intro,
     light: lightMode,
-    maxRatio: clamp(maxDevicePixelRatio, 0.5, 3)
+    maxRatio: clamp(maxDevicePixelRatio, 0.5, 3),
   };
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -387,21 +393,21 @@ const LiquidChrome = ({
     const canvas = canvasRef.current;
     if (!container || !canvas) return;
 
-    const gl = canvas.getContext('webgl2', {
+    const gl = canvas.getContext("webgl2", {
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
       depth: false,
       stencil: false,
-      powerPreference: 'high-performance'
+      powerPreference: "high-performance",
     });
     const chrome = gl ? link(gl, CHROME) : null;
     if (!gl || !chrome) return;
-    const fluid = Boolean(gl.getExtension('EXT_color_buffer_float'));
+    const fluid = Boolean(gl.getExtension("EXT_color_buffer_float"));
     const sim = fluid ? link(gl, SIM) : null;
     const slope = fluid ? link(gl, SLOPE) : null;
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const vao = gl.createVertexArray();
     const grid = { width: 1, height: 1 };
     const targets: Target[] = [];
@@ -418,20 +424,36 @@ const LiquidChrome = ({
     let raf = 0;
     let last = 0;
     let visible = true;
-    let pageVisible = document.visibilityState !== 'hidden';
+    let pageVisible = document.visibilityState !== "hidden";
     let lost = false;
 
     const makeTarget = (width: number, height: number): Target => {
       const texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG16F, width, height, 0, gl.RG, gl.HALF_FLOAT, null);
+      gl.texImage2D(
+        gl.TEXTURE_2D,
+        0,
+        gl.RG16F,
+        width,
+        height,
+        0,
+        gl.RG,
+        gl.HALF_FLOAT,
+        null
+      );
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       const framebuffer = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.framebufferTexture2D(
+        gl.FRAMEBUFFER,
+        gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,
+        texture,
+        0
+      );
       gl.clearColor(0, 0, 0, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -464,7 +486,8 @@ const LiquidChrome = ({
       if (!fluid || !sim || !slope) return;
       const gridWidth = clamp(Math.round(cssWidth / SIM_CELL), 16, 512);
       const gridHeight = clamp(Math.round(cssHeight / SIM_CELL), 16, 512);
-      if (gridWidth === grid.width && gridHeight === grid.height && targets.length) return;
+      if (gridWidth === grid.width && gridHeight === grid.height && targets.length)
+        return;
       targets.forEach(dropTarget);
       targets.length = 0;
       dropTarget(slopeTarget);
@@ -541,12 +564,15 @@ const LiquidChrome = ({
 
       const hovering = s.interactive && pointer.inside;
       const reach = reduced ? 0 : s.tilt;
-      const targetYaw = (hovering ? pointer.nx * 0.35 : 0.22 * Math.sin(time * 1.3)) * reach;
-      const targetPitch = (hovering ? -pointer.ny * 0.28 : 0.16 * Math.sin(time * 0.9 + 1.7)) * reach;
+      const targetYaw =
+        (hovering ? pointer.nx * 0.35 : 0.22 * Math.sin(time * 1.3)) * reach;
+      const targetPitch =
+        (hovering ? -pointer.ny * 0.28 : 0.16 * Math.sin(time * 0.9 + 1.7)) * reach;
       const stiffness = 36;
       const damping = 2 * Math.sqrt(stiffness) * 0.95;
       view.vyaw += ((targetYaw - view.yaw) * stiffness - view.vyaw * damping) * dt;
-      view.vpitch += ((targetPitch - view.pitch) * stiffness - view.vpitch * damping) * dt;
+      view.vpitch +=
+        ((targetPitch - view.pitch) * stiffness - view.vpitch * damping) * dt;
       view.yaw += view.vyaw * dt;
       view.pitch += view.vpitch * dt;
 
@@ -565,7 +591,8 @@ const LiquidChrome = ({
       const settling =
         Math.abs(view.vyaw) + Math.abs(view.vpitch) > 1e-4 ||
         Math.abs(targetYaw - view.yaw) + Math.abs(targetPitch - view.pitch) > 1e-4;
-      const busy = s.speed > 0 || presence < 1 || settling || energy > 0.002 || strokes.length > 0;
+      const busy =
+        s.speed > 0 || presence < 1 || settling || energy > 0.002 || strokes.length > 0;
       if (busy && visible && pageVisible) raf = requestAnimationFrame(frame);
     };
 
@@ -586,7 +613,11 @@ const LiquidChrome = ({
         y: (1 - (clientY - rect.top) / rect.height) * grid.height,
         nx: ((clientX - rect.left) / rect.width) * 2 - 1,
         ny: ((clientY - rect.top) / rect.height) * 2 - 1,
-        inside: clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom
+        inside:
+          clientX >= rect.left &&
+          clientX <= rect.right &&
+          clientY >= rect.top &&
+          clientY <= rect.bottom,
       };
     };
 
@@ -613,7 +644,7 @@ const LiquidChrome = ({
               bx: spot.x,
               by: spot.y,
               strength: -Math.min(0.45, 0.04 + travel * 0.045) * s.rippleSize,
-              radius: 4 * s.rippleSize
+              radius: 4 * s.rippleSize,
             },
             s
           );
@@ -630,7 +661,14 @@ const LiquidChrome = ({
       const spot = toGrid(event.clientX, event.clientY);
       if (!spot.inside) return;
       push(
-        { ax: spot.x, ay: spot.y, bx: spot.x, by: spot.y, strength: -1.6 * s.rippleSize, radius: 6 * s.rippleSize },
+        {
+          ax: spot.x,
+          ay: spot.y,
+          bx: spot.x,
+          by: spot.y,
+          strength: -1.6 * s.rippleSize,
+          radius: 6 * s.rippleSize,
+        },
         s
       );
       wake();
@@ -643,14 +681,14 @@ const LiquidChrome = ({
     };
 
     const onPointerUp = (event: PointerEvent) => {
-      if (event.pointerType !== 'mouse') onLeave();
+      if (event.pointerType !== "mouse") onLeave();
     };
 
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    window.addEventListener('pointerdown', onPointerDown, { passive: true });
-    window.addEventListener('pointerup', onPointerUp, { passive: true });
-    window.addEventListener('pointercancel', onPointerUp, { passive: true });
-    document.documentElement.addEventListener('pointerleave', onLeave);
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
+    window.addEventListener("pointerup", onPointerUp, { passive: true });
+    window.addEventListener("pointercancel", onPointerUp, { passive: true });
+    document.documentElement.addEventListener("pointerleave", onLeave);
 
     const onLost = (event: Event) => {
       event.preventDefault();
@@ -658,9 +696,9 @@ const LiquidChrome = ({
       cancelAnimationFrame(raf);
       raf = 0;
     };
-    const onRestored = () => setGeneration(value => value + 1);
-    canvas.addEventListener('webglcontextlost', onLost);
-    canvas.addEventListener('webglcontextrestored', onRestored);
+    const onRestored = () => setGeneration((value) => value + 1);
+    canvas.addEventListener("webglcontextlost", onLost);
+    canvas.addEventListener("webglcontextrestored", onRestored);
 
     const resizeObserver = new ResizeObserver(() => {
       resize();
@@ -668,17 +706,17 @@ const LiquidChrome = ({
     });
     resizeObserver.observe(container);
 
-    const intersection = new IntersectionObserver(entries => {
-      visible = entries.some(entry => entry.isIntersecting);
+    const intersection = new IntersectionObserver((entries) => {
+      visible = entries.some((entry) => entry.isIntersecting);
       wake();
     });
     intersection.observe(container);
 
     const onVisibility = () => {
-      pageVisible = document.visibilityState !== 'hidden';
+      pageVisible = document.visibilityState !== "hidden";
       wake();
     };
-    document.addEventListener('visibilitychange', onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
 
     resize();
     wake();
@@ -688,14 +726,14 @@ const LiquidChrome = ({
       wakeRef.current = null;
       resizeObserver.disconnect();
       intersection.disconnect();
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerdown', onPointerDown);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('pointercancel', onPointerUp);
-      document.documentElement.removeEventListener('pointerleave', onLeave);
-      document.removeEventListener('visibilitychange', onVisibility);
-      canvas.removeEventListener('webglcontextlost', onLost);
-      canvas.removeEventListener('webglcontextrestored', onRestored);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      document.documentElement.removeEventListener("pointerleave", onLeave);
+      document.removeEventListener("visibilitychange", onVisibility);
+      canvas.removeEventListener("webglcontextlost", onLost);
+      canvas.removeEventListener("webglcontextrestored", onRestored);
       if (!gl.isContextLost()) {
         targets.forEach(dropTarget);
         dropTarget(slopeTarget);
@@ -708,8 +746,16 @@ const LiquidChrome = ({
   }, [generation]);
 
   return (
-    <div ref={containerRef} className={`relative h-full w-full overflow-hidden ${className}`.trim()} style={style}>
-      <canvas ref={canvasRef} className="absolute inset-0 block h-full w-full" aria-hidden="true" />
+    <div
+      ref={containerRef}
+      className={`relative h-full w-full overflow-hidden ${className}`.trim()}
+      style={style}
+    >
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 block h-full w-full"
+        aria-hidden="true"
+      />
     </div>
   );
 };

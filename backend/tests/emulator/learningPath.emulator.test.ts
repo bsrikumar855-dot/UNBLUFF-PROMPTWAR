@@ -16,7 +16,8 @@ const PS = { role_id: "fullstack_developer", skills: ["Python", "SQL", "HTML"] }
 let db: Firestore;
 let store: FirestoreLearningPathStore;
 const data = loadLearningData(join(import.meta.dirname, "..", "..", "data", "learning"), roles);
-const service = () => new LearningPathService({ store, roles, data, logger: silentLogger, now: () => NOW });
+const service = () =>
+  new LearningPathService({ store, roles, data, logger: silentLogger, now: () => NOW });
 const uid = (n: string) => `lp-${run}-${n}`;
 
 beforeAll(() => {
@@ -42,7 +43,9 @@ describe("Firestore emulator: learning path store", () => {
     expect(await svc.get(uid("a"), created.id)).toEqual(created);
     const owned = await store.listByOwner(uid("a"));
     expect(owned.map((r) => r.id)).toEqual([created.id]);
-    expect((await svc.list(uid("a"))).paths).toEqual([{ id: created.id, role: created.role, updated_at: NOW.toISOString(), percent_complete: 0 }]);
+    expect((await svc.list(uid("a"))).paths).toEqual([
+      { id: created.id, role: created.role, updated_at: NOW.toISOString(), percent_complete: 0 },
+    ]);
   });
 
   it("never gives one student another's path, and leaves it untouched", async () => {
@@ -51,9 +54,19 @@ describe("Firestore emulator: learning path store", () => {
     expect(await store.listByOwner(uid("intruder"))).toEqual([]);
     expect((await svc.list(uid("intruder"))).paths).toEqual([]);
     await expect(svc.get(uid("intruder"), mine.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(svc.agentLog(uid("intruder"), mine.id)).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(svc.assess(uid("intruder"), mine.id, { source: "simulation", skill: "JavaScript", score: 10 })).rejects.toMatchObject({ code: "NOT_FOUND" });
-    await expect(svc.changeGoal(uid("intruder"), mine.id, { role_id: "data_analyst" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(svc.agentLog(uid("intruder"), mine.id)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    await expect(
+      svc.assess(uid("intruder"), mine.id, {
+        source: "simulation",
+        skill: "JavaScript",
+        score: 10,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      svc.changeGoal(uid("intruder"), mine.id, { role_id: "data_analyst" }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(await svc.get(uid("owner"), mine.id)).toEqual(mine); // unchanged, still version 1
     expect(mine.path.version).toBe(1);
   });
@@ -61,15 +74,20 @@ describe("Firestore emulator: learning path store", () => {
   it("applies updates in order and serialises concurrent ones, and the result survives a fresh service", async () => {
     const svc = service();
     const p = await svc.create(uid("upd"), PS);
-    const send = (skill: string, score: number) => svc.assess(uid("upd"), p.id, { source: "simulation", skill, score });
+    const send = (skill: string, score: number) =>
+      svc.assess(uid("upd"), p.id, { source: "simulation", skill, score });
     await Promise.all([send("Git", 90), send("Testing", 90)]);
     const after = await service().get(uid("upd"), p.id); // a different service instance reads what Firestore holds
     expect(after.path.version).toBe(3);
-    expect(after.path.states.map((s) => s.skill_id)).toEqual(expect.arrayContaining(["git", "testing"]));
+    expect(after.path.states.map((s) => s.skill_id)).toEqual(
+      expect.arrayContaining(["git", "testing"]),
+    );
     expect(after.path.history).toHaveLength(3);
     const ids = after.agent_log.map((e) => e.id);
     expect(ids).toEqual(ids.map((_, i) => `log-${i + 1}`)); // sequential, no id reused or lost
-    expect(new Date(after.updated_at).getTime()).toBeGreaterThanOrEqual(new Date(p.updated_at).getTime());
+    expect(new Date(after.updated_at).getTime()).toBeGreaterThanOrEqual(
+      new Date(p.updated_at).getTime(),
+    );
     const switched = await svc.changeGoal(uid("upd"), p.id, { role_id: "data_analyst" });
     expect((await service().get(uid("upd"), p.id)).path.version).toBe(4);
     expect(switched.role.id).toBe("data_analyst");
@@ -77,12 +95,18 @@ describe("Firestore emulator: learning path store", () => {
 
   it("caps each student at 20 paths and the 21st is refused", async () => {
     const svc = service();
-    for (let i = 0; i < MAX_PATHS_PER_STUDENT; i++) await svc.create(uid("cap"), { role_id: "fullstack_developer" });
+    for (let i = 0; i < MAX_PATHS_PER_STUDENT; i++)
+      await svc.create(uid("cap"), { role_id: "fullstack_developer" });
     expect((await store.listByOwner(uid("cap"))).length).toBe(MAX_PATHS_PER_STUDENT);
-    await expect(svc.create(uid("cap"), { role_id: "fullstack_developer" })).rejects.toMatchObject({ code: "BAD_REQUEST", message: /most you can keep/ });
+    await expect(svc.create(uid("cap"), { role_id: "fullstack_developer" })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      message: /most you can keep/,
+    });
     expect((await store.listByOwner(uid("cap"))).length).toBe(MAX_PATHS_PER_STUDENT);
     // another student is not affected by someone else's cap
-    await expect(svc.create(uid("cap-other"), { role_id: "fullstack_developer" })).resolves.toBeTruthy();
+    await expect(
+      svc.create(uid("cap-other"), { role_id: "fullstack_developer" }),
+    ).resolves.toBeTruthy();
   });
 
   it("deletes everything a student has, and only theirs (what account deletion calls)", async () => {
@@ -100,16 +124,26 @@ describe("Firestore emulator: learning path store", () => {
   it("round-trips the agent log, mentor note and roadmap exactly as written", async () => {
     const svc = service();
     const p = await svc.create(uid("log"), PS);
-    const failed = await svc.assess(uid("log"), p.id, { source: "simulation", skill: "JavaScript", score: 40 });
+    const failed = await svc.assess(uid("log"), p.id, {
+      source: "simulation",
+      skill: "JavaScript",
+      score: 40,
+    });
     const raw = await store.get(failed.id);
     expect(raw).not.toBeNull();
     // what Firestore holds equals what the API returned: nulls kept (to, concept, verified_proficiency), nothing dropped
     expect(raw!.agent_log).toEqual(failed.agent_log);
     expect(raw!.mentor).toEqual(failed.mentor);
     expect(raw!.path).toEqual(failed.path);
-    expect(raw!.agent_log.filter((e) => e.kind === "handoff").every((e) => e.to !== null)).toBe(true);
-    expect(raw!.agent_log.filter((e) => e.kind === "action").every((e) => e.to === null)).toBe(true);
-    expect(raw!.path.steps.some((s) => s.kind === "remedial" && s.concept === "Closures & event loop")).toBe(true);
+    expect(raw!.agent_log.filter((e) => e.kind === "handoff").every((e) => e.to !== null)).toBe(
+      true,
+    );
+    expect(raw!.agent_log.filter((e) => e.kind === "action").every((e) => e.to === null)).toBe(
+      true,
+    );
+    expect(
+      raw!.path.steps.some((s) => s.kind === "remedial" && s.concept === "Closures & event loop"),
+    ).toBe(true);
     expect(raw!.path.steps.find((s) => s.kind === "core")!.concept).toBeNull();
     // the stored log can be read again, in order, through the API
     expect((await svc.agentLog(uid("log"), p.id)).entries).toEqual(failed.agent_log);

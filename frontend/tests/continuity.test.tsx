@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, renderHook, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { Role, SessionDetailResponse, SessionSummary } from "@/types/contract";
 import { api } from "@/api/endpoints";
@@ -31,7 +39,17 @@ const role: Role = {
   id: "frontend_developer",
   name: "Frontend Developer",
   description: "d",
-  skills: [{ id: "react_state", name: "React State & Rendering", weight: 1, description: "", keywords: [], levels: { L1: [], L2: [], L3: [] }, prerequisites: [] }],
+  skills: [
+    {
+      id: "react_state",
+      name: "React State & Rendering",
+      weight: 1,
+      description: "",
+      keywords: [],
+      levels: { L1: [], L2: [], L3: [] },
+      prerequisites: [],
+    },
+  ],
 };
 
 const claims = [
@@ -93,9 +111,32 @@ beforeEach(() => {
 describe("session state", () => {
   it("UPSERT_CLAIM replaces a known claim and appends one it hasn't seen", () => {
     const { result } = renderHook(() => useSessionState(), { wrapper: SessionProvider });
-    act(() => result.current.dispatch({ type: "SET_SESSION", payload: { sessionId: "s", roleId: "r", claims: [claims[0]!], progress: makeProgress() } }));
-    act(() => result.current.dispatch({ type: "UPSERT_CLAIM", payload: { claim: { ...claims[0]!, verdict: "defended" }, progress: makeProgress({ claims_done: 1 }) } }));
-    act(() => result.current.dispatch({ type: "UPSERT_CLAIM", payload: { claim: claims[1]!, progress: makeProgress({ claims_done: 1 }) } }));
+    act(() =>
+      result.current.dispatch({
+        type: "SET_SESSION",
+        payload: {
+          sessionId: "s",
+          roleId: "r",
+          claims: [claims[0]!],
+          progress: makeProgress(),
+        },
+      })
+    );
+    act(() =>
+      result.current.dispatch({
+        type: "UPSERT_CLAIM",
+        payload: {
+          claim: { ...claims[0]!, verdict: "defended" },
+          progress: makeProgress({ claims_done: 1 }),
+        },
+      })
+    );
+    act(() =>
+      result.current.dispatch({
+        type: "UPSERT_CLAIM",
+        payload: { claim: claims[1]!, progress: makeProgress({ claims_done: 1 }) },
+      })
+    );
     expect(result.current.state.claims.map((c) => [c.id, c.verdict])).toEqual([
       ["CL-001", "defended"],
       ["CL-002", "pending"],
@@ -116,10 +157,15 @@ describe("the ledger survives a reload", () => {
 
   it("explains a session that can't be found and points to My sessions", async () => {
     const { ApiError } = await import("@/api/types");
-    mocked.getSession.mockRejectedValue(new ApiError("not found", "SESSION_NOT_FOUND", 404));
+    mocked.getSession.mockRejectedValue(
+      new ApiError("not found", "SESSION_NOT_FOUND", 404)
+    );
     openFresh("/ledger/s_gone");
     expect(await screen.findByText(/couldn't find this session/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "My sessions" })).toHaveAttribute("href", "/sessions");
+    expect(screen.getByRole("link", { name: "My sessions" })).toHaveAttribute(
+      "href",
+      "/sessions"
+    );
   });
 
   it("with no session at all, offers setup and My sessions", async () => {
@@ -132,32 +178,75 @@ describe("the ledger survives a reload", () => {
 
 describe("the workspace survives a reload", () => {
   it("rehydrates without the report, resumes the open question and keeps every claim listed", async () => {
-    mocked.getSession.mockResolvedValue(detail({ stage: "interrogate", open_claim_id: "CL-002", progress: makeProgress({ claims_total: 3, claims_done: 1, next_claim_id: "CL-002" }) }));
-    mocked.interrogate.mockResolvedValue(makeTurn({ session_id: "s_saved", claim_id: "CL-002", claim: claims[1]!, question: "How does Jest track coverage?", level: 2 }));
+    mocked.getSession.mockResolvedValue(
+      detail({
+        stage: "interrogate",
+        open_claim_id: "CL-002",
+        progress: makeProgress({
+          claims_total: 3,
+          claims_done: 1,
+          next_claim_id: "CL-002",
+        }),
+      })
+    );
+    mocked.interrogate.mockResolvedValue(
+      makeTurn({
+        session_id: "s_saved",
+        claim_id: "CL-002",
+        claim: claims[1]!,
+        question: "How does Jest track coverage?",
+        level: 2,
+      })
+    );
     openFresh("/workspace/s_saved");
-    expect(await screen.findByRole("heading", { name: "How does Jest track coverage?" })).toBeInTheDocument();
-    expect(mocked.interrogate).toHaveBeenCalledWith({ session_id: "s_saved", claim_id: "CL-002", mode: "assess" });
+    expect(
+      await screen.findByRole("heading", { name: "How does Jest track coverage?" })
+    ).toBeInTheDocument();
+    expect(mocked.interrogate).toHaveBeenCalledWith({
+      session_id: "s_saved",
+      claim_id: "CL-002",
+      mode: "assess",
+    });
     expect(mocked.getReport).not.toHaveBeenCalled();
     // Regression: the first turn used to replace the hydrated list with just its own claim.
-    for (const text of ["Built a React dashboard", "Wrote Jest tests", "Deployed an Express API"]) {
+    for (const text of [
+      "Built a React dashboard",
+      "Wrote Jest tests",
+      "Deployed an Express API",
+    ]) {
       expect(await screen.findByText(text)).toBeInTheDocument();
     }
   });
 
   it("keeps an unsent answer as a draft for this account, and drops it once sent", async () => {
-    mocked.getSession.mockResolvedValue(detail({ stage: "interrogate", open_claim_id: "CL-001" }));
-    mocked.interrogate.mockResolvedValue(makeTurn({ session_id: "s_saved", claim_id: "CL-001", claim: claims[0]!, question: "What did you build?" }));
+    mocked.getSession.mockResolvedValue(
+      detail({ stage: "interrogate", open_claim_id: "CL-001" })
+    );
+    mocked.interrogate.mockResolvedValue(
+      makeTurn({
+        session_id: "s_saved",
+        claim_id: "CL-001",
+        claim: claims[0]!,
+        question: "What did you build?",
+      })
+    );
     const first = openFresh("/workspace/s_saved");
     fireEvent.click(await screen.findByRole("button", { name: /ready, ask me/ })); // Teach me shows its primer first
-    fireEvent.change(await screen.findByLabelText("Your answer"), { target: { value: "A dashboard with hooks" } });
-    expect(loadDraft("u1", "answer:s_saved:CL-001", "assess-L1-question")).toBe("A dashboard with hooks");
+    fireEvent.change(await screen.findByLabelText("Your answer"), {
+      target: { value: "A dashboard with hooks" },
+    });
+    expect(loadDraft("u1", "answer:s_saved:CL-001", "assess-L1-question")).toBe(
+      "A dashboard with hooks"
+    );
     first.unmount();
 
     openFresh("/workspace/s_saved");
     fireEvent.click(await screen.findByRole("button", { name: /ready, ask me/ }));
     expect(await screen.findByDisplayValue("A dashboard with hooks")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Submit answer" }));
-    await waitFor(() => expect(loadDraft("u1", "answer:s_saved:CL-001", "assess-L1-question")).toBeNull());
+    await waitFor(() =>
+      expect(loadDraft("u1", "answer:s_saved:CL-001", "assess-L1-question")).toBeNull()
+    );
   });
 });
 
@@ -178,16 +267,32 @@ describe("My sessions", () => {
       sessions: [
         summary({ session_id: "s_review" }),
         summary({ session_id: "s_mid", stage: "interrogate", claims_done: 1 }),
-        summary({ session_id: "s_done", stage: "complete", claims_done: 3, mode: "defense" }),
+        summary({
+          session_id: "s_done",
+          stage: "complete",
+          claims_done: 3,
+          mode: "defense",
+        }),
       ],
     });
     openFresh("/sessions");
     const items = await screen.findAllByRole("listitem");
-    expect(within(items[0]!).getByRole("link", { name: "Review claims" })).toHaveAttribute("href", "/ledger/s_review");
-    expect(within(items[0]!).getByText("Frontend Developer · Teach me")).toBeInTheDocument();
-    expect(within(items[1]!).getByRole("link", { name: "Continue interview" })).toHaveAttribute("href", "/workspace/s_mid");
-    expect(within(items[1]!).getByRole("link", { name: "Report so far" })).toHaveAttribute("href", "/report/s_mid");
-    expect(within(items[2]!).getByRole("link", { name: "Open report" })).toHaveAttribute("href", "/report/s_done");
+    expect(
+      within(items[0]!).getByRole("link", { name: "Review claims" })
+    ).toHaveAttribute("href", "/ledger/s_review");
+    expect(
+      within(items[0]!).getByText("Frontend Developer · Teach me")
+    ).toBeInTheDocument();
+    expect(
+      within(items[1]!).getByRole("link", { name: "Continue interview" })
+    ).toHaveAttribute("href", "/workspace/s_mid");
+    expect(
+      within(items[1]!).getByRole("link", { name: "Report so far" })
+    ).toHaveAttribute("href", "/report/s_mid");
+    expect(within(items[2]!).getByRole("link", { name: "Open report" })).toHaveAttribute(
+      "href",
+      "/report/s_done"
+    );
     expect(within(items[2]!).getByText(/Interview defense/)).toBeInTheDocument();
   });
 });

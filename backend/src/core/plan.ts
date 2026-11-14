@@ -13,7 +13,10 @@ const round3 = (n: number): number => Math.round(n * 1000) / 1000;
 function weakestClaim(skillClaims: readonly Claim[]): Claim | null {
   const assessed = skillClaims.filter((c) => isAssessed(c.verdict));
   const pool = assessed.length > 0 ? assessed : skillClaims;
-  return pool.reduce<Claim | null>((w, c) => (w === null || c.proficiency < w.proficiency ? c : w), null);
+  return pool.reduce<Claim | null>(
+    (w, c) => (w === null || c.proficiency < w.proficiency ? c : w),
+    null,
+  );
 }
 
 function priorityReason(skill: RoleSkill, claim: Claim | null): string {
@@ -94,7 +97,11 @@ function blindSpotItem(skill: RoleSkill): Omit<PlanItem, "day"> {
 }
 
 /** One item per priority, then the remaining weak claims; days 1..7, max 2 per day. */
-export function buildPlan(role: Role, claims: readonly Claim[], priorities: readonly Priority[]): PlanItem[] {
+export function buildPlan(
+  role: Role,
+  claims: readonly Claim[],
+  priorities: readonly Priority[],
+): PlanItem[] {
   const skillById = new Map(role.skills.map((s) => [s.id, s]));
   const claimById = new Map(claims.map((c) => [c.id, c]));
   const items: Omit<PlanItem, "day">[] = [];

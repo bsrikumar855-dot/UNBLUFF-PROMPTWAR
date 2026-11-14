@@ -11,7 +11,11 @@ export const Wordmark: React.FC<{ className?: string; to?: string }> = ({
   className,
   to = routes.home,
 }) => (
-  <Link to={to} aria-label="UNBLUFF home" className={cn("inline-flex items-center", className)}>
+  <Link
+    to={to}
+    aria-label="UNBLUFF home"
+    className={cn("inline-flex items-center", className)}
+  >
     <img src="/brand/logo.png" alt="" width={321} height={105} className="h-9 w-auto" />
   </Link>
 );

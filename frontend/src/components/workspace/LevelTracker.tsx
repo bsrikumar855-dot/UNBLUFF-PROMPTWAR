@@ -17,10 +17,7 @@ interface LevelTrackerProps {
 
 /** Right column: L1 → L2 → L3 with passed / current / upcoming states in text, not just color. */
 export const LevelTracker: React.FC<LevelTrackerProps> = ({ current, levelsPassed }) => (
-  <section
-    aria-labelledby="levels-heading"
-    className={cn(GLASS, "p-4")}
-  >
+  <section aria-labelledby="levels-heading" className={cn(GLASS, "p-4")}>
     <h2
       id="levels-heading"
       className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted"

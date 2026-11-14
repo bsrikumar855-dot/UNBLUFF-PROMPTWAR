@@ -42,7 +42,10 @@ const ReportPage: React.FC<{ demo?: boolean }> = ({ demo = false }) => {
           Readiness report
         </h1>
         <ErrorState error={error} onRetry={refresh} />
-        <Link to={routes.setup} className={buttonClasses("secondary", "md", "mt-4 rounded-full")}>
+        <Link
+          to={routes.setup}
+          className={buttonClasses("secondary", "md", "mt-4 rounded-full")}
+        >
           Start a new audit
         </Link>
       </div>

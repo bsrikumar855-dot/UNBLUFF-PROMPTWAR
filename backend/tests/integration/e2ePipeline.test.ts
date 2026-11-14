@@ -34,7 +34,15 @@ class PackProvider extends FakeProvider {
     super({ mock: true, solve: () => "" });
   }
   override async execute(input: Parameters<FakeProvider["execute"]>[0]) {
-    if (input.source.includes("CORRECT")) return { outcome: "completed" as const, stdout: `${byId.get(this.question())!.solve(input.stdin)}\n`, stderr: "", compile_output: "", time_ms: 7, memory_kb: 2500 };
+    if (input.source.includes("CORRECT"))
+      return {
+        outcome: "completed" as const,
+        stdout: `${byId.get(this.question())!.solve(input.stdin)}\n`,
+        stderr: "",
+        compile_output: "",
+        time_ms: 7,
+        memory_kb: 2500,
+      };
     return super.execute(input);
   }
 }
@@ -46,7 +54,14 @@ function pipeline(allowMock: boolean) {
   const progress = new DsaProgressService(progressStore, () => catalogue);
   const stats = new MemoryStatsStore();
   const revisions = new MemoryRevisionStore();
-  const analytics = new AnalyticsService({ stats, revisions, submissions, progress, catalogue: () => catalogue, logger: silentLogger });
+  const analytics = new AnalyticsService({
+    stats,
+    revisions,
+    submissions,
+    progress,
+    catalogue: () => catalogue,
+    logger: silentLogger,
+  });
   const code = new CodeService({
     provider: new PackProvider(() => current),
     suites: packSuites,
@@ -58,7 +73,14 @@ function pipeline(allowMock: boolean) {
     allowMockToCount: allowMock,
     onJudged: (r) => analytics.recordSubmission(r),
   });
-  const app = testApp({ autoAuth: false, code, analytics, catalogue, progressStore, submissionStore: submissions });
+  const app = testApp({
+    autoAuth: false,
+    code,
+    analytics,
+    catalogue,
+    progressStore,
+    submissionStore: submissions,
+  });
   const as = { Authorization: bearer("alice") };
   const texts: string[] = [];
   const keep = <T extends { text: string }>(r: T): T => (texts.push(r.text), r);
@@ -69,12 +91,23 @@ function pipeline(allowMock: boolean) {
     analytics,
     submit: async (q: string, source: string) => {
       current = q;
-      return keep(await request(app).post("/api/code/submit").set(as).send({ question_id: q, language: "python", source }));
+      return keep(
+        await request(app)
+          .post("/api/code/submit")
+          .set(as)
+          .send({ question_id: q, language: "python", source }),
+      );
     },
     get: async (path: string) => keep(await request(app).get(path).set(as)),
-    overview: async () => (await request(app).get("/api/me/dsa-analytics").set(as).expect(200)).body,
-    queue: async () => (await request(app).get("/api/me/dsa-revision?view=all").set(as).expect(200)).body,
-    progress: async () => (await request(app).get("/api/me/dsa-progress").set(as).expect(200)).body.progress as { question_id: string; status: string }[],
+    overview: async () =>
+      (await request(app).get("/api/me/dsa-analytics").set(as).expect(200)).body,
+    queue: async () =>
+      (await request(app).get("/api/me/dsa-revision?view=all").set(as).expect(200)).body,
+    progress: async () =>
+      (await request(app).get("/api/me/dsa-progress").set(as).expect(200)).body.progress as {
+        question_id: string;
+        status: string;
+      }[],
   };
 }
 
@@ -86,40 +119,99 @@ describe("judged submission -> history -> progress -> analytics -> revision (moc
     // Three genuine-looking wrong answers: stored, counted, queued for revision, never solved.
     for (let i = 0; i < 3; i++) {
       const res = await p.submit(Q1, "WRONG").then((r) => r.body);
-      expect(res).toMatchObject({ verdict: "wrong_answer", failed_test: 1, passed: 0, progress_updated: false, analytics_status: "counted", test_revision: "fp-1" });
+      expect(res).toMatchObject({
+        verdict: "wrong_answer",
+        failed_test: 1,
+        passed: 0,
+        progress_updated: false,
+        analytics_status: "counted",
+        test_revision: "fp-1",
+      });
     }
     expect(await p.progress()).toEqual([]);
     let queue = await p.queue();
     expect(queue.items).toHaveLength(1);
-    expect(queue.items[0]).toMatchObject({ question_id: Q1, reason: "repeated_failure", priority: 1, title: "Pair Count", due: true });
+    expect(queue.items[0]).toMatchObject({
+      question_id: Q1,
+      reason: "repeated_failure",
+      priority: 1,
+      title: "Pair Count",
+      due: true,
+    });
     let o = await p.overview();
-    expect(o.totals).toEqual({ solved_unique: 0, attempted_unique: 1, eligible_attempts: 3, accepted_attempts: 0 });
-    expect(o.repeated_failures).toEqual([expect.objectContaining({ question_id: Q1, consecutive_failures: 3 })]);
+    expect(o.totals).toEqual({
+      solved_unique: 0,
+      attempted_unique: 1,
+      eligible_attempts: 3,
+      accepted_attempts: 0,
+    });
+    expect(o.repeated_failures).toEqual([
+      expect.objectContaining({ question_id: Q1, consecutive_failures: 3 }),
+    ]);
 
     // A correct solution: judged on every hidden test, accepted, progress updated, revision becomes spaced review.
     const ok = (await p.submit(Q1, "CORRECT")).body;
     const suite = packSuites.suite(Q1)!;
-    expect(ok).toMatchObject({ verdict: "accepted", passed: suite.tests.length, total: suite.tests.length, failed_test: null, progress_updated: true, analytics_status: "counted" });
-    expect(await p.progress()).toEqual([expect.objectContaining({ question_id: Q1, status: "solved" })]);
+    expect(ok).toMatchObject({
+      verdict: "accepted",
+      passed: suite.tests.length,
+      total: suite.tests.length,
+      failed_test: null,
+      progress_updated: true,
+      analytics_status: "counted",
+    });
+    expect(await p.progress()).toEqual([
+      expect.objectContaining({ question_id: Q1, status: "solved" }),
+    ]);
     queue = await p.queue();
-    expect(queue.items[0]).toMatchObject({ reason: "spaced_review", status: "scheduled", due: false, priority: 4 });
+    expect(queue.items[0]).toMatchObject({
+      reason: "spaced_review",
+      status: "scheduled",
+      due: false,
+      priority: 4,
+    });
     expect(Date.parse(queue.items[0].due_at)).toBeGreaterThan(Date.now() + 23 * 3_600_000);
 
     // History keeps all four, newest first, in the owner's account only.
-    const history = (await p.get("/api/code/submissions")).body.submissions as { verdict: string }[];
-    expect(history.map((s) => s.verdict)).toEqual(["accepted", "wrong_answer", "wrong_answer", "wrong_answer"]);
+    const history = (await p.get("/api/code/submissions")).body.submissions as {
+      verdict: string;
+    }[];
+    expect(history.map((s) => s.verdict)).toEqual([
+      "accepted",
+      "wrong_answer",
+      "wrong_answer",
+      "wrong_answer",
+    ]);
 
     o = await p.overview();
-    expect(o.totals).toEqual({ solved_unique: 1, attempted_unique: 1, eligible_attempts: 4, accepted_attempts: 1 });
+    expect(o.totals).toEqual({
+      solved_unique: 1,
+      attempted_unique: 1,
+      eligible_attempts: 4,
+      accepted_attempts: 1,
+    });
     expect(o.submission_success).toMatchObject({ numerator: 1, denominator: 4, available: false }); // 4 < 5 submissions: no percentage yet
     expect(o.first_attempt_success).toMatchObject({ available: false, denominator: 1 });
     expect(o.topics.map((t: { key: string }) => t.key).sort()).toEqual(["Arrays", "Hash Table"]);
-    expect(o.difficulties).toEqual([expect.objectContaining({ key: "easy", attempts: 4, accepted: 1, questions_solved: 1 })]);
+    expect(o.difficulties).toEqual([
+      expect.objectContaining({ key: "easy", attempts: 4, accepted: 1, questions_solved: 1 }),
+    ]);
     expect(o.weekly.at(-1)).toMatchObject({ attempts: 4, accepted: 1, first_solves: 1 });
-    expect(o.exclusions).toMatchObject({ available: true, sampled_submissions: 4, mock_execution: 0 });
+    expect(o.exclusions).toMatchObject({
+      available: true,
+      sampled_submissions: 4,
+      mock_execution: 0,
+    });
 
     // Every stored record is labelled as mock output allowed only by the test policy.
-    for (const r of await p.submissions.listByOwner("alice")) expect(r).toMatchObject({ provider_mock: true, mock_counting_allowed: true, provider_verified: true, suite_eligible: true, suite_license: "own_work" });
+    for (const r of await p.submissions.listByOwner("alice"))
+      expect(r).toMatchObject({
+        provider_mock: true,
+        mock_counting_allowed: true,
+        provider_verified: true,
+        suite_eligible: true,
+        suite_license: "own_work",
+      });
   });
 
   it("detects a weak topic from repeated algorithmic failures across questions, with its evidence", async () => {
@@ -132,7 +224,12 @@ describe("judged submission -> history -> progress -> analytics -> revision (moc
     const o = await p.overview();
     const w = o.weaknesses.find((x: { topic: string }) => x.topic === "Strings");
     expect(w).toMatchObject({ status: "weak" });
-    expect(w.evidence).toMatchObject({ questions_attempted: 3, questions_solved: 0, attempts: 5, algorithmic_failures: 5 });
+    expect(w.evidence).toMatchObject({
+      questions_attempted: 3,
+      questions_solved: 0,
+      attempts: 5,
+      algorithmic_failures: 5,
+    });
     expect(w.explanation.join(" ")).toMatch(/3 of 3 attempted questions are still unsolved/);
     const queue = await p.queue();
     expect(queue.items).toHaveLength(3); // one item per question
@@ -158,13 +255,17 @@ describe("judged submission -> history -> progress -> analytics -> revision (moc
     await p.get("/api/code/submissions");
     await p.overview();
     await p.queue();
-    const secrets = ["fp_005_coin_ways", "fp_006_shortest_hops", "fp_002_pair_count"].flatMap((id) => {
-      const s = packSuites.suite(id)!;
-      const visible = new Set(s.samples.map((x) => x.input));
-      return s.tests.map((t) => t.input).filter((i) => i.length >= 20 && !visible.has(i));
-    });
+    const secrets = ["fp_005_coin_ways", "fp_006_shortest_hops", "fp_002_pair_count"].flatMap(
+      (id) => {
+        const s = packSuites.suite(id)!;
+        const visible = new Set(s.samples.map((x) => x.input));
+        return s.tests.map((t) => t.input).filter((i) => i.length >= 20 && !visible.has(i));
+      },
+    );
     expect(secrets.length).toBeGreaterThan(3);
-    for (const text of p.texts) for (const secret of secrets) expect(text.includes(JSON.stringify(secret).slice(1, -1))).toBe(false);
+    for (const text of p.texts)
+      for (const secret of secrets)
+        expect(text.includes(JSON.stringify(secret).slice(1, -1))).toBe(false);
   });
 });
 
@@ -173,10 +274,21 @@ describe("the same flow with the default policy (mock results are excluded from 
     const p = pipeline(false);
     const bad = (await p.submit("fp_002_pair_count", "WRONG")).body;
     const good = (await p.submit("fp_002_pair_count", "CORRECT")).body;
-    expect(bad).toMatchObject({ verdict: "wrong_answer", analytics_status: "excluded_mock_execution" });
-    expect(good).toMatchObject({ verdict: "accepted", analytics_status: "excluded_mock_execution" });
+    expect(bad).toMatchObject({
+      verdict: "wrong_answer",
+      analytics_status: "excluded_mock_execution",
+    });
+    expect(good).toMatchObject({
+      verdict: "accepted",
+      analytics_status: "excluded_mock_execution",
+    });
     const o = await p.overview();
-    expect(o.totals).toEqual({ solved_unique: 0, attempted_unique: 0, eligible_attempts: 0, accepted_attempts: 0 });
+    expect(o.totals).toEqual({
+      solved_unique: 0,
+      attempted_unique: 0,
+      eligible_attempts: 0,
+      accepted_attempts: 0,
+    });
     expect(o.has_eligible_activity).toBe(false);
     expect(o.exclusions).toMatchObject({ mock_execution: 2, sampled_submissions: 2 });
     expect((await p.queue()).items).toEqual([]);

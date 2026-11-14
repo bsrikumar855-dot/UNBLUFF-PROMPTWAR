@@ -14,7 +14,11 @@ import { createApp } from "./app.js";
 import { FirebaseTokenVerifier, MockTokenVerifier } from "./auth/verifier.js";
 import { EvidenceService } from "./placement/evidence.js";
 import { PlacementService } from "./placement/service.js";
-import { FirestorePlacementStore, MemoryPlacementStore, type PlacementStore } from "./placement/store.js";
+import {
+  FirestorePlacementStore,
+  MemoryPlacementStore,
+  type PlacementStore,
+} from "./placement/store.js";
 import { CareerService } from "./careers/service.js";
 import { FirestoreCareerStore, MemoryCareerStore, type CareerStore } from "./careers/store.js";
 import { FreehireClient } from "./careers/freehire.js";
@@ -23,13 +27,21 @@ import { LeetCodeService } from "./leetcode/service.js";
 import { DockerLatexCompiler, UnavailableLatex } from "./resume/latex.js";
 import { LearnService } from "./learn/service.js";
 import { FirestoreLearnStore, MemoryLearnStore, type LearnStore } from "./learn/store.js";
-import { FirestoreLearningPathStore, MemoryLearningPathStore, type LearningPathStore } from "./learning/store.js";
+import {
+  FirestoreLearningPathStore,
+  MemoryLearningPathStore,
+  type LearningPathStore,
+} from "./learning/store.js";
 import { LearningPathService } from "./learning/service.js";
 import { loadLearningData } from "./learning/data.js";
 import { COACH_INSTRUCTION } from "./agents/mentorAgent.js";
 import { ResumeService } from "./resume/service.js";
 import { FirestoreResumeStore, MemoryResumeStore, type ResumeStore } from "./resume/store.js";
-import { FirestoreLeetCodeStore, MemoryLeetCodeStore, type LeetCodeStore } from "./leetcode/store.js";
+import {
+  FirestoreLeetCodeStore,
+  MemoryLeetCodeStore,
+  type LeetCodeStore,
+} from "./leetcode/store.js";
 import { GithubGraphQL } from "./github/client.js";
 import { GithubOAuth } from "./github/oauth.js";
 import { GithubService } from "./github/service.js";
@@ -38,16 +50,31 @@ import { TokenVault } from "./github/vault.js";
 import { MentorService } from "./mentor/service.js";
 import { FirestoreMentorStore, MemoryMentorStore, type MentorStore } from "./mentor/store.js";
 import { AnalyticsService } from "./analytics/service.js";
-import { FirestoreRevisionStore, FirestoreStatsStore, MemoryRevisionStore, MemoryStatsStore, type RevisionStore, type StatsStore } from "./analytics/stores.js";
+import {
+  FirestoreRevisionStore,
+  FirestoreStatsStore,
+  MemoryRevisionStore,
+  MemoryStatsStore,
+  type RevisionStore,
+  type StatsStore,
+} from "./analytics/stores.js";
 import { DockerProvider } from "./code/docker.js";
 import { Judge0Provider } from "./code/judge0.js";
 import { UnavailableProvider, type ExecutionProvider } from "./code/provider.js";
 import { CodeService } from "./code/service.js";
-import { FirestoreSubmissionStore, MemorySubmissionStore, type SubmissionStore } from "./code/submissionStore.js";
+import {
+  FirestoreSubmissionStore,
+  MemorySubmissionStore,
+  type SubmissionStore,
+} from "./code/submissionStore.js";
 import { SuiteRegistry } from "./code/suites.js";
 import { Catalogue, assertCatalogueServable } from "./dsa/catalogue.js";
 import { DsaProgressService } from "./dsa/progressService.js";
-import { FirestoreProgressStore, MemoryProgressStore, type ProgressStore } from "./dsa/progressStore.js";
+import {
+  FirestoreProgressStore,
+  MemoryProgressStore,
+  type ProgressStore,
+} from "./dsa/progressStore.js";
 import { loadConfig, parseServiceAccount, type Config } from "./config.js";
 import { createLogger } from "./logger.js";
 import { createProvider } from "./llm/select.js";
@@ -64,39 +91,118 @@ function backendRoot(): string {
   return here.includes(`${join("dist", "src")}`) ? join(here, "..", "..") : join(here, "..");
 }
 
-function createStores(config: Config): { sessions: SessionStore; progress: ProgressStore; submissions: SubmissionStore; stats: StatsStore; revisions: RevisionStore; mentor: MentorStore; github: GithubStore; placement: PlacementStore; career: CareerStore; leetcode: LeetCodeStore; resume: ResumeStore; learn: LearnStore; account: AccountStore; usage: UsageStore; learningPath: LearningPathStore } {
-  if (config.STORE !== "firestore") return { sessions: new MemoryStore(), progress: new MemoryProgressStore(), submissions: new MemorySubmissionStore(), stats: new MemoryStatsStore(), revisions: new MemoryRevisionStore(), mentor: new MemoryMentorStore(), github: new MemoryGithubStore(), placement: new MemoryPlacementStore(), career: new MemoryCareerStore(), leetcode: new MemoryLeetCodeStore(), resume: new MemoryResumeStore(), learn: new MemoryLearnStore(), account: new MemoryAccountStore(), usage: new MemoryUsageStore(), learningPath: new MemoryLearningPathStore() };
-  const account = config.FIREBASE_SERVICE_ACCOUNT_JSON ? parseServiceAccount(config.FIREBASE_SERVICE_ACCOUNT_JSON) : null;
-  const projectId = config.GOOGLE_CLOUD_PROJECT ?? account?.project_id ?? config.FIREBASE_PROJECT_ID;
+function createStores(config: Config): {
+  sessions: SessionStore;
+  progress: ProgressStore;
+  submissions: SubmissionStore;
+  stats: StatsStore;
+  revisions: RevisionStore;
+  mentor: MentorStore;
+  github: GithubStore;
+  placement: PlacementStore;
+  career: CareerStore;
+  leetcode: LeetCodeStore;
+  resume: ResumeStore;
+  learn: LearnStore;
+  account: AccountStore;
+  usage: UsageStore;
+  learningPath: LearningPathStore;
+} {
+  if (config.STORE !== "firestore")
+    return {
+      sessions: new MemoryStore(),
+      progress: new MemoryProgressStore(),
+      submissions: new MemorySubmissionStore(),
+      stats: new MemoryStatsStore(),
+      revisions: new MemoryRevisionStore(),
+      mentor: new MemoryMentorStore(),
+      github: new MemoryGithubStore(),
+      placement: new MemoryPlacementStore(),
+      career: new MemoryCareerStore(),
+      leetcode: new MemoryLeetCodeStore(),
+      resume: new MemoryResumeStore(),
+      learn: new MemoryLearnStore(),
+      account: new MemoryAccountStore(),
+      usage: new MemoryUsageStore(),
+      learningPath: new MemoryLearningPathStore(),
+    };
+  const account = config.FIREBASE_SERVICE_ACCOUNT_JSON
+    ? parseServiceAccount(config.FIREBASE_SERVICE_ACCOUNT_JSON)
+    : null;
+  const projectId =
+    config.GOOGLE_CLOUD_PROJECT ?? account?.project_id ?? config.FIREBASE_PROJECT_ID;
   // Without a service-account secret, Application Default Credentials apply (Cloud Run identity, gcloud login, emulator).
   const db = new Firestore({
     projectId,
     ignoreUndefinedProperties: true,
-    ...(account ? { credentials: { client_email: account.client_email, private_key: account.private_key } } : {}),
+    ...(account
+      ? { credentials: { client_email: account.client_email, private_key: account.private_key } }
+      : {}),
   });
-  return { sessions: new FirestoreStore(undefined, db), progress: new FirestoreProgressStore(undefined, db), submissions: new FirestoreSubmissionStore(undefined, db), stats: new FirestoreStatsStore(undefined, db), revisions: new FirestoreRevisionStore(undefined, db), mentor: new FirestoreMentorStore(undefined, db), github: new FirestoreGithubStore(db), placement: new FirestorePlacementStore(db), career: new FirestoreCareerStore(db), leetcode: new FirestoreLeetCodeStore(db), resume: new FirestoreResumeStore(db), learn: new FirestoreLearnStore(db), account: new FirestoreAccountStore(db), usage: new FirestoreUsageStore(db), learningPath: new FirestoreLearningPathStore(db) };
+  return {
+    sessions: new FirestoreStore(undefined, db),
+    progress: new FirestoreProgressStore(undefined, db),
+    submissions: new FirestoreSubmissionStore(undefined, db),
+    stats: new FirestoreStatsStore(undefined, db),
+    revisions: new FirestoreRevisionStore(undefined, db),
+    mentor: new FirestoreMentorStore(undefined, db),
+    github: new FirestoreGithubStore(db),
+    placement: new FirestorePlacementStore(db),
+    career: new FirestoreCareerStore(db),
+    leetcode: new FirestoreLeetCodeStore(db),
+    resume: new FirestoreResumeStore(db),
+    learn: new FirestoreLearnStore(db),
+    account: new FirestoreAccountStore(db),
+    usage: new FirestoreUsageStore(db),
+    learningPath: new FirestoreLearningPathStore(db),
+  };
 }
 
 /**
  * An explicit approved file wins. Otherwise: the labelled dev fixture locally, and in production the first-party practice
  * pack (original exercises, no company data). Set DSA_CATALOGUE_PATH and CODE_SUITES_PATH together.
  */
-function loadCatalogue(config: Config, root: string, logger: ReturnType<typeof createLogger>): Catalogue {
-  const path = config.DSA_CATALOGUE_PATH ?? join(root, "data", "dsa", config.NODE_ENV === "production" ? "practice-pack.json" : "fixture.json");
-  if (!config.DSA_CATALOGUE_PATH) logger.info({ path }, "DSA_CATALOGUE_PATH is not set: using the bundled default for this environment");
+function loadCatalogue(
+  config: Config,
+  root: string,
+  logger: ReturnType<typeof createLogger>,
+): Catalogue {
+  const path =
+    config.DSA_CATALOGUE_PATH ??
+    join(
+      root,
+      "data",
+      "dsa",
+      config.NODE_ENV === "production" ? "practice-pack.json" : "fixture.json",
+    );
+  if (!config.DSA_CATALOGUE_PATH)
+    logger.info(
+      { path },
+      "DSA_CATALOGUE_PATH is not set: using the bundled default for this environment",
+    );
   const catalogue = Catalogue.fromPath(path); // validates; throws (fail fast) on a malformed file
   assertCatalogueServable(config.NODE_ENV, catalogue.source);
-  logger.info({ source: catalogue.source?.name, license_status: catalogue.source?.license_status }, "DSA catalogue loaded");
+  logger.info(
+    { source: catalogue.source?.name, license_status: catalogue.source?.license_status },
+    "DSA catalogue loaded",
+  );
   return catalogue;
 }
 
-function createExecutionProvider(config: Config, logger: ReturnType<typeof createLogger>): ExecutionProvider {
+function createExecutionProvider(
+  config: Config,
+  logger: ReturnType<typeof createLogger>,
+): ExecutionProvider {
   if (config.EXECUTION_PROVIDER === "docker") {
-    logger.warn("EXECUTION_PROVIDER=docker: running code in local Docker containers (development only)");
+    logger.warn(
+      "EXECUTION_PROVIDER=docker: running code in local Docker containers (development only)",
+    );
     return new DockerProvider();
   }
   if (config.EXECUTION_PROVIDER !== "judge0") {
-    logger.warn("EXECUTION_PROVIDER is not set: running and submitting code is reported as unavailable");
+    logger.warn(
+      "EXECUTION_PROVIDER is not set: running and submitting code is reported as unavailable",
+    );
     return new UnavailableProvider();
   }
   return new Judge0Provider({
@@ -109,31 +215,69 @@ function createExecutionProvider(config: Config, logger: ReturnType<typeof creat
 }
 
 /** Hidden test suites are server-only data. Unset: the labelled dev fixture locally, the practice pack's suites in production. */
-function loadSuites(config: Config, root: string, logger: ReturnType<typeof createLogger>): SuiteRegistry {
-  const path = config.CODE_SUITES_PATH ?? join(root, "data", "code", config.NODE_ENV === "production" ? "practice-suites.json" : "fixture-suites.json");
-  if (!config.CODE_SUITES_PATH) logger.info({ path }, "CODE_SUITES_PATH is not set: using the bundled default for this environment");
+function loadSuites(
+  config: Config,
+  root: string,
+  logger: ReturnType<typeof createLogger>,
+): SuiteRegistry {
+  const path =
+    config.CODE_SUITES_PATH ??
+    join(
+      root,
+      "data",
+      "code",
+      config.NODE_ENV === "production" ? "practice-suites.json" : "fixture-suites.json",
+    );
+  if (!config.CODE_SUITES_PATH)
+    logger.info(
+      { path },
+      "CODE_SUITES_PATH is not set: using the bundled default for this environment",
+    );
   const suites = SuiteRegistry.fromPath(path); // validates; throws on a malformed file
   logger.info({ suites: suites.size() }, "code test suites loaded");
   return suites;
 }
 
 /** GitHub is optional: without its OAuth app and encryption key the service exists but reports itself as not configured. */
-function createGithub(config: Config, store: GithubStore, logger: ReturnType<typeof createLogger>): GithubService {
+function createGithub(
+  config: Config,
+  store: GithubStore,
+  logger: ReturnType<typeof createLogger>,
+): GithubService {
   const timeoutMs = config.GITHUB_TIMEOUT_MS;
-  const configured = config.GITHUB_CLIENT_ID && config.GITHUB_CLIENT_SECRET && config.GITHUB_REDIRECT_URI && config.GITHUB_TOKEN_ENCRYPTION_KEY;
-  if (!configured) logger.warn("GitHub OAuth is not configured: GitHub insights are disabled (set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI and GITHUB_TOKEN_ENCRYPTION_KEY)");
+  const configured =
+    config.GITHUB_CLIENT_ID &&
+    config.GITHUB_CLIENT_SECRET &&
+    config.GITHUB_REDIRECT_URI &&
+    config.GITHUB_TOKEN_ENCRYPTION_KEY;
+  if (!configured)
+    logger.warn(
+      "GitHub OAuth is not configured: GitHub insights are disabled (set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_REDIRECT_URI and GITHUB_TOKEN_ENCRYPTION_KEY)",
+    );
   return new GithubService({
     store,
     gql: new GithubGraphQL({ timeoutMs }),
-    oauth: configured ? new GithubOAuth({ clientId: config.GITHUB_CLIENT_ID as string, clientSecret: config.GITHUB_CLIENT_SECRET as string, redirectUri: config.GITHUB_REDIRECT_URI as string, timeoutMs }) : null,
+    oauth: configured
+      ? new GithubOAuth({
+          clientId: config.GITHUB_CLIENT_ID as string,
+          clientSecret: config.GITHUB_CLIENT_SECRET as string,
+          redirectUri: config.GITHUB_REDIRECT_URI as string,
+          timeoutMs,
+        })
+      : null,
     vault: configured
       ? new TokenVault(
           config.GITHUB_TOKEN_ENCRYPTION_KEY as string,
-          (config.GITHUB_TOKEN_ENCRYPTION_KEY_RETIRED ?? "").split(",").map((k) => k.trim()).filter((k) => k !== ""),
+          (config.GITHUB_TOKEN_ENCRYPTION_KEY_RETIRED ?? "")
+            .split(",")
+            .map((k) => k.trim())
+            .filter((k) => k !== ""),
         )
       : null,
     logger,
-    frontendUrl: config.GITHUB_FRONTEND_URL || (config.CORS_ORIGIN.split(",")[0] ?? "http://localhost:5173").trim(),
+    frontendUrl:
+      config.GITHUB_FRONTEND_URL ||
+      (config.CORS_ORIGIN.split(",")[0] ?? "http://localhost:5173").trim(),
     freshMinutes: config.GITHUB_FRESH_MINUTES,
     minSyncIntervalMinutes: config.GITHUB_MIN_SYNC_INTERVAL_MINUTES,
   });
@@ -145,7 +289,9 @@ function main(): void {
   const root = backendRoot();
 
   const roles = RoleRegistry.fromDirectory(join(root, "data", "roles")); // asserts weights sum to 1
-  const demoReportJson = JSON.stringify(JSON.parse(readFileSync(join(root, "data", "demo_report.json"), "utf8")));
+  const demoReportJson = JSON.stringify(
+    JSON.parse(readFileSync(join(root, "data", "demo_report.json"), "utf8")),
+  );
   const stores = createStores(config);
   const catalogue = loadCatalogue(config, root, logger);
   const dsaProgress = new DsaProgressService(stores.progress, () => catalogue);
@@ -161,7 +307,9 @@ function main(): void {
     logger,
   });
   if (config.EXECUTION_PROVIDER === "judge0" && !config.EXECUTION_PROVIDER_VERIFIED) {
-    logger.warn("EXECUTION_PROVIDER_VERIFIED is not true: judged submissions will not count toward analytics until the operator confirms the service is a real deployment");
+    logger.warn(
+      "EXECUTION_PROVIDER_VERIFIED is not true: judged submissions will not count toward analytics until the operator confirms the service is a real deployment",
+    );
   }
   const github = createGithub(config, stores.github, logger);
   // LeetCode has no official API and forbids scraping: this service only holds a saved username and numbers the student imports.
@@ -177,11 +325,15 @@ function main(): void {
   // The rÃ©sumÃ© builder: the ATS score is deterministic and computed on demand; PDFs come from a sandboxed TeX container.
   const resume = new ResumeService({
     store: stores.resume,
-    compiler: config.LATEX_COMPILER === "docker" ? new DockerLatexCompiler() : new UnavailableLatex(),
+    compiler:
+      config.LATEX_COMPILER === "docker" ? new DockerLatexCompiler() : new UnavailableLatex(),
     role: (id) => roles.get(id) ?? null,
     logger,
   });
-  if (config.LATEX_COMPILER === "docker") logger.warn("LATEX_COMPILER=docker: building PDFs in local Docker containers (development only)");
+  if (config.LATEX_COMPILER === "docker")
+    logger.warn(
+      "LATEX_COMPILER=docker: building PDFs in local Docker containers (development only)",
+    );
   const learn = new LearnService({ store: stores.learn }); // DSA patterns and DBMS topics
   const careerHolder: { current?: CareerService } = {}; // the Career service is built after the placement service, which needs the mentor
   const mentor = new MentorService({
@@ -199,7 +351,11 @@ function main(): void {
     leetcode,
     resume,
     career: () => careerHolder.current,
-    retention: { conversationDays: config.MENTOR_CONVERSATION_RETENTION_DAYS, summaryDays: config.MENTOR_SUMMARY_RETENTION_DAYS, learningDays: config.MENTOR_LEARNING_RETENTION_DAYS },
+    retention: {
+      conversationDays: config.MENTOR_CONVERSATION_RETENTION_DAYS,
+      summaryDays: config.MENTOR_SUMMARY_RETENTION_DAYS,
+      learningDays: config.MENTOR_LEARNING_RETENTION_DAYS,
+    },
   });
   const suites = loadSuites(config, root, logger);
   const code = new CodeService({
@@ -214,8 +370,24 @@ function main(): void {
     providerVerified: config.EXECUTION_PROVIDER_VERIFIED,
     onJudged: (record) => analytics.recordSubmission(record),
   });
-  const executionStatus = { configured: config.EXECUTION_PROVIDER !== "none", verified: config.EXECUTION_PROVIDER === "judge0" && config.EXECUTION_PROVIDER_VERIFIED };
-  const evidence = new EvidenceService({ analytics, sessions: stores.sessions, roles, learn, github, leetcode, mentor, catalogue: () => catalogue, suites, execution: executionStatus, llmMode: llm.mode, logger });
+  const executionStatus = {
+    configured: config.EXECUTION_PROVIDER !== "none",
+    verified: config.EXECUTION_PROVIDER === "judge0" && config.EXECUTION_PROVIDER_VERIFIED,
+  };
+  const evidence = new EvidenceService({
+    analytics,
+    sessions: stores.sessions,
+    roles,
+    learn,
+    github,
+    leetcode,
+    mentor,
+    catalogue: () => catalogue,
+    suites,
+    execution: executionStatus,
+    llmMode: llm.mode,
+    logger,
+  });
   const placement = new PlacementService({
     store: stores.placement,
     evidence,
@@ -225,23 +397,57 @@ function main(): void {
     logger,
     suggestions: async (uid) => {
       const p = (await mentor.getProfile(uid)).profile;
-      return { preferred_language: p.preferred_languages[0] ?? null, daily_minutes: p.daily_study_minutes };
+      return {
+        preferred_language: p.preferred_languages[0] ?? null,
+        daily_minutes: p.daily_study_minutes,
+      };
     },
   });
-  const career = new CareerService({ freehire: new FreehireClient(), store: stores.career, placement, logger });
+  const career = new CareerService({
+    freehire: new FreehireClient(),
+    store: stores.career,
+    placement,
+    logger,
+  });
   careerHolder.current = career;
-  const serviceAccount = config.FIREBASE_SERVICE_ACCOUNT_JSON ? parseServiceAccount(config.FIREBASE_SERVICE_ACCOUNT_JSON) : null;
-  const firebaseVerifier = config.AUTH_MODE === "mock" ? null : new FirebaseTokenVerifier(config.FIREBASE_PROJECT_ID ?? serviceAccount?.project_id ?? "", undefined, serviceAccount);
-  if (!firebaseVerifier) logger.warn("AUTH_MODE=mock: sign-in is NOT verified; anyone can act as any user. Demonstration only.");
+  const serviceAccount = config.FIREBASE_SERVICE_ACCOUNT_JSON
+    ? parseServiceAccount(config.FIREBASE_SERVICE_ACCOUNT_JSON)
+    : null;
+  const firebaseVerifier =
+    config.AUTH_MODE === "mock"
+      ? null
+      : new FirebaseTokenVerifier(
+          config.FIREBASE_PROJECT_ID ?? serviceAccount?.project_id ?? "",
+          undefined,
+          serviceAccount,
+        );
+  if (!firebaseVerifier)
+    logger.warn(
+      "AUTH_MODE=mock: sign-in is NOT verified; anyone can act as any user. Demonstration only.",
+    );
   const verifier = firebaseVerifier ?? new MockTokenVerifier();
   const admin = firebaseVerifier?.admin() ?? null;
   const revocation = admin ? new RevocationGuard({ admin, logger }) : null;
-  if (config.NODE_ENV === "production" && config.APP_CHECK === "off") logger.warn("APP_CHECK is off: any script can call the API with a valid sign-in (set APP_CHECK=monitor, then enforce, once the web app sends App Check tokens)");
-  if (!config.REQUIRE_EMAIL_VERIFICATION) logger.warn("REQUIRE_EMAIL_VERIFICATION is off: unverified accounts can use every feature, including the language model");
+  if (config.NODE_ENV === "production" && config.APP_CHECK === "off")
+    logger.warn(
+      "APP_CHECK is off: any script can call the API with a valid sign-in (set APP_CHECK=monitor, then enforce, once the web app sends App Check tokens)",
+    );
+  if (!config.REQUIRE_EMAIL_VERIFICATION)
+    logger.warn(
+      "REQUIRE_EMAIL_VERIFICATION is off: unverified accounts can use every feature, including the language model",
+    );
   if (config.NODE_ENV === "production" && config.STORE === "memory") {
-    logger.warn("ALLOW_EPHEMERAL_STORE is set: sessions are lost on restart/redeploy and are not shared between instances");
+    logger.warn(
+      "ALLOW_EPHEMERAL_STORE is set: sessions are lost on restart/redeploy and are not shared between instances",
+    );
   }
-  const service = new AssessmentService({ store: stores.sessions, llm, roles, logger, maxSessionsPerStudent: config.MAX_SESSIONS_PER_STUDENT });
+  const service = new AssessmentService({
+    store: stores.sessions,
+    llm,
+    roles,
+    logger,
+    maxSessionsPerStudent: config.MAX_SESSIONS_PER_STUDENT,
+  });
   const learningData = loadLearningData(join(root, "data", "learning"), roles); // validates the curated topics, prerequisites and resources (fail fast)
   const learningPath = new LearningPathService({
     store: stores.learningPath,
@@ -252,10 +458,18 @@ function main(): void {
     // The model only phrases the mentor message from the facts; in mock mode no model is used at all (a template is).
     coach:
       llm.mode === "live"
-        ? async (uid, facts) => (await mentor.tutorHelp(uid, { context: JSON.stringify(facts), message: COACH_INSTRUCTION, topics: facts.top_gaps })).reply
+        ? async (uid, facts) =>
+            (
+              await mentor.tutorHelp(uid, {
+                context: JSON.stringify(facts),
+                message: COACH_INSTRUCTION,
+                topics: facts.top_gaps,
+              })
+            ).reply
         : undefined,
   });
-  const account = new AccountService({    profiles: stores.account,
+  const account = new AccountService({
+    profiles: stores.account,
     roles,
     sessions: stores.sessions,
     progress: stores.progress,
@@ -303,18 +517,32 @@ function main(): void {
     appCheck: { mode: config.APP_CHECK, verifier: firebaseVerifier?.appCheck() ?? null },
     exposeModel: config.NODE_ENV !== "production",
     readyProbe: async () => void (await stores.sessions.get("readiness-probe")),
-    llm, logger, demoReportJson, corsOrigin: config.CORS_ORIGIN, trustProxy: config.TRUST_PROXY });
+    llm,
+    logger,
+    demoReportJson,
+    corsOrigin: config.CORS_ORIGIN,
+    trustProxy: config.TRUST_PROXY,
+  });
   // Revocation needs Admin access. In production a configuration that cannot provide it is refused at startup, rather
   // than running with revoked sessions silently accepted; a transient failure to reach Firebase is only logged.
   if (admin) {
     void checkAdminAccess(admin).then((r) => {
       if (r.ok) return logger.info("Firebase Admin access verified (token revocation is active)");
-      audit(logger, "startup.admin_check_failed", null, { error_code: r.code, transient: r.transient });
+      audit(logger, "startup.admin_check_failed", null, {
+        error_code: r.code,
+        transient: r.transient,
+      });
       if (config.NODE_ENV === "production" && !r.transient) {
-        logger.fatal({ error_code: r.code }, "Firebase Admin access is not available: give the backend's service account the Firebase Authentication Admin role (or set FIREBASE_SERVICE_ACCOUNT_JSON). Refusing to run without token revocation.");
+        logger.fatal(
+          { error_code: r.code },
+          "Firebase Admin access is not available: give the backend's service account the Firebase Authentication Admin role (or set FIREBASE_SERVICE_ACCOUNT_JSON). Refusing to run without token revocation.",
+        );
         process.exit(1);
       }
-      logger.error({ error_code: r.code }, "Firebase Admin access check failed: revoked sessions are accepted until this is fixed");
+      logger.error(
+        { error_code: r.code },
+        "Firebase Admin access check failed: revoked sessions are accepted until this is fixed",
+      );
     });
   }
 
@@ -324,7 +552,10 @@ function main(): void {
       logger.fatal({ port: config.PORT, error: err.message }, "failed to start server");
       process.exit(1);
     }
-    logger.info({ port: config.PORT, llm_mode: llm.mode, model: llm.model, store: config.STORE }, "UNBLUFF backend listening");
+    logger.info(
+      { port: config.PORT, llm_mode: llm.mode, model: llm.model, store: config.STORE },
+      "UNBLUFF backend listening",
+    );
   });
 
   // Platform load balancers (Render, Cloud Run) keep idle connections open for about a minute. Node's default of 5 s would
@@ -342,8 +573,9 @@ function main(): void {
 
   // Retention: audits untouched for SESSION_RETENTION_DAYS are deleted, shortly after start and then twice a day.
   const sweep = () =>
-    void sweepInactiveSessions(stores.sessions, config.SESSION_RETENTION_DAYS, logger).catch((err: unknown) =>
-      logger.error({ err: (err as Error).message }, "session retention sweep failed"),
+    void sweepInactiveSessions(stores.sessions, config.SESSION_RETENTION_DAYS, logger).catch(
+      (err: unknown) =>
+        logger.error({ err: (err as Error).message }, "session retention sweep failed"),
     );
   setTimeout(sweep, 60_000).unref();
   setInterval(sweep, 12 * 3_600_000).unref();
@@ -352,7 +584,10 @@ function main(): void {
   // A bug that slips through must be logged (with the same redaction as everything else) and then restart the process
   // cleanly rather than leave it half-working.
   process.on("unhandledRejection", (reason) => {
-    logger.fatal({ err: reason instanceof Error ? reason : new Error(String(reason)) }, "unhandled promise rejection");
+    logger.fatal(
+      { err: reason instanceof Error ? reason : new Error(String(reason)) },
+      "unhandled promise rejection",
+    );
     process.exit(1);
   });
   process.on("uncaughtException", (err) => {

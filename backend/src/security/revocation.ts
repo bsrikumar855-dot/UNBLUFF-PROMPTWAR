@@ -58,15 +58,26 @@ export class RevocationGuard {
     try {
       const u = await this.deps.admin.getUser(uid);
       const validAfter = u.tokensValidAfterTime ? Date.parse(u.tokensValidAfterTime) : 0;
-      entry = { validAfterMs: Number.isFinite(validAfter) ? validAfter : 0, disabled: u.disabled, deleted: false, at: now };
+      entry = {
+        validAfterMs: Number.isFinite(validAfter) ? validAfter : 0,
+        disabled: u.disabled,
+        deleted: false,
+        at: now,
+      };
     } catch (err) {
-      const code = typeof err === "object" && err !== null && "code" in err ? String((err as { code: unknown }).code) : "";
+      const code =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code: unknown }).code)
+          : "";
       if (code === "auth/user-not-found") {
         entry = { validAfterMs: 0, disabled: false, deleted: true, at: now };
       } else {
         if (now - this.lastErrorLogAt >= ERROR_LOG_EVERY_MS) {
           this.lastErrorLogAt = now;
-          this.deps.logger.error({ error_code: code || "unknown" }, "revocation check unavailable: allowing verified tokens without it (logged at most every 5 minutes)");
+          this.deps.logger.error(
+            { error_code: code || "unknown" },
+            "revocation check unavailable: allowing verified tokens without it (logged at most every 5 minutes)",
+          );
         }
         return null;
       }

@@ -16,7 +16,9 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
     } else if (isBodyParserError(err)) {
       apiError = new ApiError(
         "BAD_REQUEST",
-        err.type === "entity.too.large" ? "Request body too large (max 100 kB)" : "Request body is not valid JSON",
+        err.type === "entity.too.large"
+          ? "Request body too large (max 100 kB)"
+          : "Request body is not valid JSON",
       );
     } else {
       logger.error({ err, method: req.method, path: req.path }, "unhandled error");
@@ -28,6 +30,16 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
 }
 
 function isBodyParserError(err: unknown): err is { type: string } {
-  return typeof err === "object" && err !== null && "type" in err && typeof (err as { type: unknown }).type === "string"
-    && ["entity.parse.failed", "entity.too.large", "encoding.unsupported", "charset.unsupported"].includes((err as { type: string }).type);
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "type" in err &&
+    typeof (err as { type: unknown }).type === "string" &&
+    [
+      "entity.parse.failed",
+      "entity.too.large",
+      "encoding.unsupported",
+      "charset.unsupported",
+    ].includes((err as { type: string }).type)
+  );
 }

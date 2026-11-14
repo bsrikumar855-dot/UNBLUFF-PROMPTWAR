@@ -15,7 +15,10 @@ export async function checkAdminAccess(admin: AccountAdmin): Promise<AdminCheck>
     await admin.getUser("unbluff-startup-probe-0000000000");
     return { ok: true }; // the probe uid exists?! Access works either way.
   } catch (err) {
-    const code = typeof err === "object" && err !== null && "code" in err ? String((err as { code: unknown }).code) : "unknown";
+    const code =
+      typeof err === "object" && err !== null && "code" in err
+        ? String((err as { code: unknown }).code)
+        : "unknown";
     if (code === "auth/user-not-found") return { ok: true };
     return { ok: false, transient: TRANSIENT.has(code), code };
   }

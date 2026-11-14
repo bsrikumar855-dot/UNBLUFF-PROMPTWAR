@@ -189,7 +189,14 @@ const evalJs = async (c, expression) => {
     awaitPromise: true,
     returnByValue: true,
   });
-  if (r.exceptionDetails) console.error("page script error:", (r.exceptionDetails.exception?.description ?? r.exceptionDetails.text ?? "").slice(0, 300));
+  if (r.exceptionDetails)
+    console.error(
+      "page script error:",
+      (r.exceptionDetails.exception?.description ?? r.exceptionDetails.text ?? "").slice(
+        0,
+        300
+      )
+    );
   return r.result?.value;
 };
 const goto = async (c, url, settle = 1500) => {
@@ -238,8 +245,14 @@ async function main() {
   await c.ready;
   await c.send("Page.enable");
   await c.send("Runtime.enable");
-  if (reducedMotion) await c.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
-  if (injectFile) await c.send("Page.addScriptToEvaluateOnNewDocument", { source: readFileSync(injectFile, "utf8") });
+  if (reducedMotion)
+    await c.send("Emulation.setEmulatedMedia", {
+      features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+    });
+  if (injectFile)
+    await c.send("Page.addScriptToEvaluateOnNewDocument", {
+      source: readFileSync(injectFile, "utf8"),
+    });
   const results = [];
   try {
     if (wantAuth) await signIn(c);
@@ -258,10 +271,11 @@ async function main() {
         let axeViolations = [];
         if (axeFile) {
           await evalJs(c, readFileSync(axeFile, "utf8"));
-          axeViolations = (await evalJs(
-            c,
-            `axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } }).then(r => r.violations.map(v => ({ id: v.id, impact: v.impact, count: v.nodes.length, sample: v.nodes[0].target.join(" ").slice(0, 90) })))`
-          )) ?? [];
+          axeViolations =
+            (await evalJs(
+              c,
+              `axe.run(document, { runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"] } }).then(r => r.violations.map(v => ({ id: v.id, impact: v.impact, count: v.nodes.length, sample: v.nodes[0].target.join(" ").slice(0, 90) })))`
+            )) ?? [];
         }
         const errors = c.events
           .filter(
@@ -286,8 +300,16 @@ async function main() {
           clip: { x: 0, y: 0, width: w, height, scale: 1 },
         });
         writeFileSync(join(out, name), Buffer.from(shot.data, "base64"));
-        results.push({ route, width: w, file: name, ...info, errors, axe: axeViolations });
-        for (const v of axeViolations) console.log(`   AXE ${v.impact} ${v.id} x${v.count}: ${v.sample}`);
+        results.push({
+          route,
+          width: w,
+          file: name,
+          ...info,
+          errors,
+          axe: axeViolations,
+        });
+        for (const v of axeViolations)
+          console.log(`   AXE ${v.impact} ${v.id} x${v.count}: ${v.sample}`);
         const flags = [
           info.overflowPx > 1
             ? `OVERFLOW ${info.overflowPx}px ${info.wide.join(" ")}`

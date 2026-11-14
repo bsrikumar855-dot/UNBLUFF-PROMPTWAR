@@ -10,7 +10,12 @@ const MAX_BATCHES = 50;
  * batches so one sweep cannot hog the store; whatever is left is picked up by the next sweep. Safe to run on several
  * instances at once (deleting an already-deleted session is a no-op).
  */
-export async function sweepInactiveSessions(store: SessionStore, days: number, logger: Logger, now: Date = new Date()): Promise<number> {
+export async function sweepInactiveSessions(
+  store: SessionStore,
+  days: number,
+  logger: Logger,
+  now: Date = new Date(),
+): Promise<number> {
   const cutoff = new Date(now.getTime() - days * 86_400_000);
   let total = 0;
   for (let i = 0; i < MAX_BATCHES; i++) {
@@ -18,6 +23,7 @@ export async function sweepInactiveSessions(store: SessionStore, days: number, l
     total += n;
     if (n < BATCH) break;
   }
-  if (total > 0) audit(logger, "retention.sessions_deleted", null, { count: total, older_than_days: days });
+  if (total > 0)
+    audit(logger, "retention.sessions_deleted", null, { count: total, older_than_days: days });
   return total;
 }

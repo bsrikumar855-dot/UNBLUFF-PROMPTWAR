@@ -7,8 +7,16 @@ import { InterrogateRequestSchema } from "../validation/requests.js";
 
 /** One endpoint for assess + clarify + retest (see CONTRACT.md §5). */
 export function interrogateRouter(service: AssessmentService, llmLimiter: RequestHandler): Router {
-  return Router().post("/interrogate", llmLimiter, validateBody(InterrogateRequestSchema), async (req, res) => {
-    const body: TurnResponse = await service.interrogate(uidOf(res), req.body as InterrogateRequest);
-    res.json(body);
-  });
+  return Router().post(
+    "/interrogate",
+    llmLimiter,
+    validateBody(InterrogateRequestSchema),
+    async (req, res) => {
+      const body: TurnResponse = await service.interrogate(
+        uidOf(res),
+        req.body as InterrogateRequest,
+      );
+      res.json(body);
+    },
+  );
 }

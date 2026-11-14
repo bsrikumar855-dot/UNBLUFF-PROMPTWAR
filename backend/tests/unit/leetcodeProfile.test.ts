@@ -33,14 +33,36 @@ describe("LeetCode username and profile address validation", () => {
   });
 
   it("rejects empty, too short, too long and badly shaped usernames", () => {
-    for (const s of ["", "   ", "a", "x".repeat(41), "has space", "semi;colon", "slash/inside", "dot.dot", "ünïcode", "<script>", "a\u0000b", "name\nname"]) expect(bad(s), JSON.stringify(s)).toBeTruthy();
+    for (const s of [
+      "",
+      "   ",
+      "a",
+      "x".repeat(41),
+      "has space",
+      "semi;colon",
+      "slash/inside",
+      "dot.dot",
+      "ünïcode",
+      "<script>",
+      "a\u0000b",
+      "name\nname",
+    ])
+      expect(bad(s), JSON.stringify(s)).toBeTruthy();
     expect(isValidUsername("ab")).toBe(true);
     expect(isValidUsername("x".repeat(40))).toBe(true);
     expect(isValidUsername("x".repeat(41))).toBe(false);
   });
 
   it("rejects names that are LeetCode pages, not people", () => {
-    for (const s of ["problems", "contest", "Discuss", "explore", "https://leetcode.com/problems/", "https://leetcode.com/contest"]) expect(bad(s), s).toBeTruthy();
+    for (const s of [
+      "problems",
+      "contest",
+      "Discuss",
+      "explore",
+      "https://leetcode.com/problems/",
+      "https://leetcode.com/contest",
+    ])
+      expect(bad(s), s).toBeTruthy();
     expect(bad("problems")).toMatch(/page, not a username/);
   });
 
@@ -60,12 +82,16 @@ describe("LeetCode username and profile address validation", () => {
       "https://leetcode.com/",
       "https://leetcode.com/u/bad name/",
       "https://leetcode.com/u/%E0%A4%A/",
-    ]) expect(bad(s), s).toBeTruthy();
+    ])
+      expect(bad(s), s).toBeTruthy();
     expect(bad("https://user:pass@leetcode.com/u/lee215/")).toMatch(/Never enter a password/);
   });
 
   it("never fetches anything: parsing is pure and the address is only built, not opened", () => {
     // parseProfile and profileUrl take and return strings; there is no network client in this module to call.
-    expect(parseProfile("https://leetcode.com/u/lee215/")).toEqual({ ok: true, username: "lee215" });
+    expect(parseProfile("https://leetcode.com/u/lee215/")).toEqual({
+      ok: true,
+      username: "lee215",
+    });
   });
 });

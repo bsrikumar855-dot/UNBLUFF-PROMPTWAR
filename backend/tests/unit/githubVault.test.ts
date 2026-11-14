@@ -34,7 +34,9 @@ describe("GitHub token vault", () => {
     const data = Buffer.from(sealed.data, "base64");
     data[0] = (data[0] ?? 0) ^ 1;
     expect(() => vault.open({ ...sealed, data: data.toString("base64") }, "u1", "42")).toThrow();
-    expect(() => vault.open({ ...sealed, tag: Buffer.alloc(16, 0).toString("base64") }, "u1", "42")).toThrow();
+    expect(() =>
+      vault.open({ ...sealed, tag: Buffer.alloc(16, 0).toString("base64") }, "u1", "42"),
+    ).toThrow();
   });
 
   it("a different key cannot decrypt; a retired key still can (rotation)", () => {
@@ -56,6 +58,8 @@ describe("GitHub token vault", () => {
   });
 
   it("hashes one-time values with sha256", () => {
-    expect(sha256Hex("abc")).toBe("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad");
+    expect(sha256Hex("abc")).toBe(
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    );
   });
 });

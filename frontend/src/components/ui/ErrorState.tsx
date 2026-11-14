@@ -17,7 +17,12 @@ export interface ErrorStateProps {
  * derived from the backend's { error: { code, message } } shape and a
  * Retry action that repeats the same request — never a raw stack trace.
  */
-export const ErrorState: React.FC<ErrorStateProps> = ({ error, message, onRetry, className }) => (
+export const ErrorState: React.FC<ErrorStateProps> = ({
+  error,
+  message,
+  onRetry,
+  className,
+}) => (
   <div
     role="alert"
     className={cn(

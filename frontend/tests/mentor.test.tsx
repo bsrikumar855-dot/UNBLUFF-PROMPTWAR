@@ -174,12 +174,9 @@ describe("mentor chat", () => {
     renderAt("/mentor");
     expect(await screen.findByRole("heading", { name: "AI Mentor" })).toBeInTheDocument();
     expect(await screen.findByText("No conversations yet.")).toBeInTheDocument();
-    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual([
-      "DSA Coach",
-      "Code Explainer",
-      "Interview Practice",
-      "Placement Mentor",
-    ]);
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(
+      ["DSA Coach", "Code Explainer", "Interview Practice", "Placement Mentor"]
+    );
     fireEvent.click(screen.getByRole("radio", { name: "Interview Practice" }));
     fireEvent.click(
       screen.getByRole("button", { name: /Ask me a technical interview question/ })
@@ -229,13 +226,20 @@ describe("mentor chat", () => {
   });
 
   it("sends a pasted problem with the first message only, and keeps it visible", async () => {
-    const PROBLEM = "Given an array of integers and a target, return the indices of the two numbers that add up to the target.";
+    const PROBLEM =
+      "Given an array of integers and a target, return the indices of the two numbers that add up to the target.";
     mocked.mentorChat.mockResolvedValue(reply());
     renderAt("/mentor");
-    fireEvent.change(await screen.findByLabelText("Problem statement"), { target: { value: PROBLEM } });
+    fireEvent.change(await screen.findByLabelText("Problem statement"), {
+      target: { value: PROBLEM },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Explain this problem" }));
     await screen.findByText("Think about moving two indexes inward.");
-    expect(mocked.mentorChat.mock.calls[0]![0]).toMatchObject({ mode: "dsa_coach", problem_text: PROBLEM, message: expect.stringMatching(/Explain this problem/) });
+    expect(mocked.mentorChat.mock.calls[0]![0]).toMatchObject({
+      mode: "dsa_coach",
+      problem_text: PROBLEM,
+      message: expect.stringMatching(/Explain this problem/),
+    });
     expect(screen.getByText("The problem you pasted")).toBeInTheDocument();
     fireEvent.change(await box(), { target: { value: "hint please" } });
     fireEvent.keyDown(await box(), { key: "Enter" });
@@ -246,7 +250,9 @@ describe("mentor chat", () => {
 
   it("does not offer to send a problem that is too short, and hides the panel outside DSA coach mode", async () => {
     renderAt("/mentor");
-    fireEvent.change(await screen.findByLabelText("Problem statement"), { target: { value: "two sum" } });
+    fireEvent.change(await screen.findByLabelText("Problem statement"), {
+      target: { value: "two sum" },
+    });
     expect(screen.getByRole("button", { name: "Explain this problem" })).toBeDisabled();
     fireEvent.click(screen.getByRole("radio", { name: "Code Explainer" }));
     expect(screen.queryByLabelText("Problem statement")).not.toBeInTheDocument();
@@ -263,11 +269,21 @@ describe("mentor chat", () => {
     renderAt("/mentor");
     fireEvent.change(await box(), { target: { value: "Explain two pointers" } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
-    expect(await screen.findByText("The mentor is thinking, in progress")).toBeInTheDocument();
-    expect(screen.getAllByRole("status").some((el) => /thinking/i.test(el.textContent ?? ""))).toBe(true);
+    expect(
+      await screen.findByText("The mentor is thinking, in progress")
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("status").some((el) => /thinking/i.test(el.textContent ?? ""))
+    ).toBe(true);
     finish(reply());
-    expect(await screen.findByText("Think about moving two indexes inward.")).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByText("The mentor is thinking, in progress")).not.toBeInTheDocument());
+    expect(
+      await screen.findByText("Think about moving two indexes inward.")
+    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByText("The mentor is thinking, in progress")
+      ).not.toBeInTheDocument()
+    );
   });
 
   it("Shift+Enter does not send", async () => {
@@ -701,7 +717,11 @@ describe("memory settings", () => {
 
 describe("Which engine answers is always visible", () => {
   it("says Live model, with the model name, when the server reports live mode", async () => {
-    mocked.getHealth.mockResolvedValue({ status: "ok", llm_mode: "live", model: "gemini-test-model" });
+    mocked.getHealth.mockResolvedValue({
+      status: "ok",
+      llm_mode: "live",
+      model: "gemini-test-model",
+    });
     renderAt("/mentor");
     const note = await screen.findByText(/Live model\./);
     expect(note.closest("p")).toHaveTextContent(/gemini-test-model/);
@@ -726,13 +746,27 @@ describe("Which engine answers is always visible", () => {
   });
 
   it("a model failure is an error with a retry, never an invented answer", async () => {
-    mocked.getHealth.mockResolvedValue({ status: "ok", llm_mode: "live", model: "gemini-test-model" });
-    mocked.mentorChat.mockRejectedValue(new ApiError("The mentor could not answer right now. Please try again.", "LLM_INVALID_OUTPUT", 502));
+    mocked.getHealth.mockResolvedValue({
+      status: "ok",
+      llm_mode: "live",
+      model: "gemini-test-model",
+    });
+    mocked.mentorChat.mockRejectedValue(
+      new ApiError(
+        "The mentor could not answer right now. Please try again.",
+        "LLM_INVALID_OUTPUT",
+        502
+      )
+    );
     renderAt("/mentor");
     fireEvent.change(await box(), { target: { value: "explain heaps" } });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
-    expect(await screen.findByRole("button", { name: "Retry the same message" })).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent(/could not get an answer from the AI model/i);
+    expect(
+      await screen.findByRole("button", { name: "Retry the same message" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /could not get an answer from the AI model/i
+    );
     expect(screen.getAllByText("explain heaps")).toHaveLength(1);
     expect(screen.queryByText(/Think about|\(mock mentor/)).not.toBeInTheDocument();
   });
@@ -740,12 +774,34 @@ describe("Which engine answers is always visible", () => {
 
 describe("Skills from your resume (Memory)", () => {
   const found = [
-    { slug: "react", label: "React", mentions: 3, evidence: "Built a dashboard with React and tests" },
-    { slug: "docker", label: "Docker", mentions: 1, evidence: "Containerised services with Docker" },
+    {
+      slug: "react",
+      label: "React",
+      mentions: 3,
+      evidence: "Built a dashboard with React and tests",
+    },
+    {
+      slug: "docker",
+      label: "Docker",
+      mentions: 1,
+      evidence: "Containerised services with Docker",
+    },
   ];
   const openMemory = async () => {
     mocked.listMentorMemories.mockResolvedValue(memories([]));
-    mocked.getMentorProfile.mockResolvedValue({ profile: { target_roles: [], target_companies: [], preferred_languages: [], daily_study_minutes: null, placement_timeline: null, explanation_style: null, current_goals: null, skill_self_assessment: {} }, updated_at: null } as never);
+    mocked.getMentorProfile.mockResolvedValue({
+      profile: {
+        target_roles: [],
+        target_companies: [],
+        preferred_languages: [],
+        daily_study_minutes: null,
+        placement_timeline: null,
+        explanation_style: null,
+        current_goals: null,
+        skill_self_assessment: {},
+      },
+      updated_at: null,
+    } as never);
     renderAt("/mentor/memory");
     return screen.findByRole("heading", { name: "Skills from your resume" });
   };
@@ -753,24 +809,47 @@ describe("Skills from your resume (Memory)", () => {
   it("explains what is and is not kept, and offers the upload where the resume is read", async () => {
     mocked.getResumeSkills.mockResolvedValue({ skills: [], saved_at: null });
     await openMemory();
-    expect(screen.getByText(/neither the file nor the text is stored/)).toBeInTheDocument();
-    expect(screen.getByText(/count as stated by you, not as verified/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/neither the file nor the text is stored/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/count as stated by you, not as verified/)
+    ).toBeInTheDocument();
     expect(await screen.findByText("No resume skills saved yet.")).toBeInTheDocument();
     expect(screen.getByLabelText("Your resume")).toBeInTheDocument();
     expect(screen.getByText("Upload PDF")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Find skills in this resume" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Find skills in this resume" })
+    ).toBeDisabled();
   });
 
   it("finds skills in the text, lets the student keep only some, and saves exactly those", async () => {
     mocked.getResumeSkills.mockResolvedValue({ skills: [], saved_at: null });
-    mocked.extractResumeSkills.mockResolvedValue({ skills: found, text_chars: 80, vocabulary_size: 114 });
-    mocked.saveResumeSkills.mockResolvedValue({ skills: [{ slug: "react", label: "React" }], saved_at: "2026-10-18T10:00:00.000Z" });
+    mocked.extractResumeSkills.mockResolvedValue({
+      skills: found,
+      text_chars: 80,
+      vocabulary_size: 114,
+    });
+    mocked.saveResumeSkills.mockResolvedValue({
+      skills: [{ slug: "react", label: "React" }],
+      saved_at: "2026-10-18T10:00:00.000Z",
+    });
     await openMemory();
-    fireEvent.change(screen.getByLabelText("Your resume"), { target: { value: "Built a dashboard with React. Containerised services with Docker." } });
+    fireEvent.change(screen.getByLabelText("Your resume"), {
+      target: {
+        value: "Built a dashboard with React. Containerised services with Docker.",
+      },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Find skills in this resume" }));
-    await waitFor(() => expect(mocked.extractResumeSkills).toHaveBeenCalledWith("Built a dashboard with React. Containerised services with Docker."));
+    await waitFor(() =>
+      expect(mocked.extractResumeSkills).toHaveBeenCalledWith(
+        "Built a dashboard with React. Containerised services with Docker."
+      )
+    );
     expect(await screen.findByText(/Found 2 skills/)).toBeInTheDocument();
-    expect(screen.getByText(/Built a dashboard with React and tests/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Built a dashboard with React and tests/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/mentioned 3 times/)).toBeInTheDocument();
     expect(screen.getByRole("checkbox", { name: /React/ })).toBeChecked();
     fireEvent.click(screen.getByRole("checkbox", { name: /Docker/ }));
@@ -784,38 +863,66 @@ describe("Skills from your resume (Memory)", () => {
 
   it("supports select all and none, and says plainly when nothing is recognised", async () => {
     mocked.getResumeSkills.mockResolvedValue({ skills: [], saved_at: null });
-    mocked.extractResumeSkills.mockResolvedValueOnce({ skills: found, text_chars: 80, vocabulary_size: 114 }).mockResolvedValueOnce({ skills: [], text_chars: 20, vocabulary_size: 114 });
+    mocked.extractResumeSkills
+      .mockResolvedValueOnce({ skills: found, text_chars: 80, vocabulary_size: 114 })
+      .mockResolvedValueOnce({ skills: [], text_chars: 20, vocabulary_size: 114 });
     await openMemory();
-    fireEvent.change(screen.getByLabelText("Your resume"), { target: { value: "some text" } });
+    fireEvent.change(screen.getByLabelText("Your resume"), {
+      target: { value: "some text" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Find skills in this resume" }));
     await screen.findByText(/Found 2 skills/);
     fireEvent.click(screen.getByRole("button", { name: "Select none" }));
-    expect(screen.getByRole("button", { name: "Save none (clears saved skills)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Save none (clears saved skills)" })
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Select all" }));
     expect(screen.getByRole("button", { name: "Save 2 skills" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     fireEvent.click(screen.getByRole("button", { name: "Find skills in this resume" }));
-    expect(await screen.findByText(/No skills this app recognises were found/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Save (none|d+ skills?)/ })).not.toBeInTheDocument(); // nothing to save, and Back never wipes saved skills
+    expect(
+      await screen.findByText(/No skills this app recognises were found/)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Save (none|d+ skills?)/ })
+    ).not.toBeInTheDocument(); // nothing to save, and Back never wipes saved skills
     expect(mocked.saveResumeSkills).not.toHaveBeenCalled();
   });
 
   it("shows saved skills with the date, and removes them on request", async () => {
-    mocked.getResumeSkills.mockResolvedValue({ skills: [{ slug: "react", label: "React" }, { slug: "css", label: "CSS" }], saved_at: "2026-10-18T10:00:00.000Z" });
+    mocked.getResumeSkills.mockResolvedValue({
+      skills: [
+        { slug: "react", label: "React" },
+        { slug: "css", label: "CSS" },
+      ],
+      saved_at: "2026-10-18T10:00:00.000Z",
+    });
     mocked.deleteResumeSkills.mockResolvedValue(undefined);
     await openMemory();
     const kept = await screen.findByLabelText("Saved resume skills");
     expect(within(kept).getByText("CSS")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Find skills in this resume and replace" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Find skills in this resume and replace" })
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Remove my resume skills" }));
     await waitFor(() => expect(mocked.deleteResumeSkills).toHaveBeenCalled());
-    expect(await screen.findByText("Your resume skills were removed.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Your resume skills were removed.")
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText("Saved resume skills")).not.toBeInTheDocument();
   });
 
   it("shows why finding or saving failed", async () => {
     mocked.getResumeSkills.mockResolvedValue({ skills: [], saved_at: null });
-    mocked.extractResumeSkills.mockRejectedValueOnce(new ApiError("The resume text is too long (at most 50,000 characters).", "BAD_REQUEST", 400)).mockResolvedValueOnce({ skills: found, text_chars: 5, vocabulary_size: 114 });
+    mocked.extractResumeSkills
+      .mockRejectedValueOnce(
+        new ApiError(
+          "The resume text is too long (at most 50,000 characters).",
+          "BAD_REQUEST",
+          400
+        )
+      )
+      .mockResolvedValueOnce({ skills: found, text_chars: 5, vocabulary_size: 114 });
     mocked.saveResumeSkills.mockRejectedValue(new ApiError("down", "INTERNAL", 500));
     await openMemory();
     fireEvent.change(screen.getByLabelText("Your resume"), { target: { value: "x" } });
@@ -824,7 +931,9 @@ describe("Skills from your resume (Memory)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Find skills in this resume" }));
     await screen.findByText(/Found 2 skills/);
     fireEvent.click(screen.getByRole("button", { name: "Save 2 skills" }));
-    expect(await screen.findByText(/Something went wrong on our side/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Something went wrong on our side/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Found 2 skills/)).toBeInTheDocument(); // the review stays open so nothing is lost
   });
 });

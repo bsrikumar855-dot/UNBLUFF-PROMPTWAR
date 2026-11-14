@@ -32,7 +32,10 @@ export interface RateLimitOptions {
 export const DEFAULT_RATE_LIMITS: RateLimitOptions = { globalPerMinute: 300, llmPerMinute: 40 };
 
 const body: ApiErrorBody = {
-  error: { code: "RATE_LIMITED", message: "Too many requests. Please wait a minute and try again." },
+  error: {
+    code: "RATE_LIMITED",
+    message: "Too many requests. Please wait a minute and try again.",
+  },
 };
 
 function limiter(limit: number): RequestHandler {
@@ -59,7 +62,10 @@ function userLimiter(limit: number): RequestHandler {
 }
 
 export function createCodeLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { run: userLimiter(opts.codeRunPerMinute ?? 20), submit: userLimiter(opts.codeSubmitPerMinute ?? 8) };
+  return {
+    run: userLimiter(opts.codeRunPerMinute ?? 20),
+    submit: userLimiter(opts.codeSubmitPerMinute ?? 8),
+  };
 }
 
 /** Per-user limit for AI mentor messages (each one is a model call). Mount after requireAuth. */
@@ -69,40 +75,68 @@ export function createMentorLimiter(opts: RateLimitOptions = DEFAULT_RATE_LIMITS
 
 /** Placement planner: refreshing/generating the plan, assistant questions and task actions, each per student. Mount after requireAuth. */
 export function createPlacementLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { refresh: userLimiter(opts.placementRefreshPerMinute ?? 20), assistant: userLimiter(opts.placementAssistantPerMinute ?? 12), action: userLimiter(opts.placementActionPerMinute ?? 60) };
+  return {
+    refresh: userLimiter(opts.placementRefreshPerMinute ?? 20),
+    assistant: userLimiter(opts.placementAssistantPerMinute ?? 12),
+    action: userLimiter(opts.placementActionPerMinute ?? 60),
+  };
 }
 
 /** Career: reads (each can be one or two Freehire requests, cached) and writes (tracker, preferences), per student. Mount after requireAuth. */
 export function createCareerLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { read: userLimiter(opts.careerReadPerMinute ?? 90), write: userLimiter(opts.careerWritePerMinute ?? 60) };
+  return {
+    read: userLimiter(opts.careerReadPerMinute ?? 90),
+    write: userLimiter(opts.careerWritePerMinute ?? 60),
+  };
 }
 
 /** LeetCode link and import: local reads and writes only (no request ever leaves for LeetCode), per student. Mount after requireAuth. */
 export function createLeetcodeLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { read: userLimiter(opts.leetcodeReadPerMinute ?? 90), write: userLimiter(opts.leetcodeWritePerMinute ?? 30) };
+  return {
+    read: userLimiter(opts.leetcodeReadPerMinute ?? 90),
+    write: userLimiter(opts.leetcodeWritePerMinute ?? 30),
+  };
 }
 
 /** Learn: progress reads and writes, and quiz attempts. Per student. Mount after requireAuth. */
 export function createLearnLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { read: userLimiter(opts.learnReadPerMinute ?? 90), write: userLimiter(opts.learnWritePerMinute ?? 40) };
+  return {
+    read: userLimiter(opts.learnReadPerMinute ?? 90),
+    write: userLimiter(opts.learnWritePerMinute ?? 40),
+  };
 }
 
 /** Résumé builder: saving and scoring are cheap, compiling runs TeX in a container so it is limited more tightly than saving. Per student; the page also builds automatically after edits. */
 export function createResumeLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { read: userLimiter(opts.resumeReadPerMinute ?? 90), write: userLimiter(opts.resumeWritePerMinute ?? 40), compile: userLimiter(opts.resumeCompilePerMinute ?? 20) };
+  return {
+    read: userLimiter(opts.resumeReadPerMinute ?? 90),
+    write: userLimiter(opts.resumeWritePerMinute ?? 40),
+    compile: userLimiter(opts.resumeCompilePerMinute ?? 20),
+  };
 }
 
 /** Account: profile saves are cheap; export and delete-everything read or touch every store, so they are limited tightly. Per student. */
 export function createAccountLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { write: userLimiter(opts.accountWritePerMinute ?? 30), bulk: userLimiter(opts.accountBulkPerMinute ?? 5) };
+  return {
+    write: userLimiter(opts.accountWritePerMinute ?? 30),
+    bulk: userLimiter(opts.accountBulkPerMinute ?? 5),
+  };
 }
 
 /** GitHub: connecting/disconnecting and manual syncs are per user; the OAuth callback (no token) is per IP. */
 export function createGithubLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { connect: userLimiter(opts.githubConnectPerMinute ?? 10), sync: userLimiter(opts.githubSyncPerMinute ?? 6), callback: limiter(30) };
+  return {
+    connect: userLimiter(opts.githubConnectPerMinute ?? 10),
+    sync: userLimiter(opts.githubSyncPerMinute ?? 6),
+    callback: limiter(30),
+  };
 }
 
 /** Global limiter for all routes, plus tighter ones for routes that call the LLM (cost control): per IP, and per student (mount `llmUser` after requireAuth). */
 export function createRateLimiters(opts: RateLimitOptions = DEFAULT_RATE_LIMITS) {
-  return { global: limiter(opts.globalPerMinute), llm: limiter(opts.llmPerMinute), llmUser: userLimiter(opts.llmUserPerMinute ?? 20) };
+  return {
+    global: limiter(opts.globalPerMinute),
+    llm: limiter(opts.llmPerMinute),
+    llmUser: userLimiter(opts.llmUserPerMinute ?? 20),
+  };
 }

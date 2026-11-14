@@ -39,8 +39,10 @@ const PROGRAMS: Record<CodeLanguageId, { source: string; brokenSource?: string }
     brokenSource: "#include <iostream>\nint main() { std::cout << 2 + 3 << std::endl return 0; }\n",
   },
   java: {
-    source: "public class Main {\n    public static void main(String[] args) {\n        System.out.println(2 + 3);\n    }\n}\n",
-    brokenSource: "public class Main {\n    public static void main(String[] args) {\n        System.out.println(2 + 3)\n    }\n}\n",
+    source:
+      "public class Main {\n    public static void main(String[] args) {\n        System.out.println(2 + 3);\n    }\n}\n",
+    brokenSource:
+      "public class Main {\n    public static void main(String[] args) {\n        System.out.println(2 + 3)\n    }\n}\n",
   },
 };
 
@@ -49,17 +51,22 @@ export const ALL_LANGUAGES = Object.keys(PROGRAMS) as CodeLanguageId[];
 /** Why the environment cannot run a smoke test (empty means it can). Values are never included, only names. */
 export function smokeConfigProblems(env: NodeJS.ProcessEnv): string[] {
   const problems: string[] = [];
-  if (env.EXECUTION_PROVIDER !== "judge0") problems.push("EXECUTION_PROVIDER must be set to judge0 (it is not set, or is another value)");
+  if (env.EXECUTION_PROVIDER !== "judge0")
+    problems.push("EXECUTION_PROVIDER must be set to judge0 (it is not set, or is another value)");
   const urlProblem = judge0UrlProblem(env.JUDGE0_URL, env.NODE_ENV === "production");
   if (urlProblem) problems.push(urlProblem);
-  if (env.JUDGE0_AUTH_HEADER && !/^[A-Za-z0-9-]{1,60}$/.test(env.JUDGE0_AUTH_HEADER)) problems.push("JUDGE0_AUTH_HEADER must be a plain header name");
+  if (env.JUDGE0_AUTH_HEADER && !/^[A-Za-z0-9-]{1,60}$/.test(env.JUDGE0_AUTH_HEADER))
+    problems.push("JUDGE0_AUTH_HEADER must be a plain header name");
   return problems;
 }
 
 /** Parses "python=100,cpp=105" into pinned provider ids. Throws on malformed input. */
 export function parseExpectedIds(raw: string | undefined): Partial<Record<CodeLanguageId, number>> {
   const out: Partial<Record<CodeLanguageId, number>> = {};
-  for (const part of (raw ?? "").split(",").map((p) => p.trim()).filter(Boolean)) {
+  for (const part of (raw ?? "")
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)) {
     const m = /^(python|javascript|cpp|java)=(\d+)$/.exec(part);
     if (!m) throw new Error(`invalid expected id "${part}" (use e.g. python=100,cpp=105)`);
     out[m[1] as CodeLanguageId] = Number(m[2]);
@@ -80,13 +87,19 @@ export interface SmokeOptions {
 
 const limits = { cpuTimeSeconds: 5, memoryMb: 128 };
 
-export async function runSmoke(provider: ExecutionProvider, opts: SmokeOptions = {}): Promise<SmokeReport> {
+export async function runSmoke(
+  provider: ExecutionProvider,
+  opts: SmokeOptions = {},
+): Promise<SmokeReport> {
   const redact = opts.redact ?? ((s: string) => s);
   const checks: SmokeCheck[] = [];
   const languages: SmokeLanguageResult[] = [];
-  const add = (name: string, ok: boolean, detail: string, required = true) => void checks.push({ name, ok, required, detail: redact(detail) });
+  const add = (name: string, ok: boolean, detail: string, required = true) =>
+    void checks.push({ name, ok, required, detail: redact(detail) });
   const explicit = opts.languages !== undefined;
-  const wanted = Array.from(new Set<CodeLanguageId>(["python", ...(opts.languages ?? ALL_LANGUAGES)]));
+  const wanted = Array.from(
+    new Set<CodeLanguageId>(["python", ...(opts.languages ?? ALL_LANGUAGES)]),
+  );
 
   const body = async () => {
     // 1. the supported-language endpoint
@@ -97,7 +110,8 @@ export async function runSmoke(provider: ExecutionProvider, opts: SmokeOptions =
       add("language lookup", false, errorText(err));
       return;
     }
-    if (listed.length === 0) return add("language lookup", false, "the service returned no languages");
+    if (listed.length === 0)
+      return add("language lookup", false, "the service returned no languages");
     add("language lookup", true, `${listed.length} languages reported by the service`);
 
     // 2. names and ids
@@ -106,14 +120,35 @@ export async function runSmoke(provider: ExecutionProvider, opts: SmokeOptions =
       const hit = resolved.find((r) => r.id === lang);
       const required = lang === "python" || explicit;
       if (!hit) {
-        languages.push({ language: lang, provider_id: null, provider_name: null, status: "not_offered" });
-        add(`language ${lang}`, !required, required ? `no matching language in the service's list` : "not offered by this service (the product hides it)", required);
+        languages.push({
+          language: lang,
+          provider_id: null,
+          provider_name: null,
+          status: "not_offered",
+        });
+        add(
+          `language ${lang}`,
+          !required,
+          required
+            ? `no matching language in the service's list`
+            : "not offered by this service (the product hides it)",
+          required,
+        );
         continue;
       }
       const pinned = opts.expectedIds?.[lang];
       const idOk = pinned === undefined || pinned === hit.providerId;
-      add(`language ${lang}`, idOk, `resolved to "${hit.name}" (id ${hit.providerId})${pinned === undefined ? "" : idOk ? `; matches pinned id ${pinned}` : `; pinned id ${pinned} does NOT match`}`);
-      languages.push({ language: lang, provider_id: hit.providerId, provider_name: hit.name, status: idOk ? "passed" : "failed" });
+      add(
+        `language ${lang}`,
+        idOk,
+        `resolved to "${hit.name}" (id ${hit.providerId})${pinned === undefined ? "" : idOk ? `; matches pinned id ${pinned}` : `; pinned id ${pinned} does NOT match`}`,
+      );
+      languages.push({
+        language: lang,
+        provider_id: hit.providerId,
+        provider_name: hit.name,
+        status: idOk ? "passed" : "failed",
+      });
     }
 
     // 3. execution
@@ -122,10 +157,22 @@ export async function runSmoke(provider: ExecutionProvider, opts: SmokeOptions =
       const program = PROGRAMS[entry.language];
       const required = entry.language === "python" || explicit;
       try {
-        const r = await provider.execute({ providerLanguageId: entry.provider_id, source: program.source, stdin: "", limits });
+        const r = await provider.execute({
+          providerLanguageId: entry.provider_id,
+          source: program.source,
+          stdin: "",
+          limits,
+        });
         const out = r.stdout.trim();
         const ok = r.outcome === "completed" && out === "5";
-        add(`run ${entry.language}`, ok, ok ? `status completed, output "5"${r.time_ms !== null ? `, ${r.time_ms} ms` : ""}` : `expected completed with output "5", got ${r.outcome} with output ${JSON.stringify(out.slice(0, 80))}`, required);
+        add(
+          `run ${entry.language}`,
+          ok,
+          ok
+            ? `status completed, output "5"${r.time_ms !== null ? `, ${r.time_ms} ms` : ""}`
+            : `expected completed with output "5", got ${r.outcome} with output ${JSON.stringify(out.slice(0, 80))}`,
+          required,
+        );
         if (!ok) entry.status = "failed";
       } catch (err) {
         add(`run ${entry.language}`, false, errorText(err), required);
@@ -134,9 +181,21 @@ export async function runSmoke(provider: ExecutionProvider, opts: SmokeOptions =
       }
       if (program.brokenSource) {
         try {
-          const r = await provider.execute({ providerLanguageId: entry.provider_id, source: program.brokenSource, stdin: "", limits });
+          const r = await provider.execute({
+            providerLanguageId: entry.provider_id,
+            source: program.brokenSource,
+            stdin: "",
+            limits,
+          });
           const ok = r.outcome === "compile_error";
-          add(`compile error ${entry.language}`, ok, ok ? "invalid source reported as a compilation error" : `invalid source was reported as ${r.outcome}`, required);
+          add(
+            `compile error ${entry.language}`,
+            ok,
+            ok
+              ? "invalid source reported as a compilation error"
+              : `invalid source was reported as ${r.outcome}`,
+            required,
+          );
           if (!ok) entry.status = "failed";
         } catch (err) {
           add(`compile error ${entry.language}`, false, errorText(err), required);
@@ -153,7 +212,12 @@ export async function runSmoke(provider: ExecutionProvider, opts: SmokeOptions =
   });
   const outcome = await Promise.race([body().then(() => "done" as const), timedOut]);
   clearTimeout(timer);
-  if (outcome === "timeout") add("overall time budget", false, `the smoke test did not finish within ${Math.round(timeoutMs / 1000)} s`);
+  if (outcome === "timeout")
+    add(
+      "overall time budget",
+      false,
+      `the smoke test did not finish within ${Math.round(timeoutMs / 1000)} s`,
+    );
 
   return { ok: checks.every((c) => c.ok || !c.required) && checks.length > 0, checks, languages };
 }

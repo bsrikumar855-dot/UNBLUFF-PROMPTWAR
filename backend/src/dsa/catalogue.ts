@@ -18,7 +18,14 @@ import type {
  * elsewhere and only refers to question ids.
  */
 
-export const LICENSE_STATUSES = ["licensed", "permission_granted", "public_domain", "own_work", "development_fixture", "unlicensed_local_use"] as const satisfies readonly DsaLicenseStatus[];
+export const LICENSE_STATUSES = [
+  "licensed",
+  "permission_granted",
+  "public_domain",
+  "own_work",
+  "development_fixture",
+  "unlicensed_local_use",
+] as const satisfies readonly DsaLicenseStatus[];
 export const DIFFICULTIES = ["easy", "medium", "hard"] as const satisfies readonly DsaDifficulty[];
 const DIFFICULTY_RANK: Record<DsaDifficulty, number> = { easy: 1, medium: 2, hard: 3 };
 
@@ -37,7 +44,9 @@ export const SourceFileSchema = z.strictObject({
 export const CatalogueFileSchema = z.strictObject({
   schema_version: z.literal(1),
   source: SourceFileSchema,
-  companies: z.array(z.strictObject({ id: z.string().regex(idRe), name: z.string().trim().min(1).max(120) })).max(5000),
+  companies: z
+    .array(z.strictObject({ id: z.string().regex(idRe), name: z.string().trim().min(1).max(120) }))
+    .max(5000),
   questions: z
     .array(
       z.strictObject({
@@ -50,7 +59,11 @@ export const CatalogueFileSchema = z.strictObject({
       }),
     )
     .max(100_000),
-  associations: z.array(z.strictObject({ company_id: z.string().regex(idRe), question_id: z.string().regex(idRe) })).max(500_000),
+  associations: z
+    .array(
+      z.strictObject({ company_id: z.string().regex(idRe), question_id: z.string().regex(idRe) }),
+    )
+    .max(500_000),
 });
 export type CatalogueFile = z.infer<typeof CatalogueFileSchema>;
 
@@ -73,13 +86,18 @@ export function parseCatalogueFile(raw: unknown): CatalogueFile {
   }
   const pairs = new Set<string>();
   for (const a of file.associations) {
-    if (!companyIds.has(a.company_id)) problems.push(`association references unknown company "${a.company_id}"`);
-    if (!questionIds.has(a.question_id)) problems.push(`association references unknown question "${a.question_id}"`);
+    if (!companyIds.has(a.company_id))
+      problems.push(`association references unknown company "${a.company_id}"`);
+    if (!questionIds.has(a.question_id))
+      problems.push(`association references unknown question "${a.question_id}"`);
     const key = `${a.company_id}|${a.question_id}`;
     if (pairs.has(key)) problems.push(`duplicate association ${a.company_id} -> ${a.question_id}`);
     pairs.add(key);
   }
-  if (problems.length > 0) throw new Error(`Invalid catalogue: ${problems.slice(0, 10).join("; ")}${problems.length > 10 ? `; and ${problems.length - 10} more` : ""}`);
+  if (problems.length > 0)
+    throw new Error(
+      `Invalid catalogue: ${problems.slice(0, 10).join("; ")}${problems.length > 10 ? `; and ${problems.length - 10} more` : ""}`,
+    );
   return file;
 }
 
@@ -95,9 +113,14 @@ export interface QuestionQuery {
 }
 
 /** A catalogue whose source declares no licence may be used locally, never served by a production deployment. */
-export function assertCatalogueServable(nodeEnv: string | undefined, source: DsaSource | null): void {
+export function assertCatalogueServable(
+  nodeEnv: string | undefined,
+  source: DsaSource | null,
+): void {
   if (nodeEnv === "production" && source?.license_status === "unlicensed_local_use") {
-    throw new Error("The DSA catalogue is marked unlicensed_local_use (the source declares no licence): it must not be served when NODE_ENV=production");
+    throw new Error(
+      "The DSA catalogue is marked unlicensed_local_use (the source declares no licence): it must not be served when NODE_ENV=production",
+    );
   }
 }
 
@@ -108,7 +131,13 @@ function paginate<T>(items: T[], page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   const total = items.length;
   const total_pages = Math.max(1, Math.ceil(total / pageSize));
   const start = (page - 1) * pageSize;
-  return { items: items.slice(start, start + pageSize), page, page_size: pageSize, total, total_pages };
+  return {
+    items: items.slice(start, start + pageSize),
+    page,
+    page_size: pageSize,
+    total,
+    total_pages,
+  };
 }
 
 const norm = (s: string) => s.trim().toLowerCase();
@@ -139,7 +168,14 @@ export class Catalogue {
       this.questionIdsByCompany.set(c.id, []);
     }
     for (const q of file.questions) {
-      this.questionsById.set(q.id, { id: q.id, title: q.title, url: q.url, difficulty: q.difficulty, topics: [...q.topics].sort(), company_ids: [] });
+      this.questionsById.set(q.id, {
+        id: q.id,
+        title: q.title,
+        url: q.url,
+        difficulty: q.difficulty,
+        topics: [...q.topics].sort(),
+        company_ids: [],
+      });
     }
     for (const a of file.associations) {
       this.questionIdsByCompany.get(a.company_id)?.push(a.question_id);
@@ -166,7 +202,12 @@ export class Catalogue {
 
   private companySummary(id: string): CompanySummary {
     const count = this.questionIdsByCompany.get(id)?.length ?? 0;
-    return { id, name: this.companyNames.get(id) ?? id, question_count: count, catalogue_available: count > 0 };
+    return {
+      id,
+      name: this.companyNames.get(id) ?? id,
+      question_count: count,
+      catalogue_available: count > 0,
+    };
   }
 
   listCompanies(query: { search?: string; page?: number; page_size?: number }): CompaniesResponse {
@@ -176,24 +217,40 @@ export class Catalogue {
       .filter((c) => needle === "" || norm(c.name).includes(needle))
       .sort((a, b) => a.name.localeCompare(b.name));
     const p = paginate(all, query.page, query.page_size);
-    return { companies: p.items, page: p.page, page_size: p.page_size, total: p.total, total_pages: p.total_pages, source: this.source };
+    return {
+      companies: p.items,
+      page: p.page,
+      page_size: p.page_size,
+      total: p.total,
+      total_pages: p.total_pages,
+      source: this.source,
+    };
   }
 
   companyDetail(id: string): CompanyDetailResponse | null {
     if (!this.hasCompany(id)) return null;
-    const questions = (this.questionIdsByCompany.get(id) ?? []).map((q) => this.questionsById.get(q)!);
+    const questions = (this.questionIdsByCompany.get(id) ?? []).map((q) =>
+      this.questionsById.get(q)!,
+    );
     const difficulties: Record<DsaDifficulty, number> = { easy: 0, medium: 0, hard: 0 };
     const topics = new Set<string>();
     for (const q of questions) {
       difficulties[q.difficulty]++;
       q.topics.forEach((t) => topics.add(t));
     }
-    return { company: this.companySummary(id), topics: [...topics].sort((a, b) => a.localeCompare(b)), difficulties, source: this.source };
+    return {
+      company: this.companySummary(id),
+      topics: [...topics].sort((a, b) => a.localeCompare(b)),
+      difficulties,
+      source: this.source,
+    };
   }
 
   /** Server-side search, filters (AND), sort and pagination. `company` must be validated by the caller. */
   queryQuestions(q: QuestionQuery): QuestionsResponse {
-    const scope = q.company ? (this.questionIdsByCompany.get(q.company) ?? []).map((id) => this.questionsById.get(id)!) : [...this.questionsById.values()];
+    const scope = q.company
+      ? (this.questionIdsByCompany.get(q.company) ?? []).map((id) => this.questionsById.get(id)!)
+      : [...this.questionsById.values()];
 
     const topicSet = new Set<string>();
     const diffSet = new Set<DsaDifficulty>();
@@ -212,10 +269,12 @@ export class Catalogue {
     );
 
     const dir = q.order === "desc" ? -1 : 1;
-    const byTitle = (a: QuestionSummary, b: QuestionSummary) => a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
+    const byTitle = (a: QuestionSummary, b: QuestionSummary) =>
+      a.title.localeCompare(b.title) || a.id.localeCompare(b.id);
     rows = [...rows].sort(
       q.sort === "difficulty"
-        ? (a, b) => dir * (DIFFICULTY_RANK[a.difficulty] - DIFFICULTY_RANK[b.difficulty]) || byTitle(a, b)
+        ? (a, b) =>
+            dir * (DIFFICULTY_RANK[a.difficulty] - DIFFICULTY_RANK[b.difficulty]) || byTitle(a, b)
         : (a, b) => dir * byTitle(a, b),
     );
 
@@ -243,7 +302,9 @@ export class Catalogue {
 
   /** Questions carrying a topic (exact match), in a stable order. */
   topicQuestions(topic: string): QuestionSummary[] {
-    return [...this.questionsById.values()].filter((q) => q.topics.includes(topic)).sort((a, b) => a.id.localeCompare(b.id));
+    return [...this.questionsById.values()]
+      .filter((q) => q.topics.includes(topic))
+      .sort((a, b) => a.id.localeCompare(b.id));
   }
 
   summary(id: string): QuestionSummary | null {
@@ -255,7 +316,10 @@ export class Catalogue {
     if (!question) return null;
     return {
       question,
-      companies: question.company_ids.map((cid) => ({ id: cid, name: this.companyNames.get(cid) ?? cid })),
+      companies: question.company_ids.map((cid) => ({
+        id: cid,
+        name: this.companyNames.get(cid) ?? cid,
+      })),
       source: this.source,
     };
   }

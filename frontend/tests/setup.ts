@@ -19,8 +19,10 @@ class InertIntersectionObserver {
   }
 }
 if (typeof window !== "undefined" && typeof window.IntersectionObserver === "undefined") {
-  (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver = InertIntersectionObserver;
-  (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver = InertIntersectionObserver;
+  (window as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+    InertIntersectionObserver;
+  (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+    InertIntersectionObserver;
 }
 
 // jsdom has no ResizeObserver; the glass surface (React Bits) measures itself with one.
@@ -33,7 +35,8 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 }
 
 // jsdom has no CSS.supports; the glass surface asks it whether the browser can do backdrop filters.
-if (typeof globalThis.CSS === "undefined") (globalThis as unknown as { CSS: object }).CSS = {};
+if (typeof globalThis.CSS === "undefined")
+  (globalThis as unknown as { CSS: object }).CSS = {};
 if (typeof globalThis.CSS.supports !== "function") globalThis.CSS.supports = () => false;
 
 // jsdom has no Web Animations API; the pill navigation (React Bits) animates with element.animate().

@@ -11,7 +11,10 @@ const SEVERITY: Record<string, string> = {
 };
 
 /** `destination` defaults to stdout; tests pass a stream to inspect what would be written. */
-export function createLogger(level = process.env.LOG_LEVEL ?? "info", destination?: DestinationStream): Logger {
+export function createLogger(
+  level = process.env.LOG_LEVEL ?? "info",
+  destination?: DestinationStream,
+): Logger {
   const options: pino.LoggerOptions = {
     level,
     messageKey: "message",
@@ -22,9 +25,27 @@ export function createLogger(level = process.env.LOG_LEVEL ?? "info", destinatio
     // Defense in depth: never let a key reach the logs even if someone logs a config object.
     redact: {
       paths: [
-        "apiKey", "*.apiKey", "GEMINI_API_KEY", "*.GEMINI_API_KEY", "req.headers.authorization",
-        "access_token", "*.access_token", "token", "*.token", "code", "*.code", "state", "*.state", "code_verifier", "*.code_verifier",
-        "client_secret", "*.client_secret", "GITHUB_CLIENT_SECRET", "*.GITHUB_CLIENT_SECRET", "GITHUB_TOKEN_ENCRYPTION_KEY", "*.GITHUB_TOKEN_ENCRYPTION_KEY",
+        "apiKey",
+        "*.apiKey",
+        "GEMINI_API_KEY",
+        "*.GEMINI_API_KEY",
+        "req.headers.authorization",
+        "access_token",
+        "*.access_token",
+        "token",
+        "*.token",
+        "code",
+        "*.code",
+        "state",
+        "*.state",
+        "code_verifier",
+        "*.code_verifier",
+        "client_secret",
+        "*.client_secret",
+        "GITHUB_CLIENT_SECRET",
+        "*.GITHUB_CLIENT_SECRET",
+        "GITHUB_TOKEN_ENCRYPTION_KEY",
+        "*.GITHUB_TOKEN_ENCRYPTION_KEY",
       ],
       censor: "[redacted]",
     },

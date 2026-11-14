@@ -19,7 +19,7 @@ const LABEL = "mb-1.5 block text-sm font-medium text-ink-secondary";
 
 type Step = "idle" | "verifying" | "deleting-data" | "deleting-account";
 const STEP_TEXT: Record<Exclude<Step, "idle">, string> = {
-  "verifying": "Checking your password…",
+  verifying: "Checking your password…",
   "deleting-data": "Deleting your data…",
   "deleting-account": "Deleting your sign-in account…",
 };
@@ -55,7 +55,9 @@ export const DataPanel: React.FC = () => {
     setExportError(null);
     try {
       const data = await api.exportAccount();
-      const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+      );
       const a = document.createElement("a");
       a.href = url;
       a.download = `unbluff-export-${data.exported_at.slice(0, 10)}.json`;
@@ -87,7 +89,9 @@ export const DataPanel: React.FC = () => {
         await auth.deleteAccount();
       } catch (err) {
         // The data is already gone; the sign-in account can be removed by signing in again and repeating this.
-        setDeleteError(`Your data is deleted, but the sign-in account could not be removed: ${getErrorMessage(err)}`);
+        setDeleteError(
+          `Your data is deleted, but the sign-in account could not be removed: ${getErrorMessage(err)}`
+        );
         setStep("idle");
         return;
       }
@@ -101,14 +105,22 @@ export const DataPanel: React.FC = () => {
   };
 
   return (
-    <GlassCard id="data" icon={ShieldAlert} title="Your data" sub="Take a copy of everything, or delete all of it.">
+    <GlassCard
+      id="data"
+      icon={ShieldAlert}
+      title="Your data"
+      sub="Take a copy of everything, or delete all of it."
+    >
       {usage && (
         <div className={cn(TILE, "mb-4 px-4 py-3.5 text-sm")}>
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
             <p className="font-medium text-ink-primary">AI allowance today</p>
             <p className="text-ink-secondary">
               {usage.used} of {usage.limit} used · resets{" "}
-              {new Date(usage.resets_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              {new Date(usage.resets_at).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </p>
           </div>
           <div
@@ -119,24 +131,41 @@ export const DataPanel: React.FC = () => {
             aria-valuenow={usage.used}
             className="h-1.5 overflow-hidden rounded-full bg-surface-100"
           >
-            <div className="h-full rounded-full bg-redline" style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }} />
+            <div
+              className="h-full rounded-full bg-redline"
+              style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }}
+            />
           </div>
         </div>
       )}
-      <div className={cn(TILE, "mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5")}>
+      <div
+        className={cn(
+          TILE,
+          "mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+        )}
+      >
         <div className="text-sm">
           <p className="font-medium text-ink-primary">Download my data</p>
           <p className="text-ink-secondary">
-            One JSON file with your profile, audits, answers, practice, mentor memory, plans and connections. Access tokens are never included.
+            One JSON file with your profile, audits, answers, practice, mentor memory,
+            plans and connections. Access tokens are never included.
           </p>
         </div>
-        <Button variant="outline" className="rounded-full bg-white/70" onClick={() => void download()} disabled={exporting}>
+        <Button
+          variant="outline"
+          className="rounded-full bg-white/70"
+          onClick={() => void download()}
+          disabled={exporting}
+        >
           <Download aria-hidden="true" />
           {exporting ? "Preparing…" : "Download JSON"}
         </Button>
       </div>
       {exportError && (
-        <p role="alert" className="mb-4 rounded-2xl bg-verdict-bluff-bg px-4 py-2.5 text-sm text-verdict-bluff-fg">
+        <p
+          role="alert"
+          className="mb-4 rounded-2xl bg-verdict-bluff-bg px-4 py-2.5 text-sm text-verdict-bluff-fg"
+        >
           {exportError}
         </p>
       )}
@@ -146,11 +175,16 @@ export const DataPanel: React.FC = () => {
           <div className="text-sm">
             <p className="font-medium text-ink-primary">Delete my account and all data</p>
             <p className="text-ink-secondary">
-              Permanently removes every session, answer, report, plan, memory and connection, then your sign-in account. This cannot be undone.
+              Permanently removes every session, answer, report, plan, memory and
+              connection, then your sign-in account. This cannot be undone.
             </p>
           </div>
           {!open && (
-            <Button variant="outline" className="rounded-full bg-white/70" onClick={() => setOpen(true)}>
+            <Button
+              variant="outline"
+              className="rounded-full bg-white/70"
+              onClick={() => setOpen(true)}
+            >
               <Trash2 aria-hidden="true" />
               Delete everything…
             </Button>
@@ -160,18 +194,37 @@ export const DataPanel: React.FC = () => {
           <form onSubmit={remove} className="mt-4 grid gap-4 sm:grid-cols-2" noValidate>
             <div>
               <label htmlFor={ids.phrase} className={LABEL}>
-                Type <span className="font-mono text-ink-primary">{DELETE_PHRASE}</span> to confirm
+                Type <span className="font-mono text-ink-primary">{DELETE_PHRASE}</span>{" "}
+                to confirm
               </label>
-              <input id={ids.phrase} className={FIELD} value={phrase} onChange={(e) => setPhrase(e.target.value)} autoComplete="off" spellCheck={false} />
+              <input
+                id={ids.phrase}
+                className={FIELD}
+                value={phrase}
+                onChange={(e) => setPhrase(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+              />
             </div>
             <div>
               <label htmlFor={ids.password} className={LABEL}>
                 Your password
               </label>
-              <input id={ids.password} type="password" className={FIELD} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+              <input
+                id={ids.password}
+                type="password"
+                className={FIELD}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+              />
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
-              <Button type="submit" className="rounded-full bg-redline text-surface-50 hover:bg-redline-dark" disabled={!canDelete}>
+              <Button
+                type="submit"
+                className="rounded-full bg-redline text-surface-50 hover:bg-redline-dark"
+                disabled={!canDelete}
+              >
                 {step === "idle" ? "Permanently delete" : STEP_TEXT[step]}
               </Button>
               <Button
@@ -192,7 +245,10 @@ export const DataPanel: React.FC = () => {
           </form>
         )}
         {deleteError && (
-          <p role="alert" className="mt-4 rounded-2xl bg-verdict-bluff-bg px-4 py-2.5 text-sm text-verdict-bluff-fg">
+          <p
+            role="alert"
+            className="mt-4 rounded-2xl bg-verdict-bluff-bg px-4 py-2.5 text-sm text-verdict-bluff-fg"
+          >
             {deleteError}
           </p>
         )}

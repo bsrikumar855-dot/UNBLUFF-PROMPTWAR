@@ -16,7 +16,10 @@ describe("contract drift guards", () => {
 
   it("data/demo_report.json is exactly the §7 mock", () => {
     const mock = /<!-- MOCK_REPORT_START -->\n```json\n([\s\S]*?)```/.exec(contract)?.[1];
-    const demo = readFileSync(join(root, "data", "demo_report.json"), "utf8").replace(/\r\n/g, "\n");
+    const demo = readFileSync(join(root, "data", "demo_report.json"), "utf8").replace(
+      /\r\n/g,
+      "\n",
+    );
     expect(mock).toBeDefined();
     expect(JSON.parse(demo)).toEqual(JSON.parse(mock as string));
   });

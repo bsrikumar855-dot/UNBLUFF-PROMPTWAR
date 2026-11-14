@@ -4,8 +4,15 @@ import { z } from "zod";
 export const DEV_CORS_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173";
 
 /** Splits a comma-separated CORS_ORIGIN value; `invalid` lists entries that are not bare http(s) origins. */
-export function parseCorsOrigins(raw: string): { origins: string[]; wildcard: boolean; invalid: string[] } {
-  const origins = raw.split(",").map((o) => o.trim()).filter((o) => o !== "");
+export function parseCorsOrigins(raw: string): {
+  origins: string[];
+  wildcard: boolean;
+  invalid: string[];
+} {
+  const origins = raw
+    .split(",")
+    .map((o) => o.trim())
+    .filter((o) => o !== "");
   const wildcard = origins.includes("*");
   const invalid = origins.filter((o) => {
     if (o === "*") return false;
@@ -20,11 +27,17 @@ export function parseCorsOrigins(raw: string): { origins: string[]; wildcard: bo
 }
 
 /** Returns the parsed service-account object, or null if it is not valid JSON with the required fields. */
-export function parseServiceAccount(raw: string): { client_email: string; private_key: string; project_id?: string } | null {
+export function parseServiceAccount(
+  raw: string,
+): { client_email: string; private_key: string; project_id?: string } | null {
   try {
     const v = JSON.parse(raw) as Record<string, unknown>;
     if (typeof v.client_email === "string" && typeof v.private_key === "string") {
-      return { client_email: v.client_email, private_key: v.private_key, ...(typeof v.project_id === "string" ? { project_id: v.project_id } : {}) };
+      return {
+        client_email: v.client_email,
+        private_key: v.private_key,
+        ...(typeof v.project_id === "string" ? { project_id: v.project_id } : {}),
+      };
     }
   } catch {
     // fall through
@@ -41,10 +54,13 @@ export function judge0UrlProblem(raw: string | undefined, production: boolean): 
   } catch {
     return "JUDGE0_URL must be a valid URL";
   }
-  if (u.username || u.password || u.search || u.hash) return "JUDGE0_URL must not contain credentials, a query or a fragment";
+  if (u.username || u.password || u.search || u.hash)
+    return "JUDGE0_URL must not contain credentials, a query or a fragment";
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(u.hostname);
   if (u.protocol !== "https:" && !(u.protocol === "http:" && local && !production)) {
-    return production ? "JUDGE0_URL must use https in production" : "JUDGE0_URL must use https (http is allowed only for localhost outside production)";
+    return production
+      ? "JUDGE0_URL must use https in production"
+      : "JUDGE0_URL must use https (http is allowed only for localhost outside production)";
   }
   return null;
 }
@@ -57,9 +73,11 @@ export function githubRedirectProblem(raw: string | undefined, production: boole
   } catch {
     return "GITHUB_REDIRECT_URI must be a valid URL";
   }
-  if (u.username || u.password || u.search || u.hash) return "GITHUB_REDIRECT_URI must not contain credentials, a query or a fragment";
+  if (u.username || u.password || u.search || u.hash)
+    return "GITHUB_REDIRECT_URI must not contain credentials, a query or a fragment";
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(u.hostname);
-  if (u.protocol !== "https:" && !(u.protocol === "http:" && local && !production)) return "GITHUB_REDIRECT_URI must use https (http is allowed only for localhost outside production)";
+  if (u.protocol !== "https:" && !(u.protocol === "http:" && local && !production))
+    return "GITHUB_REDIRECT_URI must use https (http is allowed only for localhost outside production)";
   return null;
 }
 
@@ -154,7 +172,10 @@ const EnvSchema = z
     LATEX_COMPILER: z.enum(["none", "docker"]).default("none"),
     /** Secret. Sent only from the server, in a header. */
     JUDGE0_AUTH_TOKEN: z.string().optional(),
-    JUDGE0_AUTH_HEADER: z.string().regex(/^[A-Za-z0-9-]{1,60}$/, "must be a plain header name").default("X-Auth-Token"),
+    JUDGE0_AUTH_HEADER: z
+      .string()
+      .regex(/^[A-Za-z0-9-]{1,60}$/, "must be a plain header name")
+      .default("X-Auth-Token"),
     CODE_CPU_TIME_SECONDS: z.coerce.number().min(0.5).max(15).default(2),
     CODE_MEMORY_MB: z.coerce.number().min(16).max(512).default(128),
     CODE_JUDGE_DEADLINE_MS: z.coerce.number().int().min(5_000).max(300_000).default(60_000),
@@ -176,7 +197,9 @@ const EnvSchema = z
     FIREBASE_PROJECT_ID: z.string().optional(),
     /** Optional service-account JSON (secret) for Firestore on hosts without a cloud identity, e.g. Render. */
     FIREBASE_SERVICE_ACCOUNT_JSON: z.string().optional(),
-    LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
+    LOG_LEVEL: z
+      .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
+      .default("info"),
     /** Local emulator addresses. Declared only so production can refuse them (see below). */
     FIREBASE_AUTH_EMULATOR_HOST: z.string().optional(),
     FIRESTORE_EMULATOR_HOST: z.string().optional(),
@@ -187,82 +210,162 @@ const EnvSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["CORS_ORIGIN"],
-        message: "CORS_ORIGIN entries must be bare origins like https://app.example.com (no path or trailing slash)",
+        message:
+          "CORS_ORIGIN entries must be bare origins like https://app.example.com (no path or trailing slash)",
       });
     }
     if (env.NODE_ENV === "production") {
       if (env.AUTH_MODE === "mock") {
-        ctx.addIssue({ code: "custom", path: ["AUTH_MODE"], message: "AUTH_MODE=mock must not be used when NODE_ENV=production (it lets anyone sign in as anyone)" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["AUTH_MODE"],
+          message:
+            "AUTH_MODE=mock must not be used when NODE_ENV=production (it lets anyone sign in as anyone)",
+        });
       }
       // With an Auth emulator address set, the Admin SDK accepts unsigned tokens: anyone could sign in as anyone.
       for (const name of ["FIREBASE_AUTH_EMULATOR_HOST", "FIRESTORE_EMULATOR_HOST"] as const) {
-        if (env[name]?.trim()) ctx.addIssue({ code: "custom", path: [name], message: `${name} must not be set when NODE_ENV=production (it disables real sign-in checks)` });
+        if (env[name]?.trim())
+          ctx.addIssue({
+            code: "custom",
+            path: [name],
+            message: `${name} must not be set when NODE_ENV=production (it disables real sign-in checks)`,
+          });
       }
       if (!env.FIREBASE_PROJECT_ID?.trim()) {
-        ctx.addIssue({ code: "custom", path: ["FIREBASE_PROJECT_ID"], message: "FIREBASE_PROJECT_ID is required when NODE_ENV=production" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["FIREBASE_PROJECT_ID"],
+          message: "FIREBASE_PROJECT_ID is required when NODE_ENV=production",
+        });
       }
       if (env.LLM_MODE === "mock" && !env.ALLOW_MOCK_LLM) {
         ctx.addIssue({
           code: "custom",
           path: ["LLM_MODE"],
-          message: "LLM_MODE=live is required when NODE_ENV=production (set ALLOW_MOCK_LLM=true only for an explicit demonstration that must not be presented as a real AI mentor)",
+          message:
+            "LLM_MODE=live is required when NODE_ENV=production (set ALLOW_MOCK_LLM=true only for an explicit demonstration that must not be presented as a real AI mentor)",
         });
       }
       if (env.STORE === "memory" && !env.ALLOW_EPHEMERAL_STORE) {
         ctx.addIssue({
           code: "custom",
           path: ["STORE"],
-          message: "STORE=firestore is required when NODE_ENV=production (set ALLOW_EPHEMERAL_STORE=true only to accept losing all sessions on restart)",
+          message:
+            "STORE=firestore is required when NODE_ENV=production (set ALLOW_EPHEMERAL_STORE=true only to accept losing all sessions on restart)",
         });
       }
       if (cors.origins.length === 0) {
-        ctx.addIssue({ code: "custom", path: ["CORS_ORIGIN"], message: "CORS_ORIGIN is required when NODE_ENV=production" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["CORS_ORIGIN"],
+          message: "CORS_ORIGIN is required when NODE_ENV=production",
+        });
       } else if (cors.wildcard) {
-        ctx.addIssue({ code: "custom", path: ["CORS_ORIGIN"], message: 'CORS_ORIGIN must not be "*" when NODE_ENV=production' });
+        ctx.addIssue({
+          code: "custom",
+          path: ["CORS_ORIGIN"],
+          message: 'CORS_ORIGIN must not be "*" when NODE_ENV=production',
+        });
       }
     }
-    const gh = { id: env.GITHUB_CLIENT_ID, secret: env.GITHUB_CLIENT_SECRET?.trim(), uri: env.GITHUB_REDIRECT_URI, key: env.GITHUB_TOKEN_ENCRYPTION_KEY?.trim() };
+    const gh = {
+      id: env.GITHUB_CLIENT_ID,
+      secret: env.GITHUB_CLIENT_SECRET?.trim(),
+      uri: env.GITHUB_REDIRECT_URI,
+      key: env.GITHUB_TOKEN_ENCRYPTION_KEY?.trim(),
+    };
     if (gh.id || gh.secret || gh.uri || gh.key) {
-      const missing = [!gh.id && "GITHUB_CLIENT_ID", !gh.secret && "GITHUB_CLIENT_SECRET", !gh.uri && "GITHUB_REDIRECT_URI", !gh.key && "GITHUB_TOKEN_ENCRYPTION_KEY"].filter(Boolean);
-      if (missing.length > 0) ctx.addIssue({ code: "custom", path: ["GITHUB_CLIENT_ID"], message: `GitHub is partly configured; also set ${missing.join(", ")} (or unset them all)` });
+      const missing = [
+        !gh.id && "GITHUB_CLIENT_ID",
+        !gh.secret && "GITHUB_CLIENT_SECRET",
+        !gh.uri && "GITHUB_REDIRECT_URI",
+        !gh.key && "GITHUB_TOKEN_ENCRYPTION_KEY",
+      ].filter(Boolean);
+      if (missing.length > 0)
+        ctx.addIssue({
+          code: "custom",
+          path: ["GITHUB_CLIENT_ID"],
+          message: `GitHub is partly configured; also set ${missing.join(", ")} (or unset them all)`,
+        });
       if (gh.uri) {
         const problem = githubRedirectProblem(gh.uri, env.NODE_ENV === "production");
-        if (problem) ctx.addIssue({ code: "custom", path: ["GITHUB_REDIRECT_URI"], message: problem });
+        if (problem)
+          ctx.addIssue({ code: "custom", path: ["GITHUB_REDIRECT_URI"], message: problem });
       }
       if (gh.key && Buffer.from(gh.key, "base64").length !== 32) {
-        ctx.addIssue({ code: "custom", path: ["GITHUB_TOKEN_ENCRYPTION_KEY"], message: "GITHUB_TOKEN_ENCRYPTION_KEY must be 32 random bytes encoded as base64" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["GITHUB_TOKEN_ENCRYPTION_KEY"],
+          message: "GITHUB_TOKEN_ENCRYPTION_KEY must be 32 random bytes encoded as base64",
+        });
       }
-      for (const r of (env.GITHUB_TOKEN_ENCRYPTION_KEY_RETIRED ?? "").split(",").map((k) => k.trim()).filter((k) => k !== "")) {
-        if (Buffer.from(r, "base64").length !== 32) ctx.addIssue({ code: "custom", path: ["GITHUB_TOKEN_ENCRYPTION_KEY_RETIRED"], message: "every retired key must be 32 random bytes encoded as base64" });
+      for (const r of (env.GITHUB_TOKEN_ENCRYPTION_KEY_RETIRED ?? "")
+        .split(",")
+        .map((k) => k.trim())
+        .filter((k) => k !== "")) {
+        if (Buffer.from(r, "base64").length !== 32)
+          ctx.addIssue({
+            code: "custom",
+            path: ["GITHUB_TOKEN_ENCRYPTION_KEY_RETIRED"],
+            message: "every retired key must be 32 random bytes encoded as base64",
+          });
       }
       if (env.GITHUB_FRONTEND_URL) {
         const o = parseCorsOrigins(env.GITHUB_FRONTEND_URL);
-        if (o.invalid.length > 0 || o.origins.length !== 1 || o.wildcard) ctx.addIssue({ code: "custom", path: ["GITHUB_FRONTEND_URL"], message: "GITHUB_FRONTEND_URL must be one bare origin like https://app.example.com" });
+        if (o.invalid.length > 0 || o.origins.length !== 1 || o.wildcard)
+          ctx.addIssue({
+            code: "custom",
+            path: ["GITHUB_FRONTEND_URL"],
+            message: "GITHUB_FRONTEND_URL must be one bare origin like https://app.example.com",
+          });
       }
     }
     if (env.LATEX_COMPILER === "docker" && env.NODE_ENV === "production") {
-      ctx.addIssue({ code: "custom", path: ["LATEX_COMPILER"], message: "LATEX_COMPILER=docker is for local development only; a production compiler needs its own sandbox" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["LATEX_COMPILER"],
+        message:
+          "LATEX_COMPILER=docker is for local development only; a production compiler needs its own sandbox",
+      });
     }
     if (env.EXECUTION_PROVIDER === "docker" && env.NODE_ENV === "production") {
-      ctx.addIssue({ code: "custom", path: ["EXECUTION_PROVIDER"], message: "EXECUTION_PROVIDER=docker is for local development only; use judge0 in production" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["EXECUTION_PROVIDER"],
+        message:
+          "EXECUTION_PROVIDER=docker is for local development only; use judge0 in production",
+      });
     }
     if (env.EXECUTION_PROVIDER === "judge0") {
       const problem = judge0UrlProblem(env.JUDGE0_URL, env.NODE_ENV === "production");
       if (problem) ctx.addIssue({ code: "custom", path: ["JUDGE0_URL"], message: problem });
     }
-    if (env.FIREBASE_SERVICE_ACCOUNT_JSON && !parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT_JSON)) {
+    if (
+      env.FIREBASE_SERVICE_ACCOUNT_JSON &&
+      !parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT_JSON)
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["FIREBASE_SERVICE_ACCOUNT_JSON"],
-        message: "FIREBASE_SERVICE_ACCOUNT_JSON must be a service-account JSON object (client_email + private_key)",
+        message:
+          "FIREBASE_SERVICE_ACCOUNT_JSON must be a service-account JSON object (client_email + private_key)",
       });
     }
     if (env.LLM_MODE !== "live") return;
     if (!env.GEMINI_MODEL) {
-      ctx.addIssue({ code: "custom", path: ["GEMINI_MODEL"], message: "GEMINI_MODEL is required when LLM_MODE=live" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["GEMINI_MODEL"],
+        message: "GEMINI_MODEL is required when LLM_MODE=live",
+      });
     }
     if (!env.GEMINI_API_KEY && !env.GOOGLE_GENAI_USE_VERTEXAI) {
-      ctx.addIssue({ code: "custom", path: ["GEMINI_API_KEY"], message: "GEMINI_API_KEY is required when LLM_MODE=live" });
+      ctx.addIssue({
+        code: "custom",
+        path: ["GEMINI_API_KEY"],
+        message: "GEMINI_API_KEY is required when LLM_MODE=live",
+      });
     }
   })
   .transform((env) => ({

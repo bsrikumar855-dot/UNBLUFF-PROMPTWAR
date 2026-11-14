@@ -47,9 +47,17 @@ function session(): Session {
         answer: "I wrote the cart slice",
         grade: {
           criteria: {
-            accuracy: { passed: true, evidence_quote: "I wrote the cart slice", missing_concept: null },
+            accuracy: {
+              passed: true,
+              evidence_quote: "I wrote the cart slice",
+              missing_concept: null,
+            },
             specificity: { passed: true, evidence_quote: "cart slice", missing_concept: null },
-            mechanism: { passed: false, evidence_quote: null, missing_concept: "how it re-renders" },
+            mechanism: {
+              passed: false,
+              evidence_quote: null,
+              missing_concept: "how it re-renders",
+            },
             ownership: { passed: true, evidence_quote: "I wrote", missing_concept: null },
             tradeoff: { passed: false, evidence_quote: null, missing_concept: null },
           },
@@ -76,8 +84,24 @@ function session(): Session {
     claims: [c],
     next_seq: 2,
     mode: "prepare",
-    cursors: { "CL-001": { mode: "retest", level: 2, start_level: 2, clarify_used: true, interleaved_claims: 2 } },
-    history: [{ at: "2026-09-26T10:01:00.000Z", mode: "assess", claim_id: "CL-001", skill_id: "react_state", proficiency: 0.25 }],
+    cursors: {
+      "CL-001": {
+        mode: "retest",
+        level: 2,
+        start_level: 2,
+        clarify_used: true,
+        interleaved_claims: 2,
+      },
+    },
+    history: [
+      {
+        at: "2026-09-26T10:01:00.000Z",
+        mode: "assess",
+        claim_id: "CL-001",
+        skill_id: "react_state",
+        proficiency: 0.25,
+      },
+    ],
     guard_flips: 3,
     completions: 5,
     schedule: { "CL-001": { teach_completed_at_claims_done: 3, order: 1 } },
@@ -113,8 +137,16 @@ describe("FirestoreStore (mocked client)", () => {
     expect(typeof write.data.json).toBe("string");
     expect(write.data.updated_at).toBeInstanceOf(Date);
     const parsed = JSON.parse(write.data.json as string) as Session;
-    expect(parsed.claims[0]?.qa[0]?.grade?.criteria.mechanism.missing_concept).toBe("how it re-renders");
-    expect(parsed.cursors["CL-001"]).toEqual({ mode: "retest", level: 2, start_level: 2, clarify_used: true, interleaved_claims: 2 });
+    expect(parsed.claims[0]?.qa[0]?.grade?.criteria.mechanism.missing_concept).toBe(
+      "how it re-renders",
+    );
+    expect(parsed.cursors["CL-001"]).toEqual({
+      mode: "retest",
+      level: 2,
+      start_level: 2,
+      clarify_used: true,
+      interleaved_claims: 2,
+    });
     expect(parsed.schedule["CL-001"]).toEqual({ teach_completed_at_claims_done: 3, order: 1 });
     expect(parsed.history[0]?.skill_id).toBe("react_state");
   });

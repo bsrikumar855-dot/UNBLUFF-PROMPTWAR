@@ -19,16 +19,29 @@ describe("AssessmentService ladder", () => {
     const start = await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001" });
     expect(start).toMatchObject({ turn: "question", level: 1, mode: "assess", grade: null });
 
-    const clarify = await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD });
+    const clarify = await svc.interrogate(UID, {
+      session_id: sid,
+      claim_id: "CL-001",
+      answer: GOOD,
+    });
     expect(clarify).toMatchObject({ turn: "clarify", level: 1 });
     expect(clarify.claim.qa.at(-1)?.kind).toBe("clarify");
 
-    expect((await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD })).level).toBe(2);
-    expect((await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD })).level).toBe(3);
+    expect(
+      (await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD })).level,
+    ).toBe(2);
+    expect(
+      (await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD })).level,
+    ).toBe(3);
     const done = await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD });
     expect(done).toMatchObject({ turn: "done", level: null, question: null });
     expect(done.claim).toMatchObject({ verdict: "defended", levels_passed: 3, proficiency: 0.85 });
-    expect(done.progress).toEqual({ claims_total: 1, claims_done: 1, next_claim_id: null, next_mode: null });
+    expect(done.progress).toEqual({
+      claims_total: 1,
+      claims_done: 1,
+      next_claim_id: null,
+      next_mode: null,
+    });
     expect(done.teach_now).toBe(false);
   });
 
@@ -50,12 +63,19 @@ describe("AssessmentService ladder", () => {
   });
 
   it("8. retest passes → after 1.0, retest.passed, history appended with mode retest", async () => {
-    const { svc } = service(new ScriptedProvider([pass(), rawGrade(["accuracy"], Q), pass(), pass()]));
+    const { svc } = service(
+      new ScriptedProvider([pass(), rawGrade(["accuracy"], Q), pass(), pass()]),
+    );
     const sid = await reactSession(svc);
     await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001" });
     await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD });
     const shaky = await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD });
-    expect(shaky.claim).toMatchObject({ verdict: "shaky", levels_passed: 1, proficiency: 0.25, missing_concepts: ["missing mechanism"] });
+    expect(shaky.claim).toMatchObject({
+      verdict: "shaky",
+      levels_passed: 1,
+      proficiency: 0.25,
+      missing_concepts: ["missing mechanism"],
+    });
 
     // Opening the fix task schedules the retest; with nothing else pending it is forced due (rule 3).
     const fix = await svc.fixTask(UID, sid, "CL-001");
@@ -87,13 +107,19 @@ describe("AssessmentService ladder", () => {
     const { svc } = service();
     const sid = await reactSession(svc);
     await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001" });
-    const done = await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: "Honestly I don't know" });
+    const done = await svc.interrogate(UID, {
+      session_id: sid,
+      claim_id: "CL-001",
+      answer: "Honestly I don't know",
+    });
     expect(done.claim.verdict).toBe("honest_gap");
     expect(done.claim.missing_concepts.length).toBeGreaterThan(0);
   });
 
   it("guard flips are counted per session", async () => {
-    const { svc, store } = service(new ScriptedProvider([rawGrade(ALL, "not in the answer at all")]));
+    const { svc, store } = service(
+      new ScriptedProvider([rawGrade(ALL, "not in the answer at all")]),
+    );
     const sid = await reactSession(svc);
     await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001" });
     const done = await svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: GOOD });
@@ -115,9 +141,15 @@ describe("AssessmentService ladder", () => {
   it("rejects retest on defended/pending claims and answers on idle claims", async () => {
     const { svc } = service();
     const sid = await reactSession(svc);
-    await expect(svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", mode: "retest" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
-    await expect(svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: "x" })).rejects.toBeInstanceOf(ApiError);
-    await expect(svc.interrogate(UID, { session_id: sid, claim_id: "CL-999" })).rejects.toMatchObject({ code: "CLAIM_NOT_FOUND" });
+    await expect(
+      svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", mode: "retest" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(
+      svc.interrogate(UID, { session_id: sid, claim_id: "CL-001", answer: "x" }),
+    ).rejects.toBeInstanceOf(ApiError);
+    await expect(
+      svc.interrogate(UID, { session_id: sid, claim_id: "CL-999" }),
+    ).rejects.toMatchObject({ code: "CLAIM_NOT_FOUND" });
     await expect(svc.report(UID, "s_nope")).rejects.toMatchObject({ code: "SESSION_NOT_FOUND" });
   });
 });

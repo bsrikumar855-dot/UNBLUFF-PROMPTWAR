@@ -23,8 +23,11 @@ import {
 } from "lucide-react";
 
 /** First matching keyword wins, so the more specific words come first. Decorative only: nothing depends on the picture. */
-const pick = (text: string, table: [RegExp, LucideIcon][], fallback: LucideIcon): LucideIcon =>
-  table.find(([re]) => re.test(text))?.[1] ?? fallback;
+const pick = (
+  text: string,
+  table: [RegExp, LucideIcon][],
+  fallback: LucideIcon
+): LucideIcon => table.find(([re]) => re.test(text))?.[1] ?? fallback;
 
 const PATTERN_ICONS: [RegExp, LucideIcon][] = [
   [/two.?pointer|opposite|read and write|fast.?slow|cycle/i, ArrowLeftRight],

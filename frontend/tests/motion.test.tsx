@@ -39,7 +39,12 @@ describe("content is never held back where motion cannot run", () => {
   it("Enter, RuleDraw, ScanReveal and the page frame render their content immediately", () => {
     render(
       <MemoryRouter>
-        <PageHeader eyebrow="Plan" title="Career" description="About this page" actions={<button type="button">Act</button>} />
+        <PageHeader
+          eyebrow="Plan"
+          title="Career"
+          description="About this page"
+          actions={<button type="button">Act</button>}
+        />
         <Section title="A section" index="01">
           <Enter as="p" index={5}>
             Rising text
@@ -57,7 +62,11 @@ describe("content is never held back where motion cannot run", () => {
     expect(screen.getByRole("heading", { level: 2, name: "A section" })).toBeVisible();
     expect(screen.getByText("Rising text")).toBeVisible();
     expect(screen.getByText("Scanned content")).toBeVisible();
-    for (const el of [screen.getByText("Rising text"), screen.getByText("Scanned content")]) expect(el.closest("[style*='opacity: 0']")).toBeNull();
+    for (const el of [
+      screen.getByText("Rising text"),
+      screen.getByText("Scanned content"),
+    ])
+      expect(el.closest("[style*='opacity: 0']")).toBeNull();
   });
 
   it("Enter passes through accessible roles and labels", () => {
@@ -119,9 +128,17 @@ describe("feedback marks", () => {
 });
 
 describe("useNewIds: only what arrives later animates", () => {
-  const Probe: React.FC<{ ids: string[]; scope: string; ready?: boolean }> = ({ ids, scope, ready = true }) => {
+  const Probe: React.FC<{ ids: string[]; scope: string; ready?: boolean }> = ({
+    ids,
+    scope,
+    ready = true,
+  }) => {
     const isNew = useNewIds(ids, scope, ready);
-    return <p data-testid="out">{ids.map((i) => `${i}:${isNew(i) ? "new" : "old"}`).join(",")}</p>;
+    return (
+      <p data-testid="out">
+        {ids.map((i) => `${i}:${isNew(i) ? "new" : "old"}`).join(",")}
+      </p>
+    );
   };
   const out = () => screen.getByTestId("out").textContent;
 
@@ -154,7 +171,17 @@ describe("useSeen: an element is seen when it is on screen or has been scrolled 
     vi.restoreAllMocks();
   });
 
-  const rect = (top: number) => ({ top, bottom: top + 50, left: 0, right: 100, width: 100, height: 50, x: 0, y: top, toJSON: () => ({}) });
+  const rect = (top: number) => ({
+    top,
+    bottom: top + 50,
+    left: 0,
+    right: 100,
+    width: 100,
+    height: 50,
+    x: 0,
+    y: top,
+    toJSON: () => ({}),
+  });
   const Probe: React.FC<{ top: { value: number } }> = ({ top }) => {
     const ref = useRef<HTMLDivElement | null>(null);
     const seen = useSeen(ref as React.RefObject<Element>);
@@ -233,20 +260,32 @@ describe("the landing page's verdict key", () => {
     render(<VerdictKey />);
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(4);
-    ["Defended", "Shaky", "Bluff", "Honest"].forEach((label, i) => expect(radios[i]?.textContent).toMatch(new RegExp(`^${label}`)));
+    ["Defended", "Shaky", "Bluff", "Honest"].forEach((label, i) =>
+      expect(radios[i]?.textContent).toMatch(new RegExp(`^${label}`))
+    );
     expect(screen.getByRole("radio", { name: /Shaky/ })).toBeChecked();
     expect(screen.getByText(/passed one or two of the three levels/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: /Defended/ }));
     expect(screen.getByText(/passed all three levels/)).toBeInTheDocument();
     expect(screen.getByText(/Nothing to fix/)).toBeInTheDocument();
-    fireEvent.keyDown(screen.getByRole("radio", { name: /Defended/ }), { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByRole("radio", { name: /Defended/ }), {
+      key: "ArrowDown",
+    });
     expect(screen.getByRole("radio", { name: /Shaky/ })).toBeChecked();
     fireEvent.keyDown(screen.getByRole("radio", { name: /Shaky/ }), { key: "ArrowUp" });
-    fireEvent.keyDown(screen.getByRole("radio", { name: /Defended/ }), { key: "ArrowUp" });
+    fireEvent.keyDown(screen.getByRole("radio", { name: /Defended/ }), {
+      key: "ArrowUp",
+    });
     expect(screen.getByRole("radio", { name: /Honest gap/ })).toBeChecked();
     expect(screen.getByText(/said you had not used it/)).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Honest gap/ })).toHaveAttribute("tabindex", "0");
-    expect(screen.getByRole("radio", { name: /Bluff/ })).toHaveAttribute("tabindex", "-1");
+    expect(screen.getByRole("radio", { name: /Honest gap/ })).toHaveAttribute(
+      "tabindex",
+      "0"
+    );
+    expect(screen.getByRole("radio", { name: /Bluff/ })).toHaveAttribute(
+      "tabindex",
+      "-1"
+    );
   });
 });
 
@@ -264,7 +303,9 @@ describe("route transitions", () => {
 
   it("applies the navigation inside the transition, so the destination is never delayed", () => {
     const calls: string[] = [];
-    (document as unknown as { startViewTransition: (cb: () => void) => void }).startViewTransition = (cb) => {
+    (
+      document as unknown as { startViewTransition: (cb: () => void) => void }
+    ).startViewTransition = (cb) => {
       calls.push("start");
       cb();
       calls.push("after");
@@ -276,7 +317,16 @@ describe("route transitions", () => {
   it("skips the transition when the student asked for reduced motion", () => {
     const start = vi.fn();
     (document as unknown as { startViewTransition: unknown }).startViewTransition = start;
-    window.matchMedia = ((q: string) => ({ matches: /reduce/.test(q), media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, dispatchEvent: () => false, onchange: null })) as unknown as typeof window.matchMedia;
+    window.matchMedia = ((q: string) => ({
+      matches: /reduce/.test(q),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+      addListener() {},
+      removeListener() {},
+      dispatchEvent: () => false,
+      onchange: null,
+    })) as unknown as typeof window.matchMedia;
     const run = vi.fn();
     startRouteTransition(run);
     expect(run).toHaveBeenCalledTimes(1);
@@ -284,8 +334,25 @@ describe("route transitions", () => {
   });
 
   it("only treats a plain left click as an in-app navigation", () => {
-    const e = (over: Partial<React.MouseEvent>) => ({ defaultPrevented: false, button: 0, metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...over }) as React.MouseEvent;
+    const e = (over: Partial<React.MouseEvent>) =>
+      ({
+        defaultPrevented: false,
+        button: 0,
+        metaKey: false,
+        ctrlKey: false,
+        shiftKey: false,
+        altKey: false,
+        ...over,
+      }) as React.MouseEvent;
     expect(isPlainClick(e({}))).toBe(true);
-    for (const over of [{ button: 1 }, { metaKey: true }, { ctrlKey: true }, { shiftKey: true }, { altKey: true }, { defaultPrevented: true }]) expect(isPlainClick(e(over))).toBe(false);
+    for (const over of [
+      { button: 1 },
+      { metaKey: true },
+      { ctrlKey: true },
+      { shiftKey: true },
+      { altKey: true },
+      { defaultPrevented: true },
+    ])
+      expect(isPlainClick(e(over))).toBe(false);
   });
 });

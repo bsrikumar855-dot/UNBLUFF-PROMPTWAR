@@ -51,4 +51,5 @@ export function pdfUrl(base64: string): string {
 }
 
 /** Points on a 0 to 100 scale mapped to the tone class used by the score ring. */
-export const scoreTone = (score: number): "good" | "mid" | "low" => (score >= 75 ? "good" : score >= 50 ? "mid" : "low");
+export const scoreTone = (score: number): "good" | "mid" | "low" =>
+  score >= 75 ? "good" : score >= 50 ? "mid" : "low";

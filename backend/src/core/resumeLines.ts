@@ -28,10 +28,15 @@ function textsMatch(a: string, b: string): boolean {
 /** A claim sits on a line when the line matches its resume_line (or, failing that, its text). */
 function claimOnLine(line: string, claim: Claim): boolean {
   if (claim.source !== "resume") return false;
-  return claim.resume_line !== null ? textsMatch(line, claim.resume_line) : textsMatch(line, claim.text);
+  return claim.resume_line !== null
+    ? textsMatch(line, claim.resume_line)
+    : textsMatch(line, claim.text);
 }
 
-export function buildResumeLines(resumeText: string | null, claims: readonly Claim[]): ResumeLine[] {
+export function buildResumeLines(
+  resumeText: string | null,
+  claims: readonly Claim[],
+): ResumeLine[] {
   if (!resumeText) return [];
   return resumeText
     .split(/\r?\n/)

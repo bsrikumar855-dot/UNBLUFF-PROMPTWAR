@@ -15,11 +15,20 @@ import { MemoryGithubStore, type GithubStore } from "../../src/github/store.js";
 import { MentorService } from "../../src/mentor/service.js";
 import { MemoryMentorStore, type MentorStore } from "../../src/mentor/store.js";
 import { AnalyticsService } from "../../src/analytics/service.js";
-import { MemoryRevisionStore, MemoryStatsStore, type RevisionStore, type StatsStore } from "../../src/analytics/stores.js";
+import {
+  MemoryRevisionStore,
+  MemoryStatsStore,
+  type RevisionStore,
+  type StatsStore,
+} from "../../src/analytics/stores.js";
 import { CodeService } from "../../src/code/service.js";
 import { MemorySubmissionStore, type SubmissionStore } from "../../src/code/submissionStore.js";
 import { SuiteRegistry, parseSuiteFile } from "../../src/code/suites.js";
-import { ExecutionError, UnavailableProvider, type ExecutionProvider } from "../../src/code/provider.js";
+import {
+  ExecutionError,
+  UnavailableProvider,
+  type ExecutionProvider,
+} from "../../src/code/provider.js";
 import { Catalogue, parseCatalogueFile } from "../../src/dsa/catalogue.js";
 import { DsaProgressService } from "../../src/dsa/progressService.js";
 import { MemoryProgressStore, type ProgressStore } from "../../src/dsa/progressStore.js";
@@ -49,8 +58,14 @@ import type { SessionStore } from "../../src/store/SessionStore.js";
 import { MemoryStore } from "../../src/store/memoryStore.js";
 import { roles, silentLogger } from "../helpers.js";
 
-export const demoReportJson = readFileSync(join(import.meta.dirname, "..", "..", "data", "demo_report.json"), "utf8");
-export const sampleResume = readFileSync(join(import.meta.dirname, "..", "fixtures", "sampleResume.txt"), "utf8");
+export const demoReportJson = readFileSync(
+  join(import.meta.dirname, "..", "..", "data", "demo_report.json"),
+  "utf8",
+);
+export const sampleResume = readFileSync(
+  join(import.meta.dirname, "..", "fixtures", "sampleResume.txt"),
+  "utf8",
+);
 
 /** Wraps a provider and counts every language-layer call (for efficiency assertions). */
 export function countingProvider(inner: LLMProvider = new MockProvider()) {
@@ -70,10 +85,25 @@ export function countingProvider(inner: LLMProvider = new MockProvider()) {
 }
 
 export const fixtureCatalogue = () =>
-  new Catalogue(parseCatalogueFile(JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "data", "dsa", "fixture.json"), "utf8"))));
+  new Catalogue(
+    parseCatalogueFile(
+      JSON.parse(
+        readFileSync(join(import.meta.dirname, "..", "..", "data", "dsa", "fixture.json"), "utf8"),
+      ),
+    ),
+  );
 
 export const fixtureSuites = () =>
-  new SuiteRegistry(parseSuiteFile(JSON.parse(readFileSync(join(import.meta.dirname, "..", "..", "data", "code", "fixture-suites.json"), "utf8"))));
+  new SuiteRegistry(
+    parseSuiteFile(
+      JSON.parse(
+        readFileSync(
+          join(import.meta.dirname, "..", "..", "data", "code", "fixture-suites.json"),
+          "utf8",
+        ),
+      ),
+    ),
+  );
 
 export { ExecutionError };
 
@@ -85,7 +115,11 @@ export const fakeVerifier: TokenVerifier = {
   async verify(token) {
     const m = /^(test|unverified):([\w-]+)(?:@(\d+))?$/.exec(token);
     if (!m) throw new Error("invalid token");
-    return { uid: m[2]!, email_verified: m[1] === "test", ...(m[3] ? { auth_time: Number(m[3]) } : {}) };
+    return {
+      uid: m[2]!,
+      email_verified: m[1] === "test",
+      ...(m[3] ? { auth_time: Number(m[3]) } : {}),
+    };
   },
 };
 export const unverifiedBearer = (uid: string) => `Bearer unverified:${uid}`;
@@ -99,10 +133,62 @@ export const DEFAULT_TEST_UID = "student-a";
  * 401 behaviour. The wrapper only touches headers; the app under test is unchanged.
  */
 export function testApp(
-  opts: { llm?: LLMProvider; rateLimits?: RateLimitOptions; corsOrigin?: string; store?: SessionStore; autoAuth?: boolean; catalogue?: Catalogue; progressStore?: ProgressStore; verifier?: TokenVerifier; provider?: ExecutionProvider; suites?: SuiteRegistry; submissionStore?: SubmissionStore; code?: CodeService; statsStore?: StatsStore; revisionStore?: RevisionStore; analytics?: AnalyticsService; mentorStore?: MentorStore; mentor?: MentorService; github?: GithubService; placement?: PlacementService; placementStore?: PlacementStore; career?: CareerService; careerStore?: CareerStore; leetcode?: LeetCodeService; leetcodeStore?: LeetCodeStore; resume?: ResumeService; resumeStore?: ResumeStore; learn?: LearnService; learnStore?: LearnStore; learningPath?: LearningPathService; learningPathStore?: LearningPathStore; interview?: (uid: string) => Promise<InterviewEvidence | null>; coach?: (uid: string, facts: MentorFacts) => Promise<string | null>; latex?: LatexCompiler; accountStore?: AccountStore; githubStore?: GithubStore; usageStore?: UsageStore; llmDailyBudget?: number; maxSessionsPerStudent?: number; requireEmailVerification?: boolean; revocation?: RevocationGuard; revokeSessions?: (uid: string) => Promise<void>; appCheck?: { mode: AppCheckMode; verifier: AppCheckVerifier | null }; freehire?: Pick<FreehireClient, "search" | "getJob" | "facets">; execution?: { configured: boolean; verified: boolean }; llmMode?: "live" | "mock"; now?: () => Date } = {},
+  opts: {
+    llm?: LLMProvider;
+    rateLimits?: RateLimitOptions;
+    corsOrigin?: string;
+    store?: SessionStore;
+    autoAuth?: boolean;
+    catalogue?: Catalogue;
+    progressStore?: ProgressStore;
+    verifier?: TokenVerifier;
+    provider?: ExecutionProvider;
+    suites?: SuiteRegistry;
+    submissionStore?: SubmissionStore;
+    code?: CodeService;
+    statsStore?: StatsStore;
+    revisionStore?: RevisionStore;
+    analytics?: AnalyticsService;
+    mentorStore?: MentorStore;
+    mentor?: MentorService;
+    github?: GithubService;
+    placement?: PlacementService;
+    placementStore?: PlacementStore;
+    career?: CareerService;
+    careerStore?: CareerStore;
+    leetcode?: LeetCodeService;
+    leetcodeStore?: LeetCodeStore;
+    resume?: ResumeService;
+    resumeStore?: ResumeStore;
+    learn?: LearnService;
+    learnStore?: LearnStore;
+    learningPath?: LearningPathService;
+    learningPathStore?: LearningPathStore;
+    interview?: (uid: string) => Promise<InterviewEvidence | null>;
+    coach?: (uid: string, facts: MentorFacts) => Promise<string | null>;
+    latex?: LatexCompiler;
+    accountStore?: AccountStore;
+    githubStore?: GithubStore;
+    usageStore?: UsageStore;
+    llmDailyBudget?: number;
+    maxSessionsPerStudent?: number;
+    requireEmailVerification?: boolean;
+    revocation?: RevocationGuard;
+    revokeSessions?: (uid: string) => Promise<void>;
+    appCheck?: { mode: AppCheckMode; verifier: AppCheckVerifier | null };
+    freehire?: Pick<FreehireClient, "search" | "getJob" | "facets">;
+    execution?: { configured: boolean; verified: boolean };
+    llmMode?: "live" | "mock";
+    now?: () => Date;
+  } = {},
 ): Express {
   // Like production, every model call is charged to the student's daily budget (generous by default so flow tests never hit it).
-  const budget = new LlmBudget({ store: opts.usageStore ?? new MemoryUsageStore(), limit: opts.llmDailyBudget ?? 100_000, logger: silentLogger, now: opts.now });
+  const budget = new LlmBudget({
+    store: opts.usageStore ?? new MemoryUsageStore(),
+    limit: opts.llmDailyBudget ?? 100_000,
+    logger: silentLogger,
+    now: opts.now,
+  });
   const llm = budgetedProvider(opts.llm ?? new MockProvider(), budget, silentLogger);
   const catalogue = opts.catalogue ?? fixtureCatalogue();
   const progressStore = opts.progressStore ?? new MemoryProgressStore();
@@ -131,7 +217,14 @@ export function testApp(
   // Default: GitHub is not configured (no OAuth app, no key), which is also how a fresh deployment starts.
   const github =
     opts.github ??
-    new GithubService({ store: githubStore, gql: new GithubGraphQL(), oauth: null, vault: null, logger: silentLogger, frontendUrl: "http://localhost:5173" });
+    new GithubService({
+      store: githubStore,
+      gql: new GithubGraphQL(),
+      oauth: null,
+      vault: null,
+      logger: silentLogger,
+      frontendUrl: "http://localhost:5173",
+    });
   // LeetCode: only a saved username and numbers the student imports. It never contacts LeetCode.
   const leetcode =
     opts.leetcode ??
@@ -146,7 +239,13 @@ export function testApp(
     });
   const resume =
     opts.resume ??
-    new ResumeService({ store: resumeStore, compiler: opts.latex ?? new UnavailableLatex(), role: (id) => roles.get(id) ?? null, logger: silentLogger, now: opts.now });
+    new ResumeService({
+      store: resumeStore,
+      compiler: opts.latex ?? new UnavailableLatex(),
+      role: (id) => roles.get(id) ?? null,
+      logger: silentLogger,
+      now: opts.now,
+    });
   const learn = opts.learn ?? new LearnService({ store: learnStore, now: opts.now });
   const careerHolder: { current?: CareerService } = {}; // the Career service needs the placement service, which needs the mentor
   const mentor =
@@ -217,7 +316,13 @@ export function testApp(
       coach: opts.coach,
       now: opts.now,
     });
-  const service = new AssessmentService({ store: sessionStore, llm, roles, logger: silentLogger, maxSessionsPerStudent: opts.maxSessionsPerStudent });
+  const service = new AssessmentService({
+    store: sessionStore,
+    llm,
+    roles,
+    logger: silentLogger,
+    maxSessionsPerStudent: opts.maxSessionsPerStudent,
+  });
   const account = new AccountService({
     profiles: opts.accountStore ?? new MemoryAccountStore(),
     roles,
@@ -250,15 +355,17 @@ export function testApp(
     verifier: opts.verifier ?? fakeVerifier,
     catalogue,
     dsaProgress,
-    code: opts.code ?? new CodeService({
-      provider: opts.provider ?? new UnavailableProvider(),
-      suites: opts.suites ?? fixtureSuites(),
-      catalogue: () => catalogue,
-      progress: dsaProgress,
-      submissions,
-      logger: silentLogger,
-      onJudged: (r) => analytics.recordSubmission(r),
-    }),
+    code:
+      opts.code ??
+      new CodeService({
+        provider: opts.provider ?? new UnavailableProvider(),
+        suites: opts.suites ?? fixtureSuites(),
+        catalogue: () => catalogue,
+        progress: dsaProgress,
+        submissions,
+        logger: silentLogger,
+        onJudged: (r) => analytics.recordSubmission(r),
+      }),
     analytics,
     mentor,
     github,
@@ -278,7 +385,11 @@ export function testApp(
     logger: silentLogger,
     demoReportJson,
     corsOrigin: opts.corsOrigin,
-    rateLimits: opts.rateLimits ?? { globalPerMinute: 10_000, llmPerMinute: 10_000, llmUserPerMinute: 10_000 },
+    rateLimits: opts.rateLimits ?? {
+      globalPerMinute: 10_000,
+      llmPerMinute: 10_000,
+      llmUserPerMinute: 10_000,
+    },
   });
   if (opts.autoAuth === false) return app;
   const wrapper = express();

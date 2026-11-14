@@ -17,7 +17,12 @@ import type {
   SubmissionVerdict,
 } from "../types.js";
 import { resolveLanguages, type ResolvedLanguage } from "./languages.js";
-import { ExecutionError, type ExecuteResult, type ExecutionLimits, type ExecutionProvider } from "./provider.js";
+import {
+  ExecutionError,
+  type ExecuteResult,
+  type ExecutionLimits,
+  type ExecutionProvider,
+} from "./provider.js";
 import { DEFAULT_LIMITS, isAnalyticsEligible, type SuiteRegistry } from "./suites.js";
 import type { SubmissionRecord, SubmissionStore } from "./submissionStore.js";
 
@@ -69,7 +74,11 @@ export function normalizeOutput(s: string): string {
 const byteLength = (s: string) => Buffer.byteLength(s, "utf8");
 
 function toRunStatus(r: ExecuteResult): CodeRunResponse["status"] {
-  return r.outcome === "completed" ? "completed" : r.outcome === "internal_error" ? "judge_error" : r.outcome;
+  return r.outcome === "completed"
+    ? "completed"
+    : r.outcome === "internal_error"
+      ? "judge_error"
+      : r.outcome;
 }
 
 export class CodeService {
@@ -84,7 +93,10 @@ export class CodeService {
 
   constructor(private readonly deps: CodeServiceDeps) {
     this.now = deps.now ?? (() => new Date());
-    this.limits = deps.limits ?? { cpuTimeSeconds: DEFAULT_LIMITS.cpu_time_seconds, memoryMb: DEFAULT_LIMITS.memory_mb };
+    this.limits = deps.limits ?? {
+      cpuTimeSeconds: DEFAULT_LIMITS.cpu_time_seconds,
+      memoryMb: DEFAULT_LIMITS.memory_mb,
+    };
     this.judgeDeadlineMs = deps.judgeDeadlineMs ?? 60_000;
     this.languageCacheMs = deps.languageCacheMs ?? 5 * 60_000;
     this.concurrency = deps.testConcurrency ?? 3;
@@ -106,7 +118,8 @@ export class CodeService {
   }
 
   exercise(questionId: string): CodeExerciseResponse {
-    if (!this.deps.catalogue().hasQuestion(questionId)) throw new ApiError("QUESTION_NOT_FOUND", `Question ${questionId} not found`);
+    if (!this.deps.catalogue().hasQuestion(questionId))
+      throw new ApiError("QUESTION_NOT_FOUND", `Question ${questionId} not found`);
     return this.deps.suites.publicExercise(questionId);
   }
 
@@ -138,7 +151,10 @@ export class CodeService {
         compile_output: r.compile_output,
         time_ms: r.time_ms,
         memory_kb: r.memory_kb,
-        sample_passed: expected === null ? null : r.outcome === "completed" && normalizeOutput(r.stdout) === normalizeOutput(expected),
+        sample_passed:
+          expected === null
+            ? null
+            : r.outcome === "completed" && normalizeOutput(r.stdout) === normalizeOutput(expected),
       };
     });
   }
@@ -147,13 +163,20 @@ export class CodeService {
 
   async submit(uid: string, req: CodeSubmitRequest): Promise<CodeSubmission> {
     this.checkSizes(req.source);
-    if (!this.deps.catalogue().hasQuestion(req.question_id)) throw new ApiError("QUESTION_NOT_FOUND", `Question ${req.question_id} not found`);
+    if (!this.deps.catalogue().hasQuestion(req.question_id))
+      throw new ApiError("QUESTION_NOT_FOUND", `Question ${req.question_id} not found`);
     const suite = this.deps.suites.suite(req.question_id);
     if (!suite) {
-      throw new ApiError("GRADING_UNAVAILABLE", "This question has no hidden test suite, so it cannot be judged. You can still run your code against the samples or your own input.");
+      throw new ApiError(
+        "GRADING_UNAVAILABLE",
+        "This question has no hidden test suite, so it cannot be judged. You can still run your code against the samples or your own input.",
+      );
     }
     const language = await this.language(req.language);
-    const limits: ExecutionLimits = { cpuTimeSeconds: suite.limits.cpu_time_seconds, memoryMb: suite.limits.memory_mb };
+    const limits: ExecutionLimits = {
+      cpuTimeSeconds: suite.limits.cpu_time_seconds,
+      memoryMb: suite.limits.memory_mb,
+    };
 
     return this.guard(this.submitsInFlight, uid, LIMIT_SUBMITS_IN_FLIGHT, async () => {
       const deadline = Date.now() + this.judgeDeadlineMs;
@@ -166,19 +189,36 @@ export class CodeService {
       let compileOutput: string | null = null;
       for (let i = 0; i < total; i++) {
         const r = results[i];
-        const ok = r !== undefined && r.outcome === "completed" && normalizeOutput(r.stdout) === normalizeOutput(suite.tests[i]!.expected_output);
+        const ok =
+          r !== undefined &&
+          r.outcome === "completed" &&
+          normalizeOutput(r.stdout) === normalizeOutput(suite.tests[i]!.expected_output);
         if (ok) {
           passed++;
           continue;
         }
         if (failedTest === null) {
           failedTest = i + 1;
-          verdict = !r ? "judge_error" : r.outcome === "compile_error" ? "compile_error" : r.outcome === "runtime_error" ? "runtime_error" : r.outcome === "time_limit_exceeded" ? "time_limit_exceeded" : r.outcome === "internal_error" ? "judge_error" : "wrong_answer";
+          verdict = !r
+            ? "judge_error"
+            : r.outcome === "compile_error"
+              ? "compile_error"
+              : r.outcome === "runtime_error"
+                ? "runtime_error"
+                : r.outcome === "time_limit_exceeded"
+                  ? "time_limit_exceeded"
+                  : r.outcome === "internal_error"
+                    ? "judge_error"
+                    : "wrong_answer";
           if (r?.outcome === "compile_error") compileOutput = r.compile_output;
         }
       }
-      const times = results.map((r) => r?.time_ms).filter((n): n is number => typeof n === "number");
-      const mems = results.map((r) => r?.memory_kb).filter((n): n is number => typeof n === "number");
+      const times = results
+        .map((r) => r?.time_ms)
+        .filter((n): n is number => typeof n === "number");
+      const mems = results
+        .map((r) => r?.memory_kb)
+        .filter((n): n is number => typeof n === "number");
 
       let progressUpdated = false;
       if (verdict === "accepted") {
@@ -186,11 +226,15 @@ export class CodeService {
           await this.deps.progress.put(uid, req.question_id, { status: "solved" });
           progressUpdated = true;
         } catch (err) {
-          this.deps.logger.error({ err: (err as Error).message }, "accepted submission but progress update failed");
+          this.deps.logger.error(
+            { err: (err as Error).message },
+            "accepted submission but progress update failed",
+          );
         }
       }
 
-      const demonstration = suite.is_demonstration || suite.source.license_status === "development_fixture";
+      const demonstration =
+        suite.is_demonstration || suite.source.license_status === "development_fixture";
       const providerVerified = this.deps.providerVerified === true;
       const mock = this.deps.provider.mock === true;
       const mockAllowed = mock && this.deps.allowMockToCount === true;
@@ -230,7 +274,10 @@ export class CodeService {
         suite_license: suite.source.license_status,
         suite_eligible: suiteEligible,
         // A compile error is found by the first test alone and holds for every test, so it counts as judged for all of them.
-        judged_tests: results[0]?.outcome === "compile_error" ? total : results.filter((r) => r !== undefined).length,
+        judged_tests:
+          results[0]?.outcome === "compile_error"
+            ? total
+            : results.filter((r) => r !== undefined).length,
         provider_mock: mock,
         ...(mockAllowed ? { mock_counting_allowed: true } : {}),
       };
@@ -239,9 +286,22 @@ export class CodeService {
         await this.deps.onJudged?.(record);
       } catch (err) {
         // The submission is stored; statistics can be rebuilt from it (POST /api/me/dsa-analytics/refresh).
-        this.deps.logger.error({ submission: record.id, err: (err as Error).message }, "analytics update failed after judging");
+        this.deps.logger.error(
+          { submission: record.id, err: (err as Error).message },
+          "analytics update failed after judging",
+        );
       }
-      this.deps.logger.info({ submission: record.id, question: record.question_id, language: record.language, verdict, passed, total }, "submission judged");
+      this.deps.logger.info(
+        {
+          submission: record.id,
+          question: record.question_id,
+          language: record.language,
+          verdict,
+          passed,
+          total,
+        },
+        "submission judged",
+      );
       return toPublic(record);
     });
   }
@@ -250,32 +310,55 @@ export class CodeService {
 
   async listSubmissions(uid: string, questionId?: string): Promise<CodeSubmissionsResponse> {
     const records = await this.deps.submissions.listByOwner(uid, questionId);
-    return { submissions: records.sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 100).map(toPublic) };
+    return {
+      submissions: records
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 100)
+        .map(toPublic),
+    };
   }
 
   async getSubmission(uid: string, id: string): Promise<CodeSubmissionDetail> {
     const record = await this.deps.submissions.get(id);
     // Unknown and someone else's are indistinguishable.
-    if (!record || record.owner_uid !== uid) throw new ApiError("SUBMISSION_NOT_FOUND", `Submission ${id} not found`);
-    const { owner_uid: _o, provider: _p, provider_verified: _v, suite_license: _l, suite_eligible: _e, judged_tests: _j, provider_mock: _m, mock_counting_allowed: _a, ...detail } = record;
-    return { ...detail, analytics_status: record.analytics_status ?? "excluded_unknown_provenance" };
+    if (!record || record.owner_uid !== uid)
+      throw new ApiError("SUBMISSION_NOT_FOUND", `Submission ${id} not found`);
+    const {
+      owner_uid: _o,
+      provider: _p,
+      provider_verified: _v,
+      suite_license: _l,
+      suite_eligible: _e,
+      judged_tests: _j,
+      provider_mock: _m,
+      mock_counting_allowed: _a,
+      ...detail
+    } = record;
+    return {
+      ...detail,
+      analytics_status: record.analytics_status ?? "excluded_unknown_provenance",
+    };
   }
 
   async deleteSubmission(uid: string, id: string): Promise<void> {
     const record = await this.deps.submissions.get(id);
-    if (!record || record.owner_uid !== uid) throw new ApiError("SUBMISSION_NOT_FOUND", `Submission ${id} not found`);
+    if (!record || record.owner_uid !== uid)
+      throw new ApiError("SUBMISSION_NOT_FOUND", `Submission ${id} not found`);
     await this.deps.submissions.delete(id);
   }
 
   // ---------- internals ----------
 
   private checkSizes(source: string, stdin?: string): void {
-    if (byteLength(source) > MAX_SOURCE_BYTES) throw new ApiError("BAD_REQUEST", `Source code is too large (max ${MAX_SOURCE_BYTES} bytes)`);
-    if (stdin !== undefined && byteLength(stdin) > MAX_STDIN_BYTES) throw new ApiError("BAD_REQUEST", `Input is too large (max ${MAX_STDIN_BYTES} bytes)`);
+    if (byteLength(source) > MAX_SOURCE_BYTES)
+      throw new ApiError("BAD_REQUEST", `Source code is too large (max ${MAX_SOURCE_BYTES} bytes)`);
+    if (stdin !== undefined && byteLength(stdin) > MAX_STDIN_BYTES)
+      throw new ApiError("BAD_REQUEST", `Input is too large (max ${MAX_STDIN_BYTES} bytes)`);
   }
 
   private async resolved(): Promise<ResolvedLanguage[]> {
-    if (this.cache && Date.now() - this.cache.at < this.languageCacheMs) return this.cache.languages;
+    if (this.cache && Date.now() - this.cache.at < this.languageCacheMs)
+      return this.cache.languages;
     const languages = resolveLanguages(await this.deps.provider.listLanguages());
     this.cache = { at: Date.now(), languages };
     return languages;
@@ -290,13 +373,27 @@ export class CodeService {
       throw this.toApiError(err);
     }
     const language = list.find((l) => l.id === id);
-    if (!language) throw new ApiError("BAD_REQUEST", `Language "${id}" is not available on the execution service`);
+    if (!language)
+      throw new ApiError(
+        "BAD_REQUEST",
+        `Language "${id}" is not available on the execution service`,
+      );
     return language;
   }
 
-  private async execute(language: ResolvedLanguage, source: string, stdin: string, limits: ExecutionLimits): Promise<ExecuteResult> {
+  private async execute(
+    language: ResolvedLanguage,
+    source: string,
+    stdin: string,
+    limits: ExecutionLimits,
+  ): Promise<ExecuteResult> {
     try {
-      return await this.deps.provider.execute({ providerLanguageId: language.providerId, source, stdin, limits });
+      return await this.deps.provider.execute({
+        providerLanguageId: language.providerId,
+        source,
+        stdin,
+        limits,
+      });
     } catch (err) {
       throw this.toApiError(err);
     }
@@ -314,7 +411,9 @@ export class CodeService {
     limits: ExecutionLimits,
     deadline: number,
   ): Promise<(ExecuteResult | undefined)[]> {
-    const results: (ExecuteResult | undefined)[] = new Array(tests.length).fill(undefined) as undefined[];
+    const results: (ExecuteResult | undefined)[] = new Array(tests.length).fill(
+      undefined,
+    ) as undefined[];
     const runOne = async (i: number) => {
       if (Date.now() >= deadline) return;
       results[i] = await this.execute(language, source, tests[i]!.input, limits);
@@ -325,13 +424,24 @@ export class CodeService {
     const worker = async () => {
       while (next < tests.length && Date.now() < deadline) await runOne(next++);
     };
-    await Promise.all(Array.from({ length: Math.min(this.concurrency, Math.max(tests.length - 1, 0)) }, worker));
+    await Promise.all(
+      Array.from({ length: Math.min(this.concurrency, Math.max(tests.length - 1, 0)) }, worker),
+    );
     return results;
   }
 
-  private async guard<T>(table: Map<string, number>, uid: string, max: number, fn: () => Promise<T>): Promise<T> {
+  private async guard<T>(
+    table: Map<string, number>,
+    uid: string,
+    max: number,
+    fn: () => Promise<T>,
+  ): Promise<T> {
     const current = table.get(uid) ?? 0;
-    if (current >= max) throw new ApiError("RATE_LIMITED", "Another run is still in progress. Wait for it to finish.");
+    if (current >= max)
+      throw new ApiError(
+        "RATE_LIMITED",
+        "Another run is still in progress. Wait for it to finish.",
+      );
     table.set(uid, current + 1);
     try {
       return await fn();
@@ -344,7 +454,13 @@ export class CodeService {
 
   private toApiError(err: unknown): ApiError {
     if (err instanceof ApiError) return err;
-    if (err instanceof ExecutionError) return err.kind === "timeout" ? new ApiError("EXECUTION_UNAVAILABLE", "The code execution service took too long to respond. Try again.") : unavailable();
+    if (err instanceof ExecutionError)
+      return err.kind === "timeout"
+        ? new ApiError(
+            "EXECUTION_UNAVAILABLE",
+            "The code execution service took too long to respond. Try again.",
+          )
+        : unavailable();
     this.deps.logger.error({ err: (err as Error).message }, "unexpected execution failure");
     return unavailable();
   }
@@ -355,6 +471,17 @@ function unavailable(): ApiError {
 }
 
 function toPublic(r: SubmissionRecord): CodeSubmission {
-  const { owner_uid: _o, source: _s, provider: _p, provider_verified: _v, suite_license: _l, suite_eligible: _e, judged_tests: _j, provider_mock: _m, mock_counting_allowed: _a, ...rest } = r;
+  const {
+    owner_uid: _o,
+    source: _s,
+    provider: _p,
+    provider_verified: _v,
+    suite_license: _l,
+    suite_eligible: _e,
+    judged_tests: _j,
+    provider_mock: _m,
+    mock_counting_allowed: _a,
+    ...rest
+  } = r;
   return { ...rest, analytics_status: r.analytics_status ?? "excluded_unknown_provenance" };
 }

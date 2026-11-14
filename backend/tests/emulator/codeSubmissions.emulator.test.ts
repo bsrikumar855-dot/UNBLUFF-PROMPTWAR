@@ -79,9 +79,14 @@ describe("FirestoreSubmissionStore on the emulator", () => {
     await store.save(record("sub_a2", "owner-a"));
     await store.save({ ...record("sub_b1", "owner-b"), question_id: "q_fixture_04" });
     expect((await store.get("sub_a1"))?.owner_uid).toBe("owner-a");
-    expect((await store.listByOwner("owner-a")).map((r) => r.id).sort()).toEqual(["sub_a1", "sub_a2"]);
+    expect((await store.listByOwner("owner-a")).map((r) => r.id).sort()).toEqual([
+      "sub_a1",
+      "sub_a2",
+    ]);
     expect((await store.listByOwner("owner-b", Q)).map((r) => r.id)).toEqual([]);
-    expect((await store.listByOwner("owner-b", "q_fixture_04")).map((r) => r.id)).toEqual(["sub_b1"]);
+    expect((await store.listByOwner("owner-b", "q_fixture_04")).map((r) => r.id)).toEqual([
+      "sub_b1",
+    ]);
     expect(await store.listByOwner("nobody")).toEqual([]);
     await store.delete("sub_a1");
     expect(await store.get("sub_a1")).toBeNull();
@@ -98,26 +103,46 @@ describe("FirestoreSubmissionStore on the emulator", () => {
 describe("code API over Firestore on the emulator", () => {
   it("persists a judged submission, updates progress only on acceptance, and keeps it private to its owner", async () => {
     const as = (uid: string) => ({ Authorization: bearer(uid) });
-    const wrong = await request(app).post("/api/code/submit").set(as("emu-alice")).send({ question_id: Q, language: "python", source: "WRONG" }).expect(200);
+    const wrong = await request(app)
+      .post("/api/code/submit")
+      .set(as("emu-alice"))
+      .send({ question_id: Q, language: "python", source: "WRONG" })
+      .expect(200);
     expect(wrong.body.verdict).toBe("wrong_answer");
-    expect((await request(app).get("/api/me/dsa-progress").set(as("emu-alice"))).body.progress).toEqual([]);
+    expect(
+      (await request(app).get("/api/me/dsa-progress").set(as("emu-alice"))).body.progress,
+    ).toEqual([]);
 
-    const ok = await request(app).post("/api/code/submit").set(as("emu-alice")).send({ question_id: Q, language: "python", source: "OK" }).expect(200);
+    const ok = await request(app)
+      .post("/api/code/submit")
+      .set(as("emu-alice"))
+      .send({ question_id: Q, language: "python", source: "OK" })
+      .expect(200);
     expect(ok.body).toMatchObject({ verdict: "accepted", passed: 8, progress_updated: true });
-    expect((await request(app).get("/api/me/dsa-progress").set(as("emu-alice"))).body.progress).toEqual([expect.objectContaining({ question_id: Q, status: "solved" })]);
+    expect(
+      (await request(app).get("/api/me/dsa-progress").set(as("emu-alice"))).body.progress,
+    ).toEqual([expect.objectContaining({ question_id: Q, status: "solved" })]);
 
     const list = await request(app).get("/api/code/submissions").set(as("emu-alice")).expect(200);
     expect(list.body.submissions).toHaveLength(2);
-    const detail = await request(app).get(`/api/code/submissions/${ok.body.id}`).set(as("emu-alice")).expect(200);
+    const detail = await request(app)
+      .get(`/api/code/submissions/${ok.body.id}`)
+      .set(as("emu-alice"))
+      .expect(200);
     expect(detail.body.source).toBe("OK");
 
     await request(app).get(`/api/code/submissions/${ok.body.id}`).set(as("emu-bob")).expect(404);
     await request(app).delete(`/api/code/submissions/${ok.body.id}`).set(as("emu-bob")).expect(404);
-    expect((await request(app).get("/api/code/submissions").set(as("emu-bob"))).body.submissions).toEqual([]);
+    expect(
+      (await request(app).get("/api/code/submissions").set(as("emu-bob"))).body.submissions,
+    ).toEqual([]);
 
     const raw = (await db.collection(subs).doc(ok.body.id).get()).data() as SubmissionRecord;
     expect(raw.owner_uid).toBe("emu-alice");
-    await request(app).delete(`/api/code/submissions/${ok.body.id}`).set(as("emu-alice")).expect(204);
+    await request(app)
+      .delete(`/api/code/submissions/${ok.body.id}`)
+      .set(as("emu-alice"))
+      .expect(204);
     expect((await db.collection(subs).doc(ok.body.id).get()).exists).toBe(false);
   });
 });

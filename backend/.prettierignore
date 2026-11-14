@@ -1,0 +1,11 @@
+# Generated or byte-exact files that must not be reformatted.
+package-lock.json
+dist/
+coverage/
+# Byte-identical to the CONTRACT.md section 4 block (drift test).
+src/types.ts
+# Data files are read as-is; deploy config is left untouched.
+data/
+Dockerfile
+scripts/latex/
+*.md

@@ -85,11 +85,17 @@ const DsaQuestionPage: React.FC = () => {
       {error !== null && (
         <>
           <nav aria-label="Breadcrumb" className="mb-4 text-sm text-ink-muted">
-            <Link to={routes.dsa} className="underline underline-offset-4 hover:text-ink-primary">
+            <Link
+              to={routes.dsa}
+              className="underline underline-offset-4 hover:text-ink-primary"
+            >
               DSA Arena
             </Link>{" "}
             /{" "}
-            <Link to={backTo} className="underline underline-offset-4 hover:text-ink-primary">
+            <Link
+              to={backTo}
+              className="underline underline-offset-4 hover:text-ink-primary"
+            >
               Questions
             </Link>
           </nav>
@@ -99,11 +105,17 @@ const DsaQuestionPage: React.FC = () => {
       {error === null && data === null && (
         <>
           <nav aria-label="Breadcrumb" className="mb-4 text-sm text-ink-muted">
-            <Link to={routes.dsa} className="underline underline-offset-4 hover:text-ink-primary">
+            <Link
+              to={routes.dsa}
+              className="underline underline-offset-4 hover:text-ink-primary"
+            >
               DSA Arena
             </Link>{" "}
             /{" "}
-            <Link to={backTo} className="underline underline-offset-4 hover:text-ink-primary">
+            <Link
+              to={backTo}
+              className="underline underline-offset-4 hover:text-ink-primary"
+            >
               Questions
             </Link>
           </nav>

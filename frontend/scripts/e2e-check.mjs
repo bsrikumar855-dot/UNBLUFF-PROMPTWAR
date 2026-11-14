@@ -26,15 +26,24 @@ async function call(method, path, body) {
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const json = await res.json();
-  if (!res.ok) throw new Error(`${method} ${path} → ${res.status} ${JSON.stringify(json)}`);
+  if (!res.ok)
+    throw new Error(`${method} ${path} → ${res.status} ${JSON.stringify(json)}`);
   return json;
 }
 
 /** Answer until the claim is done, like the Workspace does. */
 async function runClaim(sid, claimId, answer, mode) {
-  let t = await call("POST", "/interrogate", { session_id: sid, claim_id: claimId, ...(mode ? { mode } : {}) });
+  let t = await call("POST", "/interrogate", {
+    session_id: sid,
+    claim_id: claimId,
+    ...(mode ? { mode } : {}),
+  });
   while (t.turn !== "done") {
-    t = await call("POST", "/interrogate", { session_id: sid, claim_id: claimId, answer });
+    t = await call("POST", "/interrogate", {
+      session_id: sid,
+      claim_id: claimId,
+      answer,
+    });
   }
   return t;
 }
@@ -42,47 +51,98 @@ async function runClaim(sid, claimId, answer, mode) {
 const health = await call("GET", "/health");
 step(0, `health: ${JSON.stringify(health)}`);
 
-const ex = await call("POST", "/claims/extract", { role_id: "frontend_developer", mode: "prepare", resume_text: RESUME });
-step(1, `extract (mode "prepare"): session ${ex.session_id}, ${ex.claims.length} claims, mode=${ex.mode}`);
-check(ex.mode === "prepare" && ex.claims.length >= 3, "session is in prepare mode with 3 claims");
+const ex = await call("POST", "/claims/extract", {
+  role_id: "frontend_developer",
+  mode: "prepare",
+  resume_text: RESUME,
+});
+step(
+  1,
+  `extract (mode "prepare"): session ${ex.session_id}, ${ex.claims.length} claims, mode=${ex.mode}`
+);
+check(
+  ex.mode === "prepare" && ex.claims.length >= 3,
+  "session is in prepare mode with 3 claims"
+);
 
 const conf = await call("POST", "/claims/confirm", {
   session_id: ex.session_id,
-  claims: ex.claims.map(({ id, text, resume_line, skill_id }) => ({ id, text, resume_line, skill_id })),
+  claims: ex.claims.map(({ id, text, resume_line, skill_id }) => ({
+    id,
+    text,
+    resume_line,
+    skill_id,
+  })),
 });
 const sid = conf.session_id;
 const [c1, c2, c3] = conf.claims.map((c) => c.id);
-step(2, `confirm: ${conf.claims.length} claims, next=${conf.progress.next_claim_id}/${conf.progress.next_mode}`);
+step(
+  2,
+  `confirm: ${conf.claims.length} claims, next=${conf.progress.next_claim_id}/${conf.progress.next_mode}`
+);
 
 const t1 = await runClaim(sid, c1, "I don't know");
-step(3, `${c1} answered "I don't know": verdict=${t1.claim.verdict} teach_now=${t1.teach_now} root_cause=${t1.claim.root_cause}`);
-check(t1.claim.verdict === "honest_gap" && t1.teach_now === true, "honest gap and teach_now in prepare mode");
+step(
+  3,
+  `${c1} answered "I don't know": verdict=${t1.claim.verdict} teach_now=${t1.teach_now} root_cause=${t1.claim.root_cause}`
+);
+check(
+  t1.claim.verdict === "honest_gap" && t1.teach_now === true,
+  "honest gap and teach_now in prepare mode"
+);
 
 const readinessBefore = (await call("GET", `/report/${sid}`)).readiness;
 const fix = await call("POST", "/fix-task", { session_id: sid, claim_id: c1 });
-step(4, `fix task: root_cause=${fix.root_cause}; exercise="${fix.exercise.slice(0, 60)}…"`);
+step(
+  4,
+  `fix task: root_cause=${fix.root_cause}; exercise="${fix.exercise.slice(0, 60)}…"`
+);
 try {
   await call("POST", "/interrogate", { session_id: sid, claim_id: c1, mode: "retest" });
   check(false, "retest should be locked right after the fix task");
 } catch (err) {
-  check(String(err).includes("Retest unlocks after 2 more concepts"), `retest locked: ${String(err).split(" → ")[1]?.slice(0, 90)}`);
+  check(
+    String(err).includes("Retest unlocks after 2 more concepts"),
+    `retest locked: ${String(err).split(" → ")[1]?.slice(0, 90)}`
+  );
 }
 
 const t2 = await runClaim(sid, c2, LONG);
-step(5, `${c2} long answers: verdict=${t2.claim.verdict}, next=${t2.progress.next_claim_id}/${t2.progress.next_mode}`);
+step(
+  5,
+  `${c2} long answers: verdict=${t2.claim.verdict}, next=${t2.progress.next_claim_id}/${t2.progress.next_mode}`
+);
 const t3 = await runClaim(sid, c3, LONG);
-step(6, `${c3} long answers: verdict=${t3.claim.verdict}, next=${t3.progress.next_claim_id}/${t3.progress.next_mode}`);
-check(t3.progress.next_mode === "retest" && t3.progress.next_claim_id === c1, "retest is due via progress.next_mode");
+step(
+  6,
+  `${c3} long answers: verdict=${t3.claim.verdict}, next=${t3.progress.next_claim_id}/${t3.progress.next_mode}`
+);
+check(
+  t3.progress.next_mode === "retest" && t3.progress.next_claim_id === c1,
+  "retest is due via progress.next_mode"
+);
 
 const r = await runClaim(sid, c1, LONG, "retest");
-step(7, `retest ${c1}: verdict=${r.claim.verdict} retest=${JSON.stringify(r.claim.retest)}`);
-check(r.claim.retest?.passed === true && r.claim.retest.interleaved_claims >= 2, "retest passed with interleaved_claims >= 2");
+step(
+  7,
+  `retest ${c1}: verdict=${r.claim.verdict} retest=${JSON.stringify(r.claim.retest)}`
+);
+check(
+  r.claim.retest?.passed === true && r.claim.retest.interleaved_claims >= 2,
+  "retest passed with interleaved_claims >= 2"
+);
 
 const report = await call("GET", `/report/${sid}`);
 const rc = report.claims.find((c) => c.id === c1);
-step(8, `report: readiness ${readinessBefore} → ${report.readiness}, ${c1} retest_status=${rc.retest_status}, interleaved=${rc.retest?.interleaved_claims}`);
+step(
+  8,
+  `report: readiness ${readinessBefore} → ${report.readiness}, ${c1} retest_status=${rc.retest_status}, interleaved=${rc.retest?.interleaved_claims}`
+);
 check(report.readiness > readinessBefore, "readiness increased");
-check(rc.retest_status === "done" && rc.retest.interleaved_claims >= 2, "report shows the verified retest");
+check(
+  rc.retest_status === "done" && rc.retest.interleaved_claims >= 2,
+  "report shows the verified retest"
+);
 
 console.log(failures === 0 ? "\nE2E OK" : `\nE2E FAILED (${failures})`);
 process.exit(failures === 0 ? 0 : 1);

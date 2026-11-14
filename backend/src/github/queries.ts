@@ -82,8 +82,15 @@ export const ACTIVITY_QUERY = `query UnbluffActivity($from: DateTime!, $to: Date
 export const MAX_README_READS = 10;
 export function readmesQuery(count: number): string {
   const n = Math.min(count, MAX_README_READS);
-  const vars = Array.from({ length: n }, (_, i) => `$o${i}: String!, $n${i}: String!, $e${i}: String!`).join(", ");
-  const body = Array.from({ length: n }, (_, i) => `r${i}: repository(owner: $o${i}, name: $n${i}) { object(expression: $e${i}) { ... on Blob { byteSize isTruncated text } } }`).join(" ");
+  const vars = Array.from(
+    { length: n },
+    (_, i) => `$o${i}: String!, $n${i}: String!, $e${i}: String!`,
+  ).join(", ");
+  const body = Array.from(
+    { length: n },
+    (_, i) =>
+      `r${i}: repository(owner: $o${i}, name: $n${i}) { object(expression: $e${i}) { ... on Blob { byteSize isTruncated text } } }`,
+  ).join(" ");
   return `query UnbluffReadmes(${vars}) { ${body} ${RATE} }`;
 }
 
@@ -95,7 +102,14 @@ const GithubUrl = z.string().url().max(500).startsWith("https://github.com/");
 
 const RepoRef = z.object({ nameWithOwner: z.string().max(200), isPrivate: z.boolean() });
 
-export const ViewerData = z.object({ viewer: z.object({ id: z.string().min(1), databaseId: z.number().int().positive(), login: z.string().min(1).max(100), url: GithubUrl }) });
+export const ViewerData = z.object({
+  viewer: z.object({
+    id: z.string().min(1),
+    databaseId: z.number().int().positive(),
+    login: z.string().min(1).max(100),
+    url: GithubUrl,
+  }),
+});
 
 export const ContributionsData = z.object({
   viewer: z.object({
@@ -109,12 +123,21 @@ export const ContributionsData = z.object({
       totalPullRequestReviewContributions: z.number().int().nonnegative(),
       contributionCalendar: z.object({
         totalContributions: z.number().int().nonnegative(),
-        weeks: z.array(
-          z.object({
-            firstDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-            contributionDays: z.array(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), contributionCount: z.number().int().nonnegative() })).max(7),
-          }),
-        ).max(60),
+        weeks: z
+          .array(
+            z.object({
+              firstDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+              contributionDays: z
+                .array(
+                  z.object({
+                    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+                    contributionCount: z.number().int().nonnegative(),
+                  }),
+                )
+                .max(7),
+            }),
+          )
+          .max(60),
       }),
     }),
   }),
@@ -122,7 +145,10 @@ export const ContributionsData = z.object({
 
 const TreeEntry = z.object({ name: z.string().max(255), type: z.string().max(20) });
 export const RepoNode = z.object({
-  nameWithOwner: z.string().regex(/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/).max(200),
+  nameWithOwner: z
+    .string()
+    .regex(/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/)
+    .max(200),
   name: z.string().regex(/^[A-Za-z0-9._-]{1,100}$/),
   url: GithubUrl,
   description: z.string().nullish(),
@@ -133,13 +159,26 @@ export const RepoNode = z.object({
   updatedAt: z.string().nullish(),
   stargazerCount: z.number().int().nonnegative(),
   primaryLanguage: z.object({ name: z.string() }).nullish(),
-  languages: z.object({ edges: z.array(z.object({ size: z.number().nonnegative(), node: z.object({ name: z.string() }) })).nullish() }).nullish(),
+  languages: z
+    .object({
+      edges: z
+        .array(z.object({ size: z.number().nonnegative(), node: z.object({ name: z.string() }) }))
+        .nullish(),
+    })
+    .nullish(),
   licenseInfo: z.object({ spdxId: z.string().nullish() }).nullish(),
-  repositoryTopics: z.object({ nodes: z.array(z.object({ topic: z.object({ name: z.string() }) })).nullish() }).nullish(),
+  repositoryTopics: z
+    .object({ nodes: z.array(z.object({ topic: z.object({ name: z.string() }) })).nullish() })
+    .nullish(),
   issues: Count,
   pullRequests: Count,
-  defaultBranchRef: z.object({ target: z.object({ history: Count }).partial().nullish() }).nullish(),
-  root: z.object({ entries: z.array(TreeEntry).nullish() }).partial().nullish(),
+  defaultBranchRef: z
+    .object({ target: z.object({ history: Count }).partial().nullish() })
+    .nullish(),
+  root: z
+    .object({ entries: z.array(TreeEntry).nullish() })
+    .partial()
+    .nullish(),
 });
 export type RepoNodeT = z.infer<typeof RepoNode>;
 
@@ -153,11 +192,23 @@ export const RepositoriesData = z.object({
   }),
 });
 
-const ItemNode = z.object({ title: z.string().max(500), url: GithubUrl, state: z.string().max(20), createdAt: z.string(), repository: RepoRef });
+const ItemNode = z.object({
+  title: z.string().max(500),
+  url: GithubUrl,
+  state: z.string().max(20),
+  createdAt: z.string(),
+  repository: RepoRef,
+});
 export const ActivityData = z.object({
   viewer: z.object({
-    pullRequests: z.object({ totalCount: z.number().int().nonnegative(), nodes: z.array(ItemNode.nullable()) }),
-    issues: z.object({ totalCount: z.number().int().nonnegative(), nodes: z.array(ItemNode.nullable()) }),
+    pullRequests: z.object({
+      totalCount: z.number().int().nonnegative(),
+      nodes: z.array(ItemNode.nullable()),
+    }),
+    issues: z.object({
+      totalCount: z.number().int().nonnegative(),
+      nodes: z.array(ItemNode.nullable()),
+    }),
     contributionsCollection: z.object({
       pullRequestReviewContributions: z.object({
         nodes: z.array(
@@ -165,7 +216,11 @@ export const ActivityData = z.object({
             .object({
               occurredAt: z.string(),
               pullRequestReview: z.object({ state: z.string().max(30) }),
-              pullRequest: z.object({ title: z.string().max(500), url: GithubUrl, repository: RepoRef }),
+              pullRequest: z.object({
+                title: z.string().max(500),
+                url: GithubUrl,
+                repository: RepoRef,
+              }),
             })
             .nullable(),
         ),
@@ -175,4 +230,15 @@ export const ActivityData = z.object({
 });
 
 export const ReadmesData = z.record(z.string(), z.unknown());
-export const ReadmeBlob = z.object({ object: z.object({ byteSize: z.number().int().nonnegative(), isTruncated: z.boolean(), text: z.string().nullable() }).partial().nullish() }).nullable();
+export const ReadmeBlob = z
+  .object({
+    object: z
+      .object({
+        byteSize: z.number().int().nonnegative(),
+        isTruncated: z.boolean(),
+        text: z.string().nullable(),
+      })
+      .partial()
+      .nullish(),
+  })
+  .nullable();

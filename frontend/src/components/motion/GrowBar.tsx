@@ -26,8 +26,16 @@ export const GrowBar: React.FC<{
   return (
     <div ref={ref} className={className}>
       <div
-        className={cn(axis === "x" ? "h-full origin-left" : "w-full origin-bottom", "transition-transform duration-500 ease-out motion-reduce:transition-none", barClassName)}
-        style={{ transform: axis === "x" ? `scaleX(${shown})` : `scaleY(${shown})`, transitionDelay: animated && !seen ? "0s" : `${delay}s`, ...(axis === "y" ? { height: "100%" } : {}) }}
+        className={cn(
+          axis === "x" ? "h-full origin-left" : "w-full origin-bottom",
+          "transition-transform duration-500 ease-out motion-reduce:transition-none",
+          barClassName
+        )}
+        style={{
+          transform: axis === "x" ? `scaleX(${shown})` : `scaleY(${shown})`,
+          transitionDelay: animated && !seen ? "0s" : `${delay}s`,
+          ...(axis === "y" ? { height: "100%" } : {}),
+        }}
       >
         {children}
       </div>

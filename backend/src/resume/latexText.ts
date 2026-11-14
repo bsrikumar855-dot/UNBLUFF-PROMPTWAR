@@ -20,7 +20,13 @@ export interface ParsedResume {
   phones: string[];
   links: string[];
   /** Layout features that commonly break ATS parsing. */
-  layout: { tables: boolean; columns: boolean; graphics: boolean; icons: boolean; positioned: boolean };
+  layout: {
+    tables: boolean;
+    columns: boolean;
+    graphics: boolean;
+    icons: boolean;
+    positioned: boolean;
+  };
   words: number;
 }
 
@@ -57,7 +63,7 @@ function plain(src: string, links: string[]): string {
   let s = src;
   // \href{url}{label} and \url{url}: keep the label, remember the link.
   let out = "";
-  for (let i = 0; i < s.length; ) {
+  for (let i = 0; i < s.length;) {
     const href = /^\\href\s*/.exec(s.slice(i));
     const url = /^\\url\s*/.exec(s.slice(i));
     if (href) {
@@ -85,8 +91,14 @@ function plain(src: string, links: string[]): string {
   s = s
     .replace(/\\\\(\[[^\]]*\])?/g, "\n")
     .replace(/\\(?:newline|par)\b/g, "\n")
-    .replace(/\\(?:textbf|textit|emph|underline|textsc|texttt|textsf|textrm|small|large|Large|LARGE|huge|Huge|scriptsize|footnotesize|normalsize|bfseries|itshape|scshape|centering|raggedright|noindent)\b/g, "")
-    .replace(/\\(?:hspace|vspace|hfill|vfill|quad|qquad|smallskip|medskip|bigskip|titlerule|pagenumbering|pagestyle|thispagestyle)\*?(\{[^}]*\})?/g, " ")
+    .replace(
+      /\\(?:textbf|textit|emph|underline|textsc|texttt|textsf|textrm|small|large|Large|LARGE|huge|Huge|scriptsize|footnotesize|normalsize|bfseries|itshape|scshape|centering|raggedright|noindent)\b/g,
+      "",
+    )
+    .replace(
+      /\\(?:hspace|vspace|hfill|vfill|quad|qquad|smallskip|medskip|bigskip|titlerule|pagenumbering|pagestyle|thispagestyle)\*?(\{[^}]*\})?/g,
+      " ",
+    )
     .replace(/\\(?:begin|end)\{[^}]*\}(?:\[[^\]]*\])?/g, "") // environments: drop the markers, keep the content
     .replace(/\\[,;:! ]/g, " ") // thin and normal spaces
     .replace(/\\(?:&|%|\$|#|_)/g, (m) => (m[1] === "$" ? "\uE000" : m[1]!)) // an escaped dollar must survive math-mode stripping
@@ -100,17 +112,27 @@ function plain(src: string, links: string[]): string {
     .replace(/[{}]/g, "")
     .replace(/\$/g, "")
     .replace(/\uE000/g, "$");
-  return s.replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return s
+    .replace(/[ \t]+/g, " ")
+    .replace(/ *\n */g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
-const SECTION_CMD = /\\(?:section|subsection|subsubsection|resumeSection|cvsection)\*?\s*(?:\[[^\]]*\])?\s*\{/g;
+const SECTION_CMD =
+  /\\(?:section|subsection|subsubsection|resumeSection|cvsection)\*?\s*(?:\[[^\]]*\])?\s*\{/g;
 
 /** Finds section headings and the text that follows each one up to the next heading. */
 function sectionsOf(body: string, links: string[]): ParsedSection[] {
   const marks: { name: string; start: number; end: number }[] = [];
   for (const m of body.matchAll(SECTION_CMD)) {
     const g = group(body, m.index! + m[0].length - 1);
-    if (g) marks.push({ name: plain(g.body, []).replace(/\s+/g, " ").trim(), start: m.index!, end: g.end });
+    if (g)
+      marks.push({
+        name: plain(g.body, []).replace(/\s+/g, " ").trim(),
+        start: m.index!,
+        end: g.end,
+      });
   }
   return marks.map((mk, i) => {
     const raw = body.slice(mk.end, marks[i + 1]?.start ?? body.length);
@@ -143,7 +165,13 @@ export function parseResume(latex: string): ParsedResume {
 
   const mailto = links.filter((l) => /^mailto:/i.test(l)).map((l) => l.replace(/^mailto:/i, ""));
   const emails = [...new Set([...(text.match(EMAIL) ?? []), ...mailto])];
-  const phones = [...new Set((text.match(PHONE) ?? []).map((p) => p.trim()).filter((p) => p.replace(/\D/g, "").length >= 9 && p.replace(/\D/g, "").length <= 15))];
+  const phones = [
+    ...new Set(
+      (text.match(PHONE) ?? [])
+        .map((p) => p.trim())
+        .filter((p) => p.replace(/\D/g, "").length >= 9 && p.replace(/\D/g, "").length <= 15),
+    ),
+  ];
   const hasEnv = (names: string) => new RegExp(`\\\\begin\\{(?:${names})\\*?\\}`).test(src);
 
   return {
@@ -155,10 +183,18 @@ export function parseResume(latex: string): ParsedResume {
     links: [...new Set(links.filter((l) => !/^mailto:/i.test(l)))],
     layout: {
       tables: hasEnv("tabular|tabularx|longtable|array|tabu"),
-      columns: hasEnv("multicols") || /\\(?:twocolumn|documentclass\[[^\]]*twocolumn)/.test(src) || /\\begin\{paracol\}/.test(src),
+      columns:
+        hasEnv("multicols") ||
+        /\\(?:twocolumn|documentclass\[[^\]]*twocolumn)/.test(src) ||
+        /\\begin\{paracol\}/.test(src),
       graphics: /\\includegraphics\b/.test(src),
-      icons: /\\usepackage(?:\[[^\]]*\])?\{(?:fontawesome5?|fontawesome|academicons|marvosym)\}|\\fa[A-Z][A-Za-z]+/.test(src),
-      positioned: hasEnv("tikzpicture|textblock|textblock\\*|wrapfigure") || /\\usepackage(?:\[[^\]]*\])?\{(?:textpos|tikz)\}/.test(src),
+      icons:
+        /\\usepackage(?:\[[^\]]*\])?\{(?:fontawesome5?|fontawesome|academicons|marvosym)\}|\\fa[A-Z][A-Za-z]+/.test(
+          src,
+        ),
+      positioned:
+        hasEnv("tikzpicture|textblock|textblock\\*|wrapfigure") ||
+        /\\usepackage(?:\[[^\]]*\])?\{(?:textpos|tikz)\}/.test(src),
     },
     words: (text.match(/[A-Za-z0-9][A-Za-z0-9+#./'-]*/g) ?? []).length,
   };

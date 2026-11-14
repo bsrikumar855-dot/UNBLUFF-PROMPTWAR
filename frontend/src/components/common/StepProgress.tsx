@@ -60,7 +60,11 @@ export const StepProgress: React.FC<StepProgressProps> = ({ current, className }
               <span
                 className={cn(
                   "block text-sm font-semibold",
-                  isCurrent ? "text-redline" : isDone ? "text-ink-primary" : "text-ink-secondary"
+                  isCurrent
+                    ? "text-redline"
+                    : isDone
+                      ? "text-ink-primary"
+                      : "text-ink-secondary"
                 )}
               >
                 <span className="sr-only">{String(stepNumber).padStart(2, "0")} </span>

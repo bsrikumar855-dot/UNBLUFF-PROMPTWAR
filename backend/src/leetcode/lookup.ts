@@ -17,7 +17,9 @@ const Count = z.object({ difficulty: z.string(), count: z.number().int().min(0).
 const Response = z.object({
   data: z.object({
     allQuestionsCount: z.array(Count),
-    matchedUser: z.object({ submitStatsGlobal: z.object({ acSubmissionNum: z.array(Count) }) }).nullable(),
+    matchedUser: z
+      .object({ submitStatsGlobal: z.object({ acSubmissionNum: z.array(Count) }) })
+      .nullable(),
   }),
 });
 
@@ -39,7 +41,8 @@ export interface LeetCodeLookup {
   lookup(username: string): Promise<LookupResult>;
 }
 
-const pick = (rows: { difficulty: string; count: number }[], name: string): number | null => rows.find((r) => r.difficulty.toLowerCase() === name)?.count ?? null;
+const pick = (rows: { difficulty: string; count: number }[], name: string): number | null =>
+  rows.find((r) => r.difficulty.toLowerCase() === name)?.count ?? null;
 
 export class HttpLeetCodeLookup implements LeetCodeLookup {
   constructor(private readonly opts: { fetchImpl?: typeof fetch; timeoutMs?: number } = {}) {}
@@ -49,7 +52,10 @@ export class HttpLeetCodeLookup implements LeetCodeLookup {
     try {
       res = await (this.opts.fetchImpl ?? fetch)(ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Referer: `https://leetcode.com/u/${encodeURIComponent(username)}/` },
+        headers: {
+          "Content-Type": "application/json",
+          Referer: `https://leetcode.com/u/${encodeURIComponent(username)}/`,
+        },
         body: JSON.stringify({ query: QUERY, variables: { username } }),
         signal: AbortSignal.timeout(this.opts.timeoutMs ?? 8000),
         redirect: "error",
@@ -71,9 +77,25 @@ export class HttpLeetCodeLookup implements LeetCodeLookup {
     if (matchedUser === null) return { status: "not_found" };
 
     const solved = matchedUser.submitStatsGlobal.acSubmissionNum;
-    const [easy, medium, hard] = [pick(solved, "easy"), pick(solved, "medium"), pick(solved, "hard")];
-    const [aEasy, aMedium, aHard] = [pick(allQuestionsCount, "easy"), pick(allQuestionsCount, "medium"), pick(allQuestionsCount, "hard")];
-    if (easy === null || medium === null || hard === null || aEasy === null || aMedium === null || aHard === null) throw new LeetCodeLookupError();
+    const [easy, medium, hard] = [
+      pick(solved, "easy"),
+      pick(solved, "medium"),
+      pick(solved, "hard"),
+    ];
+    const [aEasy, aMedium, aHard] = [
+      pick(allQuestionsCount, "easy"),
+      pick(allQuestionsCount, "medium"),
+      pick(allQuestionsCount, "hard"),
+    ];
+    if (
+      easy === null ||
+      medium === null ||
+      hard === null ||
+      aEasy === null ||
+      aMedium === null ||
+      aHard === null
+    )
+      throw new LeetCodeLookupError();
     if (easy > aEasy || medium > aMedium || hard > aHard) throw new LeetCodeLookupError(); // cannot have solved more than exist
     return {
       status: "found",

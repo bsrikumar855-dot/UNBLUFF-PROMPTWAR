@@ -38,7 +38,9 @@ const maxGapCheck = (input: string): string => {
 
 // ---------- 12. Mirror Phrase ----------
 const mirror = (input: string): string => {
-  const kept = lines(input)[0]!.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const kept = lines(input)[0]!
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
   return kept === [...kept].reverse().join("") ? "YES" : "NO";
 };
 const mirrorCheck = (input: string): string => {
@@ -142,7 +144,9 @@ const peaks = (input: string): string => {
 };
 const peaksCheck = (input: string): string => {
   const a = nums(lines(input)[1]!);
-  return String(a.filter((x, i) => i > 0 && i < a.length - 1 && x > a[i - 1]! && x > a[i + 1]!).length);
+  return String(
+    a.filter((x, i) => i > 0 && i < a.length - 1 && x > a[i - 1]! && x > a[i + 1]!).length,
+  );
 };
 
 // ---------- 18. Best Stretch ----------
@@ -213,7 +217,9 @@ const tripleZeroCheck = (input: string): string => {
   const found = new Set<string>();
   for (let i = 0; i < a.length; i++)
     for (let j = i + 1; j < a.length; j++)
-      for (let k = j + 1; k < a.length; k++) if (a[i]! + a[j]! + a[k]! === 0) found.add([a[i]!, a[j]!, a[k]!].sort((x, y) => x - y).join(","));
+      for (let k = j + 1; k < a.length; k++)
+        if (a[i]! + a[j]! + a[k]! === 0)
+          found.add([a[i]!, a[j]!, a[k]!].sort((x, y) => x - y).join(","));
   return String(found.size);
 };
 
@@ -245,7 +251,10 @@ const uniqueStretchCheck = (input: string): string => {
 // ---------- 22. Merge Overlaps ----------
 const mergeOverlaps = (input: string): string => {
   const l = lines(input);
-  const iv = Array.from({ length: Number(l[0]) }, (_v, i) => nums(l[1 + i]!) as [number, number]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const iv = Array.from(
+    { length: Number(l[0]) },
+    (_v, i) => nums(l[1 + i]!) as [number, number],
+  ).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const out: [number, number][] = [];
   for (const [a, b] of iv) {
     const last = out[out.length - 1];
@@ -260,7 +269,9 @@ const mergeOverlapsCheck = (input: string): string => {
   // union-find over every pair that shares a point, then take each group's lowest start and highest end
   const parent = iv.map((_x, i) => i);
   const find = (x: number): number => (parent[x] === x ? x : (parent[x] = find(parent[x]!)));
-  for (let i = 0; i < iv.length; i++) for (let j = i + 1; j < iv.length; j++) if (iv[i]![0] <= iv[j]![1] && iv[j]![0] <= iv[i]![1]) parent[find(i)] = find(j);
+  for (let i = 0; i < iv.length; i++)
+    for (let j = i + 1; j < iv.length; j++)
+      if (iv[i]![0] <= iv[j]![1] && iv[j]![0] <= iv[i]![1]) parent[find(i)] = find(j);
   const groups = new Map<number, [number, number]>();
   iv.forEach(([a, b], i) => {
     const root = find(i);
@@ -428,7 +439,12 @@ const spiralCheck = (input: string): string => {
   const [r, c] = nums(l[0]!) as [number, number];
   const g = Array.from({ length: r }, (_v, i) => nums(l[1 + i]!));
   const seen = Array.from({ length: r }, () => new Array<boolean>(c).fill(false));
-  const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]] as const;
+  const dirs = [
+    [0, 1],
+    [1, 0],
+    [0, -1],
+    [-1, 0],
+  ] as const;
   const out: number[] = [];
   let x = 0;
   let y = 0;
@@ -464,7 +480,8 @@ const risingChain = (input: string): string => {
 const risingChainCheck = (input: string): string => {
   const a = nums(lines(input)[1]!);
   const best = new Array<number>(a.length).fill(1);
-  for (let i = 0; i < a.length; i++) for (let j = 0; j < i; j++) if (a[j]! < a[i]!) best[i] = Math.max(best[i]!, best[j]! + 1);
+  for (let i = 0; i < a.length; i++)
+    for (let j = 0; j < i; j++) if (a[j]! < a[i]!) best[i] = Math.max(best[i]!, best[j]! + 1);
   return String(Math.max(...best));
 };
 
@@ -528,8 +545,10 @@ const rainTrapCheck = (input: string): string => {
 const rows = (a: number[][]) => a.map((r) => arr(r)).join("");
 const sizedArray = (a: number[]) => line(a.length) + arr(a);
 const windowInput = (a: number[], k: number) => line(a.length, k) + arr(a);
-const edgesInput = (head: (string | number)[], edges: number[][]) => line(...head) + edges.map((e) => line(...e)).join("");
-const intervals = (iv: [number, number][]) => line(iv.length) + iv.map(([a, b]) => line(a, b)).join("");
+const edgesInput = (head: (string | number)[], edges: number[][]) =>
+  line(...head) + edges.map((e) => line(...e)).join("");
+const intervals = (iv: [number, number][]) =>
+  line(iv.length) + iv.map(([a, b]) => line(a, b)).join("");
 
 export function moreExercises(): Exercise[] {
   const r = (seed: number) => rng(seed);
@@ -553,16 +572,24 @@ export function moreExercises(): Exercise[] {
   const r16 = r(1606);
   const r19 = r(1909);
 
-  const perm = (n: number, seed: number, drop: number) => shuffled(r(seed), Array.from({ length: n }, (_v, i) => i + 1)).filter((x) => x !== drop);
+  const perm = (n: number, seed: number, drop: number) =>
+    shuffled(
+      r(seed),
+      Array.from({ length: n }, (_v, i) => i + 1),
+    ).filter((x) => x !== drop);
   const dag = (n: number, m: number, rr: (n: number) => number): number[][] => {
-    const label = shuffled(rr, Array.from({ length: n }, (_v, i) => i + 1));
+    const label = shuffled(
+      rr,
+      Array.from({ length: n }, (_v, i) => i + 1),
+    );
     return Array.from({ length: m }, () => {
       const a = rr(n - 1);
       const b = a + 1 + rr(n - 1 - a);
       return [label[a]!, label[b]!];
     });
   };
-  const weighted = (n: number, m: number, rr: (n: number) => number): number[][] => Array.from({ length: m }, () => [1 + rr(n), 1 + rr(n), 1 + rr(20)]);
+  const weighted = (n: number, m: number, rr: (n: number) => number): number[][] =>
+    Array.from({ length: m }, () => [1 + rr(n), 1 + rr(n), 1 + rr(20)]);
 
   const ex: Exercise[] = [
     {
@@ -633,15 +660,38 @@ export function moreExercises(): Exercise[] {
       difficulty: "easy",
       topics: ["Arrays"],
       statement: `The first line has n and q. The second line has n integers between -1000 and 1000. Each of the next q lines has two integers l and r (1 <= l <= r <= n). For each query print, on its own line, the sum of the numbers from position l to position r, counting positions from 1. n is at most 1500 and q at most 800. ${limitsNote}`,
-      samples: [line(5, 3) + arr([1, 2, 3, 4, 5]) + line(1, 5) + line(2, 3) + line(4, 4), line(1, 1) + arr([-7]) + line(1, 1)],
+      samples: [
+        line(5, 3) + arr([1, 2, 3, 4, 5]) + line(1, 5) + line(2, 3) + line(4, 4),
+        line(1, 1) + arr([-7]) + line(1, 1),
+      ],
       tests: [
         line(1, 1) + arr([0]) + line(1, 1),
         line(3, 2) + arr([-1, -1, -1]) + line(1, 3) + line(2, 2),
         line(4, 3) + arr([1000, -1000, 1000, -1000]) + line(1, 4) + line(1, 1) + line(3, 4),
         line(6, 4) + arr([5, 4, 3, 2, 1, 0]) + line(1, 6) + line(6, 6) + line(2, 5) + line(3, 3),
-        line(10, 5) + arr(ints(r14, 10, -9, 9)) + [[1, 10], [1, 1], [10, 10], [4, 7], [2, 9]].map((q) => line(...q)).join(""),
-        line(200, 30) + arr(ints(r14, 200, -1000, 1000)) + Array.from({ length: 30 }, () => { const a = 1 + r14(200); return line(a, a + r14(201 - a)); }).join(""),
-        line(1500, 40) + arr(ints(r14, 1500, -1000, 1000)) + Array.from({ length: 40 }, () => { const a = 1 + r14(1500); return line(a, a + r14(1501 - a)); }).join(""),
+        line(10, 5) +
+          arr(ints(r14, 10, -9, 9)) +
+          [
+            [1, 10],
+            [1, 1],
+            [10, 10],
+            [4, 7],
+            [2, 9],
+          ]
+            .map((q) => line(...q))
+            .join(""),
+        line(200, 30) +
+          arr(ints(r14, 200, -1000, 1000)) +
+          Array.from({ length: 30 }, () => {
+            const a = 1 + r14(200);
+            return line(a, a + r14(201 - a));
+          }).join(""),
+        line(1500, 40) +
+          arr(ints(r14, 1500, -1000, 1000)) +
+          Array.from({ length: 40 }, () => {
+            const a = 1 + r14(1500);
+            return line(a, a + r14(1501 - a));
+          }).join(""),
         line(8, 2) + arr([1, 1, 1, 1, 1, 1, 1, 1]) + line(3, 6) + line(8, 8),
       ],
       solve: rangeSums,
@@ -673,7 +723,15 @@ export function moreExercises(): Exercise[] {
         "zzzz\nzzzz\n",
         `${"ab".repeat(4000)}\n${"ba".repeat(4000)}\n`,
         `${"a".repeat(8000)}b\n${"a".repeat(8000)}c\n`,
-        (() => { const s = str(r16, 500, "abcde"); return `${s}\n${shuffled(r16, [...s].map((c) => c.charCodeAt(0))).map((c) => String.fromCharCode(c)).join("")}\n`; })(),
+        (() => {
+          const s = str(r16, 500, "abcde");
+          return `${s}\n${shuffled(
+            r16,
+            [...s].map((c) => c.charCodeAt(0)),
+          )
+            .map((c) => String.fromCharCode(c))
+            .join("")}\n`;
+        })(),
       ],
       solve: anagram,
     },
@@ -789,18 +847,67 @@ export function moreExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Intervals", "Sorting"],
       statement: `The first line has n (1 <= n <= 1000). Each of the next n lines has two integers a and b (0 <= a <= b <= 1000000) describing the closed range from a to b, ends included. Merge every group of ranges that share at least one point, directly or through others. Print the number of merged ranges, then each merged range as "a b" on its own line, in increasing order. ${limitsNote}`,
-      samples: [intervals([[1, 3], [2, 6], [8, 10]]), intervals([[4, 5], [1, 4]])],
+      samples: [
+        intervals([
+          [1, 3],
+          [2, 6],
+          [8, 10],
+        ]),
+        intervals([
+          [4, 5],
+          [1, 4],
+        ]),
+      ],
       tests: [
         intervals([[2, 2]]),
-        intervals([[1, 2], [3, 4]]),
-        intervals([[1, 2], [2, 3]]),
-        intervals([[1, 10], [2, 3], [4, 5]]),
-        intervals([[5, 6], [1, 2], [3, 4]]),
-        intervals([[-5, -1], [-3, 2], [10, 12], [11, 11]]),
-        intervals([[1, 4], [4, 4], [0, 0], [0, 1]]),
-        intervals(Array.from({ length: 40 }, () => { const a = r22(100); return [a, a + r22(8)] as [number, number]; })),
-        intervals(Array.from({ length: 300 }, () => { const a = r22(5000); return [a, a + r22(15)] as [number, number]; })),
-        intervals(Array.from({ length: 1000 }, () => { const a = r22(900000); return [a, a + r22(1500)] as [number, number]; })),
+        intervals([
+          [1, 2],
+          [3, 4],
+        ]),
+        intervals([
+          [1, 2],
+          [2, 3],
+        ]),
+        intervals([
+          [1, 10],
+          [2, 3],
+          [4, 5],
+        ]),
+        intervals([
+          [5, 6],
+          [1, 2],
+          [3, 4],
+        ]),
+        intervals([
+          [-5, -1],
+          [-3, 2],
+          [10, 12],
+          [11, 11],
+        ]),
+        intervals([
+          [1, 4],
+          [4, 4],
+          [0, 0],
+          [0, 1],
+        ]),
+        intervals(
+          Array.from({ length: 40 }, () => {
+            const a = r22(100);
+            return [a, a + r22(8)] as [number, number];
+          }),
+        ),
+        intervals(
+          Array.from({ length: 300 }, () => {
+            const a = r22(5000);
+            return [a, a + r22(15)] as [number, number];
+          }),
+        ),
+        intervals(
+          Array.from({ length: 1000 }, () => {
+            const a = r22(900000);
+            return [a, a + r22(1500)] as [number, number];
+          }),
+        ),
       ],
       solve: mergeOverlaps,
     },
@@ -831,14 +938,56 @@ export function moreExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Graphs"],
       statement: `A country has n cities numbered 1 to n and m two-way roads. The first line has n, m, s and t. Each of the next m lines has u, v and w: a road between cities u and v that costs w to use (1 <= w <= 1000). Print the smallest total cost of a trip from s to t, or -1 if no trip exists. Roads may repeat. n is at most 500 and m at most 1500. ${limitsNote}`,
-      samples: [edgesInput([4, 4, 1, 4], [[1, 2, 5], [2, 4, 5], [1, 3, 1], [3, 4, 20]]), edgesInput([3, 1, 1, 3], [[1, 2, 4]])],
+      samples: [
+        edgesInput(
+          [4, 4, 1, 4],
+          [
+            [1, 2, 5],
+            [2, 4, 5],
+            [1, 3, 1],
+            [3, 4, 20],
+          ],
+        ),
+        edgesInput([3, 1, 1, 3], [[1, 2, 4]]),
+      ],
       tests: [
         edgesInput([1, 0, 1, 1], []),
         edgesInput([2, 1, 1, 2], [[1, 2, 9]]),
-        edgesInput([2, 2, 1, 2], [[1, 2, 9], [2, 1, 3]]),
-        edgesInput([4, 2, 1, 4], [[1, 2, 1], [3, 4, 1]]),
-        edgesInput([5, 6, 1, 5], [[1, 2, 2], [2, 3, 2], [3, 5, 2], [1, 4, 1], [4, 5, 10], [2, 5, 7]]),
-        edgesInput([5, 5, 5, 1], [[1, 1, 1], [1, 2, 3], [2, 3, 3], [3, 5, 3], [1, 5, 100]]),
+        edgesInput(
+          [2, 2, 1, 2],
+          [
+            [1, 2, 9],
+            [2, 1, 3],
+          ],
+        ),
+        edgesInput(
+          [4, 2, 1, 4],
+          [
+            [1, 2, 1],
+            [3, 4, 1],
+          ],
+        ),
+        edgesInput(
+          [5, 6, 1, 5],
+          [
+            [1, 2, 2],
+            [2, 3, 2],
+            [3, 5, 2],
+            [1, 4, 1],
+            [4, 5, 10],
+            [2, 5, 7],
+          ],
+        ),
+        edgesInput(
+          [5, 5, 5, 1],
+          [
+            [1, 1, 1],
+            [1, 2, 3],
+            [2, 3, 3],
+            [3, 5, 3],
+            [1, 5, 100],
+          ],
+        ),
         edgesInput([30, 60, 2, 29], weighted(30, 60, r24)),
         edgesInput([100, 120, 1, 100], weighted(100, 120, r24)),
         edgesInput([500, 1500, 7, 450], weighted(500, 1500, r24)),
@@ -852,18 +1001,77 @@ export function moreExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Dynamic Programming"],
       statement: `The first line has n (1 <= n <= 100) and cap (1 <= cap <= 1000). Each of the next n lines has an item's weight and value (both between 1 and 1000). Choose some of the items, each at most once, with total weight at most cap. Print the largest total value you can get. ${limitsNote}`,
-      samples: [edgesInput([3, 5], [[2, 3], [3, 4], [4, 5]]), edgesInput([1, 3], [[4, 9]])],
+      samples: [
+        edgesInput(
+          [3, 5],
+          [
+            [2, 3],
+            [3, 4],
+            [4, 5],
+          ],
+        ),
+        edgesInput([1, 3], [[4, 9]]),
+      ],
       tests: [
         edgesInput([1, 1], [[1, 1]]),
-        edgesInput([2, 10], [[5, 6], [5, 6]]),
-        edgesInput([3, 4], [[4, 10], [2, 6], [2, 6]]),
-        edgesInput([4, 7], [[1, 1], [3, 4], [4, 5], [5, 7]]),
-        edgesInput([5, 100], [[50, 60], [40, 50], [30, 40], [20, 25], [10, 12]]),
-        edgesInput([3, 50], [[10, 60], [20, 100], [30, 120]]),
-        edgesInput([12, 30], Array.from({ length: 12 }, () => [1 + r25(15), 1 + r25(20)])),
-        edgesInput([60, 400], Array.from({ length: 60 }, () => [1 + r25(150), 1 + r25(1000)])),
-        edgesInput([100, 1000], Array.from({ length: 100 }, () => [1 + r25(400), 1 + r25(1000)])),
-        edgesInput([100, 1000], Array.from({ length: 100 }, () => [1 + r25(1000), 1 + r25(1000)])),
+        edgesInput(
+          [2, 10],
+          [
+            [5, 6],
+            [5, 6],
+          ],
+        ),
+        edgesInput(
+          [3, 4],
+          [
+            [4, 10],
+            [2, 6],
+            [2, 6],
+          ],
+        ),
+        edgesInput(
+          [4, 7],
+          [
+            [1, 1],
+            [3, 4],
+            [4, 5],
+            [5, 7],
+          ],
+        ),
+        edgesInput(
+          [5, 100],
+          [
+            [50, 60],
+            [40, 50],
+            [30, 40],
+            [20, 25],
+            [10, 12],
+          ],
+        ),
+        edgesInput(
+          [3, 50],
+          [
+            [10, 60],
+            [20, 100],
+            [30, 120],
+          ],
+        ),
+        edgesInput(
+          [12, 30],
+          Array.from({ length: 12 }, () => [1 + r25(15), 1 + r25(20)]),
+        ),
+        edgesInput(
+          [60, 400],
+          Array.from({ length: 60 }, () => [1 + r25(150), 1 + r25(1000)]),
+        ),
+        edgesInput(
+          [100, 1000],
+          Array.from({ length: 100 }, () => [1 + r25(400), 1 + r25(1000)]),
+        ),
+        edgesInput(
+          [100, 1000],
+          Array.from({ length: 100 }, () => [1 + r25(1000), 1 + r25(1000)]),
+        ),
       ],
       solve: knapsack,
     },
@@ -873,18 +1081,63 @@ export function moreExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Graphs"],
       statement: `A school offers n courses numbered 1 to n and has m rules. The first line has n and m. Each of the next m lines has a and b, meaning course a must be finished before course b can start. Print YES if some order lets a student finish all n courses while obeying every rule, otherwise NO. n is at most 2000 and m at most 1800. ${limitsNote}`,
-      samples: [edgesInput([3, 2], [[1, 2], [2, 3]]), edgesInput([2, 2], [[1, 2], [2, 1]])],
+      samples: [
+        edgesInput(
+          [3, 2],
+          [
+            [1, 2],
+            [2, 3],
+          ],
+        ),
+        edgesInput(
+          [2, 2],
+          [
+            [1, 2],
+            [2, 1],
+          ],
+        ),
+      ],
       tests: [
         edgesInput([1, 0], []),
         edgesInput([1, 1], [[1, 1]]),
         edgesInput([2, 1], [[2, 1]]),
-        edgesInput([3, 3], [[1, 2], [2, 3], [3, 1]]),
-        edgesInput([4, 4], [[1, 2], [1, 3], [2, 4], [3, 4]]),
-        edgesInput([5, 5], [[1, 2], [2, 3], [3, 4], [4, 2], [4, 5]]),
+        edgesInput(
+          [3, 3],
+          [
+            [1, 2],
+            [2, 3],
+            [3, 1],
+          ],
+        ),
+        edgesInput(
+          [4, 4],
+          [
+            [1, 2],
+            [1, 3],
+            [2, 4],
+            [3, 4],
+          ],
+        ),
+        edgesInput(
+          [5, 5],
+          [
+            [1, 2],
+            [2, 3],
+            [3, 4],
+            [4, 2],
+            [4, 5],
+          ],
+        ),
         edgesInput([6, 0], []),
         edgesInput([40, 60], dag(40, 60, r26)),
         edgesInput([500, 1200], dag(500, 1200, r26)),
-        edgesInput([2000, 1800], dag(2000, 1798, r26).concat([[7, 8], [8, 7]])),
+        edgesInput(
+          [2000, 1800],
+          dag(2000, 1798, r26).concat([
+            [7, 8],
+            [8, 7],
+          ]),
+        ),
         edgesInput([300, 400], dag(300, 399, r26).concat([[1, 1]])),
       ],
       solve: coursePlan,
@@ -895,14 +1148,41 @@ export function moreExercises(): Exercise[] {
       difficulty: "medium",
       topics: ["Matrix"],
       statement: `The first line has r and c (1 <= r, c <= 50). Each of the next r lines has c integers between -1000 and 1000. Starting at the top-left number, walk clockwise around the grid, going right along the top row, down the last column, left along the bottom row and up the first column, then continue inward the same way. Print every number in the order visited, on one line separated by single spaces. ${limitsNote}`,
-      samples: [line(2, 3) + rows([[1, 2, 3], [4, 5, 6]]), line(1, 1) + rows([[9]])],
+      samples: [
+        line(2, 3) +
+          rows([
+            [1, 2, 3],
+            [4, 5, 6],
+          ]),
+        line(1, 1) + rows([[9]]),
+      ],
       tests: [
         line(1, 4) + rows([[1, 2, 3, 4]]),
         line(4, 1) + rows([[1], [2], [3], [4]]),
-        line(2, 2) + rows([[1, 2], [3, 4]]),
-        line(3, 3) + rows([[1, 2, 3], [4, 5, 6], [7, 8, 9]]),
-        line(3, 4) + rows([[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]),
-        line(4, 3) + rows([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]]),
+        line(2, 2) +
+          rows([
+            [1, 2],
+            [3, 4],
+          ]),
+        line(3, 3) +
+          rows([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+          ]),
+        line(3, 4) +
+          rows([
+            [1, 2, 3, 4],
+            [5, 6, 7, 8],
+            [9, 10, 11, 12],
+          ]),
+        line(4, 3) +
+          rows([
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9],
+            [10, 11, 12],
+          ]),
         line(5, 5) + rows(Array.from({ length: 5 }, () => ints(r27, 5, -9, 9))),
         line(7, 2) + rows(Array.from({ length: 7 }, () => ints(r27, 2, -50, 50))),
         line(30, 45) + rows(Array.from({ length: 30 }, () => ints(r27, 45, -1000, 1000))),
@@ -949,7 +1229,10 @@ export function moreExercises(): Exercise[] {
         windowInput(ints(r29, 1000, -1000, 1000), 100),
         windowInput(ints(r29, 2000, -1000000, 1000000), 1),
         windowInput(ints(r29, 2000, -1000000, 1000000), 1000),
-        windowInput(Array.from({ length: 2000 }, (_v, i) => i), 77),
+        windowInput(
+          Array.from({ length: 2000 }, (_v, i) => i),
+          77,
+        ),
       ],
       solve: windowMaximums,
     },

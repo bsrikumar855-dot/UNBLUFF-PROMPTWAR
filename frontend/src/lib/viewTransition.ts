@@ -2,7 +2,9 @@ import { flushSync } from "react-dom";
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-type WithTransition = Document & { startViewTransition?: (update: () => void) => unknown };
+type WithTransition = Document & {
+  startViewTransition?: (update: () => void) => unknown;
+};
 
 /**
  * Runs a navigation inside a View Transition where the browser has one, so the old page content cross-fades out while
@@ -12,7 +14,10 @@ type WithTransition = Document & { startViewTransition?: (update: () => void) =>
  */
 export function startRouteTransition(run: () => void): void {
   const doc = typeof document === "undefined" ? null : (document as WithTransition);
-  const reduce = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reduce =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!doc || typeof doc.startViewTransition !== "function" || reduce) {
     run();
     return;
@@ -25,8 +30,17 @@ export function startRouteTransition(run: () => void): void {
 /** `go(path)` navigates with the route transition. */
 export function useRouteNavigate(): (to: string) => void {
   const navigate = useNavigate();
-  return useCallback((to: string) => startRouteTransition(() => navigate(to)), [navigate]);
+  return useCallback(
+    (to: string) => startRouteTransition(() => navigate(to)),
+    [navigate]
+  );
 }
 
 /** True for a plain left click that should be handled in-app (not a new-tab or download gesture). */
-export const isPlainClick = (e: React.MouseEvent): boolean => !e.defaultPrevented && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+export const isPlainClick = (e: React.MouseEvent): boolean =>
+  !e.defaultPrevented &&
+  e.button === 0 &&
+  !e.metaKey &&
+  !e.ctrlKey &&
+  !e.shiftKey &&
+  !e.altKey;

@@ -12,7 +12,10 @@ export function sessionsRouter(service: AssessmentService): Router {
     res.set("Cache-Control", "no-store").json(body);
   });
   router.get("/sessions/:sessionId", async (req, res) => {
-    const body: SessionDetailResponse = await service.getSession(uidOf(res), parseSessionId(req.params.sessionId));
+    const body: SessionDetailResponse = await service.getSession(
+      uidOf(res),
+      parseSessionId(req.params.sessionId),
+    );
     res.set("Cache-Control", "no-store").json(body);
   });
   router.delete("/sessions/:sessionId", async (req, res) => {

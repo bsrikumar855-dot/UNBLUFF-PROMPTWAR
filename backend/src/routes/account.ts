@@ -12,7 +12,11 @@ export const DELETE_CONFIRMATION = "DELETE MY DATA";
 const DeleteBody = z.strictObject({ confirm: z.literal(DELETE_CONFIRMATION) });
 
 /** The caller's profile, AI usage, signing out everywhere, data export and delete-everything. Every route needs a verified student; the owner is the token's uid. */
-export function accountRouter(account: AccountService, limiters: { write: RequestHandler; bulk: RequestHandler }, budget: LlmBudget): Router {
+export function accountRouter(
+  account: AccountService,
+  limiters: { write: RequestHandler; bulk: RequestHandler },
+  budget: LlmBudget,
+): Router {
   const router = Router();
   router.get("/me/usage", async (_req, res) => {
     res.set(noStore).json(await budget.status(uidOf(res)));
@@ -32,12 +36,18 @@ export function accountRouter(account: AccountService, limiters: { write: Reques
     const body = await account.exportData(uidOf(res));
     res
       .set(noStore)
-      .set("Content-Disposition", `attachment; filename="unbluff-export-${body.exported_at.slice(0, 10)}.json"`)
+      .set(
+        "Content-Disposition",
+        `attachment; filename="unbluff-export-${body.exported_at.slice(0, 10)}.json"`,
+      )
       .json(body);
   });
   router.delete("/me", limiters.bulk, async (req, res) => {
     if (!DeleteBody.safeParse(req.body ?? {}).success) {
-      throw new ApiError("BAD_REQUEST", `To delete everything, send {"confirm": "${DELETE_CONFIRMATION}"}`);
+      throw new ApiError(
+        "BAD_REQUEST",
+        `To delete everything, send {"confirm": "${DELETE_CONFIRMATION}"}`,
+      );
     }
     res.set(noStore).json(await account.deleteAll(uidOf(res)));
   });

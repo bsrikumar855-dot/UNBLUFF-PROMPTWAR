@@ -7,9 +7,18 @@ import { formatIssues } from "../middleware/validate.js";
 
 const NoBody = z.strictObject({});
 const Callback = z.object({
-  code: z.string().regex(/^[\w.-]{1,256}$/).optional(),
-  state: z.string().regex(/^[A-Za-z0-9_-]{16,128}$/).optional(),
-  error: z.string().regex(/^[a-z_]{1,64}$/).optional(),
+  code: z
+    .string()
+    .regex(/^[\w.-]{1,256}$/)
+    .optional(),
+  state: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]{16,128}$/)
+    .optional(),
+  error: z
+    .string()
+    .regex(/^[a-z_]{1,64}$/)
+    .optional(),
 });
 
 const noStore = { "Cache-Control": "no-store" };
@@ -36,7 +45,10 @@ function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
 }
 
 /** Authenticated GitHub routes. The owner is always the verified uid; no endpoint takes a uid, URL or query from the client. */
-export function githubRouter(github: GithubService, limiters: { connect: RequestHandler; sync: RequestHandler }): Router {
+export function githubRouter(
+  github: GithubService,
+  limiters: { connect: RequestHandler; sync: RequestHandler },
+): Router {
   const router = Router();
 
   router.get("/github/connection", async (req, res) => {

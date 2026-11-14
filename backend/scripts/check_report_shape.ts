@@ -11,7 +11,11 @@ if (!sessionId) {
 }
 
 const typeOf = (v: unknown): string =>
-  v === null ? "null" : Array.isArray(v) ? `array(${v.length})${v.length ? ` of ${typeOf(v[0])}` : ""}` : typeof v;
+  v === null
+    ? "null"
+    : Array.isArray(v)
+      ? `array(${v.length})${v.length ? ` of ${typeOf(v[0])}` : ""}`
+      : typeof v;
 
 const res = await fetch(`${base}/api/report/${sessionId}`);
 const body = (await res.json()) as Record<string, unknown>;
@@ -26,9 +30,12 @@ console.log(`skills[0] keys: ${Object.keys(skills[0] ?? {}).join(", ")}`);
 
 const parsed = ReportSchema.safeParse(body);
 if (parsed.success) {
-  console.log("\nSTRICT CONTRACT CHECK: PASS (no missing fields, no extra fields, all types/enums valid)");
+  console.log(
+    "\nSTRICT CONTRACT CHECK: PASS (no missing fields, no extra fields, all types/enums valid)",
+  );
 } else {
   console.log("\nSTRICT CONTRACT CHECK: FAIL");
-  for (const issue of parsed.error.issues) console.log(`  ${issue.path.join(".")}: ${issue.message}`);
+  for (const issue of parsed.error.issues)
+    console.log(`  ${issue.path.join(".")}: ${issue.message}`);
   process.exit(1);
 }

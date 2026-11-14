@@ -27,20 +27,38 @@ describe("Firebase Auth emulator + firebase-admin verifier", () => {
     expect(alice.uid).not.toBe(bob.uid);
 
     const sid = (await create(alice.idToken).expect(200)).body.session_id as string;
-    await request(app).get(`/api/report/${sid}`).set("Authorization", `Bearer ${alice.idToken}`).expect(200);
-    await request(app).get(`/api/report/${sid}`).set("Authorization", `Bearer ${bob.idToken}`).expect(404);
-    await request(app).delete(`/api/sessions/${sid}`).set("Authorization", `Bearer ${bob.idToken}`).expect(404);
+    await request(app)
+      .get(`/api/report/${sid}`)
+      .set("Authorization", `Bearer ${alice.idToken}`)
+      .expect(200);
+    await request(app)
+      .get(`/api/report/${sid}`)
+      .set("Authorization", `Bearer ${bob.idToken}`)
+      .expect(404);
+    await request(app)
+      .delete(`/api/sessions/${sid}`)
+      .set("Authorization", `Bearer ${bob.idToken}`)
+      .expect(404);
 
-    const mine = await request(app).get("/api/sessions").set("Authorization", `Bearer ${alice.idToken}`).expect(200);
+    const mine = await request(app)
+      .get("/api/sessions")
+      .set("Authorization", `Bearer ${alice.idToken}`)
+      .expect(200);
     expect(mine.body.sessions).toHaveLength(1);
-    const theirs = await request(app).get("/api/sessions").set("Authorization", `Bearer ${bob.idToken}`).expect(200);
+    const theirs = await request(app)
+      .get("/api/sessions")
+      .set("Authorization", `Bearer ${bob.idToken}`)
+      .expect(200);
     expect(theirs.body.sessions).toEqual([]);
   });
 
   it("rejects missing, garbage and tampered tokens", async () => {
     const user = await createEmulatorUser(authHost, `carol-${randomUUID()}@example.test`);
     const [h, p] = user.idToken.split(".");
-    const forgedClaims = JSON.parse(Buffer.from(p!, "base64url").toString("utf8")) as Record<string, unknown>;
+    const forgedClaims = JSON.parse(Buffer.from(p!, "base64url").toString("utf8")) as Record<
+      string,
+      unknown
+    >;
     forgedClaims.sub = "someone-else";
     forgedClaims.user_id = "someone-else";
     const forged = `${h}.${Buffer.from(JSON.stringify(forgedClaims)).toString("base64url")}.`;
@@ -50,7 +68,10 @@ describe("Firebase Auth emulator + firebase-admin verifier", () => {
       expect(res.status).toBe(401);
       expect(res.body.error.code).toBe("UNAUTHENTICATED");
     }
-    await request(app).post("/api/claims/extract").send({ role_id: "frontend_developer", declared_skills: ["React"] }).expect(401);
+    await request(app)
+      .post("/api/claims/extract")
+      .send({ role_id: "frontend_developer", declared_skills: ["React"] })
+      .expect(401);
   });
 
   it("without the revocation guard, a valid token stays valid until it expires (production mounts the guard: see security.emulator.test.ts)", async () => {

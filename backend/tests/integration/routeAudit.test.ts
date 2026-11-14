@@ -22,7 +22,10 @@ function routes(): Route[] {
   const out: Route[] = [];
   for (const f of readdirSync(dir).filter((x) => x.endsWith(".ts"))) {
     const src = readFileSync(join(dir, f), "utf8");
-    for (const m of src.matchAll(/(?:router|Router\(\))\.(get|post|put|patch|delete)\(\s*"([^"]+)"/g)) out.push({ method: m[1] as Route["method"], path: m[2]!, file: f });
+    for (const m of src.matchAll(
+      /(?:router|Router\(\))\.(get|post|put|patch|delete)\(\s*"([^"]+)"/g,
+    ))
+      out.push({ method: m[1] as Route["method"], path: m[2]!, file: f });
   }
   return out;
 }
@@ -48,7 +51,10 @@ const PUBLIC = new Set([
   "get /learn/dbms/:id",
 ]);
 
-const concrete = (path: string) => path.replace(/:[A-Za-z]+/g, (p) => (p === ":questionId" ? "q_fixture_01" : p === ":taskId" ? `t_${"a".repeat(24)}` : "x"));
+const concrete = (path: string) =>
+  path.replace(/:[A-Za-z]+/g, (p) =>
+    p === ":questionId" ? "q_fixture_01" : p === ":taskId" ? `t_${"a".repeat(24)}` : "x",
+  );
 
 describe("every route requires a verified student unless it is explicitly public", () => {
   const all = routes();
@@ -56,17 +62,40 @@ describe("every route requires a verified student unless it is explicitly public
 
   it("finds the routes (guards against the audit silently checking nothing)", () => {
     expect(all.length).toBeGreaterThanOrEqual(72);
-    for (const f of ["mentor.ts", "github.ts", "learn.ts", "resume.ts", "placement.ts", "code.ts", "analytics.ts", "sessions.ts", "career.ts"]) expect(all.some((r) => r.file === f), f).toBe(true);
+    for (const f of [
+      "mentor.ts",
+      "github.ts",
+      "learn.ts",
+      "resume.ts",
+      "placement.ts",
+      "code.ts",
+      "analytics.ts",
+      "sessions.ts",
+      "career.ts",
+    ])
+      expect(
+        all.some((r) => r.file === f),
+        f,
+      ).toBe(true);
   });
 
   it("refuses a missing, malformed or invalid token on every private route, with no detail", async () => {
     const private_ = all.filter((r) => !PUBLIC.has(`${r.method} ${r.path}`));
     expect(private_.length).toBeGreaterThanOrEqual(60);
     for (const r of private_) {
-      for (const header of [undefined, "Bearer", "Bearer not-a-valid-token", "Basic dGVzdDp0ZXN0", "Bearer expired"]) {
+      for (const header of [
+        undefined,
+        "Bearer",
+        "Bearer not-a-valid-token",
+        "Basic dGVzdDp0ZXN0",
+        "Bearer expired",
+      ]) {
         const req = request(app)[r.method](`/api${concrete(r.path)}`);
         const res = await (header ? req.set("Authorization", header) : req).send({});
-        expect(res.status, `${r.method.toUpperCase()} ${r.path} with ${header ?? "no header"}`).toBe(401);
+        expect(
+          res.status,
+          `${r.method.toUpperCase()} ${r.path} with ${header ?? "no header"}`,
+        ).toBe(401);
         expect(res.body.error?.code).toBe("UNAUTHENTICATED");
         expect(JSON.stringify(res.body)).not.toMatch(/stack|at .*\.ts|firebase|token/i);
       }
@@ -75,7 +104,8 @@ describe("every route requires a verified student unless it is explicitly public
 
   it("the public list is accurate: each listed route really answers without a token, and none is missing from the code", async () => {
     const known = new Set(all.map((r) => `${r.method} ${r.path}`));
-    for (const p of PUBLIC) expect(known.has(p), `${p} is listed as public but no longer exists`).toBe(true);
+    for (const p of PUBLIC)
+      expect(known.has(p), `${p} is listed as public but no longer exists`).toBe(true);
     for (const p of PUBLIC) {
       const [method, path] = p.split(" ") as [Route["method"], string];
       const res = await request(app)[method](`/api${concrete(path)}`);
@@ -86,7 +116,9 @@ describe("every route requires a verified student unless it is explicitly public
   it("an unknown route is a plain 404 and does not reveal the route table", async () => {
     // Signed out, an unknown path is indistinguishable from a private one (401); signed in it is a plain 404.
     expect((await request(app).get("/api/does/not/exist")).status).toBe(401);
-    const res = await request(app).get("/api/does/not/exist").set({ Authorization: "Bearer test:alice" });
+    const res = await request(app)
+      .get("/api/does/not/exist")
+      .set({ Authorization: "Bearer test:alice" });
     expect(res.status).toBe(404);
     expect(JSON.stringify(res.body)).not.toMatch(/router|express|stack/i);
   });
@@ -95,6 +127,12 @@ describe("every route requires a verified student unless it is explicitly public
     expect((await request(app).get("/api/some/new/private/thing")).status).toBe(401);
     expect((await request(app).post("/api/some/new/private/thing").send({})).status).toBe(401);
     const signedIn = testApp({ autoAuth: false });
-    expect((await request(signedIn).get("/api/some/new/private/thing").set({ Authorization: "Bearer test:alice" })).status).toBe(404);
+    expect(
+      (
+        await request(signedIn)
+          .get("/api/some/new/private/thing")
+          .set({ Authorization: "Bearer test:alice" })
+      ).status,
+    ).toBe(404);
   });
 });

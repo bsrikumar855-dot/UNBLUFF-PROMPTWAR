@@ -6,7 +6,9 @@ import { AuthProvider } from "@/auth/AuthContext";
 import { AppShell } from "@/components/shell/AppShell";
 import type { AuthClient } from "@/auth/types";
 
-vi.mock("@/api/endpoints", () => ({ api: { getHealth: vi.fn(async () => ({ status: "ok" })) } }));
+vi.mock("@/api/endpoints", () => ({
+  api: { getHealth: vi.fn(async () => ({ status: "ok" })) },
+}));
 
 const signedOut: AuthClient = {
   configured: true,
@@ -35,13 +37,17 @@ describe("skip link and focus on navigation", () => {
     const skip = await screen.findByRole("link", { name: "Skip to content" });
     expect(skip).toHaveAttribute("href", "#main");
     // the skip link is the first focusable element in the document
-    const first = document.querySelector('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const first = document.querySelector(
+      'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
     expect(first).toBe(skip);
     // a fresh load does not move focus into the page (that would make the first Tab skip the skip link)
     expect(document.activeElement).not.toBe(document.getElementById("main"));
 
     // navigating inside the app moves focus to the new page's main landmark
     fireEvent.click(screen.getAllByRole("link", { name: /privacy/i })[0]!);
-    await waitFor(() => expect(document.activeElement).toBe(document.getElementById("main")));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(document.getElementById("main"))
+    );
   });
 });

@@ -22,7 +22,9 @@ export const SecurityPanel: React.FC = () => {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState<null | "change" | "reset" | "everywhere">(null);
   const [confirmEverywhere, setConfirmEverywhere] = useState(false);
-  const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(
+    null
+  );
   const ids = { current: useId(), next: useId(), confirm: useId() };
 
   const problem =
@@ -33,7 +35,11 @@ export const SecurityPanel: React.FC = () => {
         : next.length > 0 && next === current
           ? "Choose a password different from the current one."
           : null;
-  const canChange = current.length > 0 && next.length >= MIN_PASSWORD && confirm === next && next !== current;
+  const canChange =
+    current.length > 0 &&
+    next.length >= MIN_PASSWORD &&
+    confirm === next &&
+    next !== current;
 
   const change = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +51,10 @@ export const SecurityPanel: React.FC = () => {
       setCurrent("");
       setNext("");
       setConfirm("");
-      setMessage({ kind: "ok", text: "Your password is changed. Any other device you were signed in on is signed out." });
+      setMessage({
+        kind: "ok",
+        text: "Your password is changed. Any other device you were signed in on is signed out.",
+      });
     } catch (err) {
       setMessage({ kind: "error", text: getErrorMessage(err) });
     } finally {
@@ -81,7 +90,12 @@ export const SecurityPanel: React.FC = () => {
   };
 
   return (
-    <GlassCard id="security" icon={KeyRound} title="Sign-in and security" sub="Your sign-in email and password.">
+    <GlassCard
+      id="security"
+      icon={KeyRound}
+      title="Sign-in and security"
+      sub="Your sign-in email and password."
+    >
       <p className={cn(TILE, "mb-5 px-4 py-3 text-sm text-ink-secondary")}>
         Signed in as <span className="font-medium text-ink-primary">{email ?? "—"}</span>
       </p>
@@ -90,50 +104,106 @@ export const SecurityPanel: React.FC = () => {
           <label htmlFor={ids.current} className={LABEL}>
             Current password
           </label>
-          <input id={ids.current} type="password" className={FIELD} value={current} onChange={(e) => setCurrent(e.target.value)} autoComplete="current-password" />
+          <input
+            id={ids.current}
+            type="password"
+            className={FIELD}
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            autoComplete="current-password"
+          />
         </div>
         <div>
           <label htmlFor={ids.next} className={LABEL}>
             New password
           </label>
-          <input id={ids.next} type="password" className={FIELD} value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" aria-describedby={problem ? `${ids.next}-err` : undefined} />
+          <input
+            id={ids.next}
+            type="password"
+            className={FIELD}
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            autoComplete="new-password"
+            aria-describedby={problem ? `${ids.next}-err` : undefined}
+          />
         </div>
         <div>
           <label htmlFor={ids.confirm} className={LABEL}>
             Confirm new password
           </label>
-          <input id={ids.confirm} type="password" className={FIELD} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+          <input
+            id={ids.confirm}
+            type="password"
+            className={FIELD}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            autoComplete="new-password"
+          />
         </div>
         {problem && (
-          <p id={`${ids.next}-err`} className="text-xs text-verdict-bluff-fg sm:col-span-3">
+          <p
+            id={`${ids.next}-err`}
+            className="text-xs text-verdict-bluff-fg sm:col-span-3"
+          >
             {problem}
           </p>
         )}
         <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
-          <Button type="submit" className="rounded-full" disabled={!canChange || busy !== null}>
+          <Button
+            type="submit"
+            className="rounded-full"
+            disabled={!canChange || busy !== null}
+          >
             {busy === "change" ? "Changing…" : "Change password"}
           </Button>
-          <Button type="button" variant="outline" className="rounded-full bg-white/70" disabled={!email || busy !== null} onClick={() => void reset()}>
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-full bg-white/70"
+            disabled={!email || busy !== null}
+            onClick={() => void reset()}
+          >
             {busy === "reset" ? "Sending…" : "Email me a reset link"}
           </Button>
         </div>
       </form>
-      <div className={cn(TILE, "mt-5 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5")}>
+      <div
+        className={cn(
+          TILE,
+          "mt-5 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5"
+        )}
+      >
         <div className="text-sm">
           <p className="font-medium text-ink-primary">Sign out of all devices</p>
-          <p className="text-ink-secondary">Use this if you signed in on a shared computer or think someone else has access. Includes this device.</p>
+          <p className="text-ink-secondary">
+            Use this if you signed in on a shared computer or think someone else has
+            access. Includes this device.
+          </p>
         </div>
         {confirmEverywhere ? (
           <div className="flex gap-2">
-            <Button className="rounded-full" onClick={() => void everywhere()} disabled={busy !== null}>
+            <Button
+              className="rounded-full"
+              onClick={() => void everywhere()}
+              disabled={busy !== null}
+            >
               {busy === "everywhere" ? "Signing out…" : "Sign out everywhere"}
             </Button>
-            <Button variant="ghost" className="rounded-full" onClick={() => setConfirmEverywhere(false)} disabled={busy !== null}>
+            <Button
+              variant="ghost"
+              className="rounded-full"
+              onClick={() => setConfirmEverywhere(false)}
+              disabled={busy !== null}
+            >
               Cancel
             </Button>
           </div>
         ) : (
-          <Button variant="outline" className="rounded-full bg-white/70" onClick={() => setConfirmEverywhere(true)}>
+          <Button
+            variant="outline"
+            className="rounded-full bg-white/70"
+            onClick={() => setConfirmEverywhere(true)}
+          >
             Sign out of all devices…
           </Button>
         )}
@@ -143,7 +213,9 @@ export const SecurityPanel: React.FC = () => {
           role={message.kind === "error" ? "alert" : "status"}
           className={cn(
             "mt-4 rounded-2xl px-4 py-2.5 text-sm",
-            message.kind === "error" ? "bg-verdict-bluff-bg text-verdict-bluff-fg" : cn(TILE, "text-ink-primary")
+            message.kind === "error"
+              ? "bg-verdict-bluff-bg text-verdict-bluff-fg"
+              : cn(TILE, "text-ink-primary")
           )}
         >
           {message.text}

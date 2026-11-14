@@ -59,7 +59,12 @@ import {
   type Cursor,
   type Outcome,
 } from "../core/stateMachine.js";
-import { levelCriteria, LlmError, type LLMProvider, type QuestionContext } from "../llm/provider.js";
+import {
+  levelCriteria,
+  LlmError,
+  type LLMProvider,
+  type QuestionContext,
+} from "../llm/provider.js";
 import type { Session, SessionStore } from "../store/SessionStore.js";
 import type { RoleRegistry } from "./roles.js";
 
@@ -109,7 +114,10 @@ export class AssessmentService {
     const owned = (await this.deps.store.listByOwner(uid)).length;
     if (owned >= cap) {
       audit(this.deps.logger, "sessions.limit_reached", uid, { cap });
-      throw new ApiError("BAD_REQUEST", `You have ${owned} saved audits, the most you can keep. Delete some in My sessions to start a new one.`);
+      throw new ApiError(
+        "BAD_REQUEST",
+        `You have ${owned} saved audits, the most you can keep. Delete some in My sessions to start a new one.`,
+      );
     }
     const resume = input.resume_text?.trim() ? normalizeResume(input.resume_text) || null : null;
     const chips = dedupe((input.declared_skills ?? []).map((s) => s.trim()).filter(Boolean));
@@ -117,7 +125,9 @@ export class AssessmentService {
       throw new ApiError("BAD_REQUEST", "Provide resume_text or at least one declared skill");
     }
 
-    const extracted = resume ? await this.callLlm(() => this.deps.llm.extractClaims({ role, resumeText: resume })) : [];
+    const extracted = resume
+      ? await this.callLlm(() => this.deps.llm.extractClaims({ role, resumeText: resume }))
+      : [];
     const validSkills = new Set(role.skills.map((s) => s.id));
     const seen = new Set<string>();
     const claims: Claim[] = [];
@@ -155,7 +165,11 @@ export class AssessmentService {
         }),
       );
     }
-    if (dropped > 0) this.deps.logger.warn({ dropped }, "extract: dropped claims whose resume_line is not in the resume");
+    if (dropped > 0)
+      this.deps.logger.warn(
+        { dropped },
+        "extract: dropped claims whose resume_line is not in the resume",
+      );
 
     const capped = claims.slice(0, MAX_CLAIMS);
     const session: Session = {
@@ -185,7 +199,10 @@ export class AssessmentService {
       const next: Claim[] = [];
       for (const input of inputs) {
         if (input.skill_id !== null && !validSkills.has(input.skill_id)) {
-          throw new ApiError("BAD_REQUEST", `Unknown skill_id "${input.skill_id}" for role ${role.id}`);
+          throw new ApiError(
+            "BAD_REQUEST",
+            `Unknown skill_id "${input.skill_id}" for role ${role.id}`,
+          );
         }
         const fields = {
           text: input.text.trim(),
@@ -193,12 +210,18 @@ export class AssessmentService {
           skill_id: input.skill_id,
         };
         if (input.id === null) {
-          next.push(newClaim(claimId(session.next_seq++), { ...fields, source: fields.resume_line ? "resume" : "declared" }));
+          next.push(
+            newClaim(claimId(session.next_seq++), {
+              ...fields,
+              source: fields.resume_line ? "resume" : "declared",
+            }),
+          );
           continue;
         }
         const existing = byId.get(input.id);
         if (!existing) throw new ApiError("CLAIM_NOT_FOUND", `Claim ${input.id} not found`);
-        if (next.some((c) => c.id === input.id)) throw new ApiError("BAD_REQUEST", `Duplicate claim id ${input.id}`);
+        if (next.some((c) => c.id === input.id))
+          throw new ApiError("BAD_REQUEST", `Duplicate claim id ${input.id}`);
         const unchanged = existing.text === fields.text && existing.skill_id === fields.skill_id;
         if (unchanged) {
           next.push({ ...existing, resume_line: fields.resume_line });
@@ -211,7 +234,8 @@ export class AssessmentService {
       // Drop cursors and history for removed claims.
       const kept = new Set(next.map((c) => c.id));
       for (const id of Object.keys(session.cursors)) if (!kept.has(id)) delete session.cursors[id];
-      for (const id of Object.keys(session.schedule)) if (!kept.has(id)) delete session.schedule[id];
+      for (const id of Object.keys(session.schedule))
+        if (!kept.has(id)) delete session.schedule[id];
       session.history = session.history.filter((h) => kept.has(h.claim_id));
       session.claims = next;
       session.confirmed_at ??= this.now().toISOString();
@@ -233,7 +257,10 @@ export class AssessmentService {
         return this.startClaim(session, role, skill, claim, input.mode ?? "assess");
       }
       if (!cursor) {
-        throw new ApiError("BAD_REQUEST", `Claim ${claim.id} has no open question; start it first (omit "answer")`);
+        throw new ApiError(
+          "BAD_REQUEST",
+          `Claim ${claim.id} has no open question; start it first (omit "answer")`,
+        );
       }
       return this.answerTurn(session, role, skill, claim, cursor, input.answer);
     });
@@ -241,7 +268,15 @@ export class AssessmentService {
 
   private resumeTurn(session: Session, claim: Claim, cursor: Cursor): TurnResponse {
     const open = openQuestion(claim);
-    return turn(session, claim, cursor.mode, open.kind === "clarify" ? "clarify" : "question", cursor.level, open.question, null);
+    return turn(
+      session,
+      claim,
+      cursor.mode,
+      open.kind === "clarify" ? "clarify" : "question",
+      cursor.level,
+      open.question,
+      null,
+    );
   }
 
   private async startClaim(
@@ -253,14 +288,19 @@ export class AssessmentService {
   ): Promise<TurnResponse> {
     if (!canStart(mode, claim.verdict)) {
       const allowed = mode === "assess" ? "pending or error" : "shaky, bluff or honest_gap";
-      throw new ApiError("BAD_REQUEST", `Cannot ${mode} claim ${claim.id} with verdict "${claim.verdict}" (needs ${allowed})`);
+      throw new ApiError(
+        "BAD_REQUEST",
+        `Cannot ${mode} claim ${claim.id} with verdict "${claim.verdict}" (needs ${allowed})`,
+      );
     }
     if (mode === "retest") {
       const blocked = retestBlockReason(claim);
       if (blocked) throw new ApiError("BAD_REQUEST", blocked);
     }
-    const level: Level = mode === "assess" ? 1 : retestStartLevel(claim.verdict, claim.levels_passed);
-    const interleaved = mode === "retest" ? interleavedClaims(session.schedule[claim.id], session.completions) : 0;
+    const level: Level =
+      mode === "assess" ? 1 : retestStartLevel(claim.verdict, claim.levels_passed);
+    const interleaved =
+      mode === "retest" ? interleavedClaims(session.schedule[claim.id], session.completions) : 0;
     if (mode === "assess") Object.assign(claim, newClaim(claim.id, claim), { qa: [] });
 
     const ctx: QuestionContext = { role, skill, claim, level, history: claim.qa };
@@ -271,7 +311,10 @@ export class AssessmentService {
           ? await this.deps.llm.question(ctx)
           : await this.deps.llm.retestQuestion({
               ...ctx,
-              missingConcepts: claim.missing_concepts.length > 0 ? claim.missing_concepts : levelCriteria(skill, level),
+              missingConcepts:
+                claim.missing_concepts.length > 0
+                  ? claim.missing_concepts
+                  : levelCriteria(skill, level),
               rootCause: claim.root_cause,
               previousQuestions: claim.qa.map((q) => q.question),
             });
@@ -307,7 +350,12 @@ export class AssessmentService {
     if (grade.guard_flips.length > 0) {
       session.guard_flips += grade.guard_flips.length;
       this.deps.logger.info(
-        { session: session.id, claim: claim.id, flips: grade.guard_flips, session_total: session.guard_flips },
+        {
+          session: session.id,
+          claim: claim.id,
+          flips: grade.guard_flips,
+          session_total: session.guard_flips,
+        },
         "evidence guard flipped criteria",
       );
     }
@@ -338,7 +386,8 @@ export class AssessmentService {
     } catch (err) {
       return this.handleLlmFailure(session, claim, cursor.mode, err, grade);
     }
-    const kind = decision.turn === "clarify" ? "clarify" : cursor.mode === "retest" ? "retest" : "question";
+    const kind =
+      decision.turn === "clarify" ? "clarify" : cursor.mode === "retest" ? "retest" : "question";
     claim.qa.push(this.qa(next.level, kind, cursor.mode, question));
     session.cursors[claim.id] = next;
     return turn(session, claim, cursor.mode, decision.turn, next.level, question, grade);
@@ -353,7 +402,9 @@ export class AssessmentService {
     grade: ReturnType<typeof finalizeGrade>,
   ): void {
     const failedLevel = outcome.kind === "passed_all" ? null : outcome.level;
-    const missing = failedLevel ? missingConcepts(failedLevel, grade, levelCriteria(skill, failedLevel)) : [];
+    const missing = failedLevel
+      ? missingConcepts(failedLevel, grade, levelCriteria(skill, failedLevel))
+      : [];
 
     if (cursor.mode === "assess") {
       Object.assign(claim, resolveAssess(outcome));
@@ -394,8 +445,12 @@ export class AssessmentService {
     grade: TurnResponse["grade"],
   ): TurnResponse {
     if (!(err instanceof LlmError)) throw err;
-    this.deps.logger.warn({ session: session.id, claim: claim.id, code: err.code, mode }, "LLM failure during interrogation");
-    if (mode === "retest") throw new ApiError(err.code, "The AI examiner failed to respond. Please try again.");
+    this.deps.logger.warn(
+      { session: session.id, claim: claim.id, code: err.code, mode },
+      "LLM failure during interrogation",
+    );
+    if (mode === "retest")
+      throw new ApiError(err.code, "The AI examiner failed to respond. Please try again.");
     Object.assign(claim, ERROR_SCORE);
     delete session.cursors[claim.id];
     markCompleted(session, claim.id);
@@ -420,9 +475,13 @@ export class AssessmentService {
     return this.withSession(uid, sessionId, async (session, role) => {
       const claim = findClaim(session, id);
       if (!isWeakVerdict(claim.verdict)) {
-        throw new ApiError("BAD_REQUEST", `Fix tasks are only for shaky, bluff or honest_gap claims (${claim.id} is "${claim.verdict}")`);
+        throw new ApiError(
+          "BAD_REQUEST",
+          `Fix tasks are only for shaky, bluff or honest_gap claims (${claim.id} is "${claim.verdict}")`,
+        );
       }
-      if (!claim.fix_task) claim.fix_task = await this.callLlm(() => this.generateFixTask(role, claim));
+      if (!claim.fix_task)
+        claim.fix_task = await this.callLlm(() => this.generateFixTask(role, claim));
       // Opening the fix task schedules a delayed, interleaved retest.
       const scheduled = scheduleRetest(claim, session.schedule, session.completions);
       if (scheduled) {
@@ -443,12 +502,21 @@ export class AssessmentService {
           jobs.push(async () => void (claim.fix_task = await this.generateFixTask(role, claim)));
         }
         if (!claim.rewrite && claim.resume_line) {
-          jobs.push(async () => void (claim.rewrite = await this.deps.llm.rewrite({ claim, evidenceSummary: evidenceSummary(claim) })));
+          jobs.push(
+            async () =>
+              void (claim.rewrite = await this.deps.llm.rewrite({
+                claim,
+                evidenceSummary: evidenceSummary(claim),
+              })),
+          );
         }
       }
       const { done, skipped } = await runLimited(jobs, REPORT_LLM_CONCURRENCY);
       if (skipped > 0) {
-        this.deps.logger.warn({ session: session.id, done, skipped }, "report: LLM enrichment stopped early; using templates, will retry on next fetch");
+        this.deps.logger.warn(
+          { session: session.id, done, skipped },
+          "report: LLM enrichment stopped early; using templates, will retry on next fetch",
+        );
       }
       return buildReport({ ...session, session_id: session.id }, role, this.now().toISOString());
     });
@@ -477,7 +545,8 @@ export class AssessmentService {
     return this.serialize(sessionId, async () => {
       const session = await this.deps.store.get(sessionId);
       if (!session || session.owner_uid !== uid) throw sessionNotFound(sessionId);
-      const open = Object.keys(session.cursors).find((id) => session.claims.some((c) => c.id === id)) ?? null;
+      const open =
+        Object.keys(session.cursors).find((id) => session.claims.some((c) => c.id === id)) ?? null;
       return {
         ...claimsResponse(session, this.role(session.role_id)),
         created_at: session.created_at,
@@ -498,8 +567,19 @@ export class AssessmentService {
 
   private async generateFixTask(role: Role, claim: Claim): Promise<FixTask> {
     const concepts = claim.missing_concepts.length > 0 ? claim.missing_concepts : [claim.text];
-    const out = await this.deps.llm.fixTask({ role, claim, missingConcepts: concepts, rootCause: claim.root_cause });
-    return { claim_id: claim.id, skill_id: claim.skill_id, root_cause: claim.root_cause, missing_concepts: concepts, ...out };
+    const out = await this.deps.llm.fixTask({
+      role,
+      claim,
+      missingConcepts: concepts,
+      rootCause: claim.root_cause,
+    });
+    return {
+      claim_id: claim.id,
+      skill_id: claim.skill_id,
+      root_cause: claim.root_cause,
+      missing_concepts: concepts,
+      ...out,
+    };
   }
 
   // ---------- helpers ----------
@@ -511,7 +591,15 @@ export class AssessmentService {
   }
 
   private qa(level: Level, kind: QA["kind"], mode: Mode, question: string): QA {
-    return { level, kind, mode, question, answer: null, grade: null, asked_at: this.now().toISOString() };
+    return {
+      level,
+      kind,
+      mode,
+      question,
+      answer: null,
+      grade: null,
+      asked_at: this.now().toISOString(),
+    };
   }
 
   /** Converts LLM failures outside interrogation into contract errors (502/504). */
@@ -519,13 +607,18 @@ export class AssessmentService {
     try {
       return await fn();
     } catch (err) {
-      if (err instanceof LlmError) throw new ApiError(err.code, "The AI service failed to respond. Please try again.");
+      if (err instanceof LlmError)
+        throw new ApiError(err.code, "The AI service failed to respond. Please try again.");
       throw err;
     }
   }
 
   /** Serialises work per session, then saves. Errors abort without saving. */
-  private withSession<T>(uid: string, sessionId: string, fn: (s: Session, r: Role) => Promise<T>): Promise<T> {
+  private withSession<T>(
+    uid: string,
+    sessionId: string,
+    fn: (s: Session, r: Role) => Promise<T>,
+  ): Promise<T> {
     return this.serialize(sessionId, async () => {
       const session = await this.deps.store.get(sessionId);
       // Unknown, someone else's and legacy (ownerless) sessions are indistinguishable to the caller.
@@ -582,7 +675,10 @@ export const REPORT_LLM_CONCURRENCY = 2;
  * Runs jobs with bounded concurrency. After the first failure no new jobs start (a failure is
  * usually quota or an outage, so hammering on is pointless); in-flight jobs finish.
  */
-export async function runLimited(jobs: (() => Promise<void>)[], limit: number): Promise<{ done: number; skipped: number }> {
+export async function runLimited(
+  jobs: (() => Promise<void>)[],
+  limit: number,
+): Promise<{ done: number; skipped: number }> {
   let next = 0;
   let done = 0;
   let failed = false;
@@ -618,7 +714,8 @@ function findResumeLine(resume: string, resumeLine: string): string | null {
   for (const raw of resume.split(/\r?\n/)) {
     const line = raw.trim();
     const n = normalizeText(line);
-    if (n && (n === target || n.includes(target) || (target.includes(n) && n.length >= 12))) return line;
+    if (n && (n === target || n.includes(target) || (target.includes(n) && n.length >= 12)))
+      return line;
   }
   return isVerbatimQuote(resumeLine, resume) ? resumeLine.trim() : null;
 }
@@ -631,14 +728,19 @@ function findClaim(session: Session, id: string): Claim {
 
 function openQuestion(claim: Claim): QA {
   const open = claim.qa[claim.qa.length - 1];
-  if (!open || open.answer !== null) throw new ApiError("INTERNAL", `Claim ${claim.id} has no open question`);
+  if (!open || open.answer !== null)
+    throw new ApiError("INTERNAL", `Claim ${claim.id} has no open question`);
   return open;
 }
 
 function evidenceSummary(claim: Claim): string {
-  const shown = claim.evidence.filter((e) => e.passed).map((e) => `L${e.level} ${e.criterion}: "${e.quote}"`);
+  const shown = claim.evidence
+    .filter((e) => e.passed)
+    .map((e) => `L${e.level} ${e.criterion}: "${e.quote}"`);
   const passed = `Levels passed: ${claim.levels_passed} of 3.`;
-  return shown.length > 0 ? `${passed} Demonstrated: ${shown.join("; ")}` : `${passed} Could not demonstrate any level.`;
+  return shown.length > 0
+    ? `${passed} Demonstrated: ${shown.join("; ")}`
+    : `${passed} Could not demonstrate any level.`;
 }
 
 /**
@@ -646,9 +748,11 @@ function evidenceSummary(claim: Claim): string {
  * complete: every claim has a verdict. Sessions from before `confirmed_at` existed count as confirmed once any claim moved.
  */
 function sessionStage(session: Session): SessionStage {
-  const started = Object.keys(session.cursors).length > 0 || session.claims.some((c) => c.verdict !== "pending");
+  const started =
+    Object.keys(session.cursors).length > 0 || session.claims.some((c) => c.verdict !== "pending");
   if (!session.confirmed_at && !started) return "review";
-  const open = Object.keys(session.cursors).length > 0 || session.claims.some((c) => c.verdict === "pending");
+  const open =
+    Object.keys(session.cursors).length > 0 || session.claims.some((c) => c.verdict === "pending");
   return open || session.claims.length === 0 ? "interrogate" : "complete";
 }
 

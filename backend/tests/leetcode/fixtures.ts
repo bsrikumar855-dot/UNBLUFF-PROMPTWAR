@@ -31,6 +31,11 @@ export function good(over: Obj = {}): Obj {
 }
 
 /** The smallest valid import: a capture time and one total. */
-export const minimal = (over: Obj = {}): Obj => ({ schema_version: SCHEMA_VERSION, captured_at: "2026-10-10T08:00:00Z", totals: { solved: 12 }, ...over });
+export const minimal = (over: Obj = {}): Obj => ({
+  schema_version: SCHEMA_VERSION,
+  captured_at: "2026-10-10T08:00:00Z",
+  totals: { solved: 12 },
+  ...over,
+});
 
 export const json = (o: unknown) => JSON.stringify(o);

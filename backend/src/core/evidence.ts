@@ -10,12 +10,7 @@ export const CRITERIA: readonly Criterion[] = [
 
 /** Lowercase, unify quote characters and collapse whitespace so trivial formatting never fails a quote. */
 export function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[‘’]/g, "'")
-    .replace(/[“”]/g, '"')
-    .replace(/\s+/g, " ")
-    .trim();
+  return text.toLowerCase().replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim();
 }
 
 /** True when `quote` is a non-empty verbatim substring of `answer` (after normalization). */

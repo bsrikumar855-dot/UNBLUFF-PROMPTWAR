@@ -1,14 +1,50 @@
 import { describe, expect, it } from "vitest";
-import { MATCH_WEIGHTS, compareMatches, evidenceCoverage, matchJob, type CareerSignals } from "../../src/careers/match.js";
+import {
+  MATCH_WEIGHTS,
+  compareMatches,
+  evidenceCoverage,
+  matchJob,
+  type CareerSignals,
+} from "../../src/careers/match.js";
 import { normalizeJob } from "../../src/careers/normalize.js";
 import { deriveSignals, verifiedSkillSlugs } from "../../src/careers/signals.js";
 import type { CareerPreferences } from "../../src/types.js";
-import { demoOnly, profile, rawJob, verifiedDbms, verifiedReact, weakVerified } from "../careers/fakes.js";
+import {
+  demoOnly,
+  profile,
+  rawJob,
+  verifiedDbms,
+  verifiedReact,
+  weakVerified,
+} from "../careers/fakes.js";
 
-const prefs = (over: Partial<CareerPreferences> = {}): CareerPreferences => ({ categories: [], skills: [], countries: [], cities: [], work_modes: [], employment_types: [], must_match_location: false, must_match_work_mode: false, must_match_employment: false, ...over });
-const signals = (over: Partial<CareerSignals> = {}): CareerSignals => ({ experience: "beginner", categories: { primary: ["frontend"], related: ["fullstack"] }, skills: { verified: new Set(["react"]), resume: new Set<string>(), self: new Set(["javascript"]) }, prefs: prefs(), target_companies: [], ...over });
+const prefs = (over: Partial<CareerPreferences> = {}): CareerPreferences => ({
+  categories: [],
+  skills: [],
+  countries: [],
+  cities: [],
+  work_modes: [],
+  employment_types: [],
+  must_match_location: false,
+  must_match_work_mode: false,
+  must_match_employment: false,
+  ...over,
+});
+const signals = (over: Partial<CareerSignals> = {}): CareerSignals => ({
+  experience: "beginner",
+  categories: { primary: ["frontend"], related: ["fullstack"] },
+  skills: {
+    verified: new Set(["react"]),
+    resume: new Set<string>(),
+    self: new Set(["javascript"]),
+  },
+  prefs: prefs(),
+  target_companies: [],
+  ...over,
+});
 const job = (over: Record<string, unknown> = {}) => normalizeJob(rawJob(over));
-const comp = (m: ReturnType<typeof matchJob>, key: string) => m.components.find((c) => c.key === key)!;
+const comp = (m: ReturnType<typeof matchJob>, key: string) =>
+  m.components.find((c) => c.key === key)!;
 
 describe("the scoring model", () => {
   it("has weights that add up to one", () => {
@@ -24,15 +60,28 @@ describe("the scoring model", () => {
     const m = matchJob(job(), signals());
     expect(m.score).toBeGreaterThanOrEqual(75);
     expect(m.confidence).not.toBe("insufficient");
-    expect(m.matched_skills).toEqual([{ skill: "react", provenance: "verified" }, { skill: "javascript", provenance: "self_reported" }]);
+    expect(m.matched_skills).toEqual([
+      { skill: "react", provenance: "verified" },
+      { skill: "javascript", provenance: "self_reported" },
+    ]);
     expect(m.missing_skills).toEqual(["css"]);
     expect(m.reasons.join(" ")).toMatch(/react \(verified\)/);
     expect(comp(m, "category").state).toBe("match");
   });
 
   it("gives a verified skill more credit than one the student only stated", () => {
-    const verified = matchJob(job({ skills: ["react"] }), signals({ skills: { verified: new Set(["react"]), resume: new Set<string>(), self: new Set() } }));
-    const stated = matchJob(job({ skills: ["react"] }), signals({ skills: { verified: new Set(), resume: new Set<string>(), self: new Set(["react"]) } }));
+    const verified = matchJob(
+      job({ skills: ["react"] }),
+      signals({
+        skills: { verified: new Set(["react"]), resume: new Set<string>(), self: new Set() },
+      }),
+    );
+    const stated = matchJob(
+      job({ skills: ["react"] }),
+      signals({
+        skills: { verified: new Set(), resume: new Set<string>(), self: new Set(["react"]) },
+      }),
+    );
     expect(comp(verified, "skills").value).toBe(1);
     expect(comp(stated, "skills").value).toBeCloseTo(0.7, 10);
     expect(verified.score!).toBeGreaterThan(stated.score!);
@@ -40,7 +89,16 @@ describe("the scoring model", () => {
 
   it("does not make a long skill list an impossible bar", () => {
     const many = ["react", "javascript", "a1", "b2", "c3", "d4", "e5", "f6", "g7", "h8"];
-    const m = matchJob(job({ skills: many }), signals({ skills: { verified: new Set(["react"]), resume: new Set<string>(), self: new Set(["javascript"]) } }));
+    const m = matchJob(
+      job({ skills: many }),
+      signals({
+        skills: {
+          verified: new Set(["react"]),
+          resume: new Set<string>(),
+          self: new Set(["javascript"]),
+        },
+      }),
+    );
     expect(comp(m, "skills").value).toBeCloseTo(1.7 / 6, 5);
   });
 });
@@ -48,7 +106,10 @@ describe("the scoring model", () => {
 describe("missing data is not a mismatch", () => {
   it("leaves an unknown component out of the score and lowers confidence instead of penalising", () => {
     const full = matchJob(job(), signals());
-    const noCategory = matchJob(job({ enrichment: { employment_type: "internship", seniority: "intern" } }), signals());
+    const noCategory = matchJob(
+      job({ enrichment: { employment_type: "internship", seniority: "intern" } }),
+      signals(),
+    );
     expect(comp(noCategory, "category").state).toBe("unknown");
     expect(comp(noCategory, "category").value).toBeNull();
     expect(noCategory.score).not.toBeNull();
@@ -65,7 +126,13 @@ describe("missing data is not a mismatch", () => {
   });
 
   it("returns no score for a student with nothing to compare, and says what is missing", () => {
-    const m = matchJob(job(), signals({ categories: { primary: [], related: [] }, skills: { verified: new Set(), resume: new Set(), self: new Set() } }));
+    const m = matchJob(
+      job(),
+      signals({
+        categories: { primary: [], related: [] },
+        skills: { verified: new Set(), resume: new Set(), self: new Set() },
+      }),
+    );
     expect(m.score).toBeNull();
     expect(comp(m, "skills").state).toBe("not_set");
     expect(comp(m, "skills").note).toMatch(/No skills/);
@@ -76,60 +143,164 @@ describe("experience level", () => {
   it("suits a beginner to interns and juniors and not to senior roles", () => {
     const s = signals();
     expect(comp(matchJob(job(), s), "seniority").value).toBe(1);
-    expect(comp(matchJob(job({ enrichment: { employment_type: "full_time", seniority: "junior", category: "frontend" } }), s), "seniority").value).toBe(1);
-    expect(comp(matchJob(job({ enrichment: { employment_type: "full_time", seniority: "senior", category: "frontend" } }), s), "seniority").value).toBe(0);
-    expect(comp(matchJob(job({ enrichment: { employment_type: "full_time", seniority: "lead", category: "frontend" } }), s), "seniority").value).toBe(0);
+    expect(
+      comp(
+        matchJob(
+          job({
+            enrichment: { employment_type: "full_time", seniority: "junior", category: "frontend" },
+          }),
+          s,
+        ),
+        "seniority",
+      ).value,
+    ).toBe(1);
+    expect(
+      comp(
+        matchJob(
+          job({
+            enrichment: { employment_type: "full_time", seniority: "senior", category: "frontend" },
+          }),
+          s,
+        ),
+        "seniority",
+      ).value,
+    ).toBe(0);
+    expect(
+      comp(
+        matchJob(
+          job({
+            enrichment: { employment_type: "full_time", seniority: "lead", category: "frontend" },
+          }),
+          s,
+        ),
+        "seniority",
+      ).value,
+    ).toBe(0);
   });
 
   it("treats a stated internship as suitable even when its seniority label is not intern", () => {
-    const m = matchJob(job({ enrichment: { employment_type: "internship", seniority: "senior", category: "frontend" } }), signals());
+    const m = matchJob(
+      job({
+        enrichment: { employment_type: "internship", seniority: "senior", category: "frontend" },
+      }),
+      signals(),
+    );
     expect(comp(m, "seniority").value).toBe(1);
   });
 
   it("does not assume every role labelled intern is an internship, nor the reverse", () => {
-    const internLabelFullTime = matchJob(job({ enrichment: { employment_type: "full_time", seniority: "intern", category: "frontend" } }), signals({ prefs: prefs({ employment_types: ["internship"] }) }));
+    const internLabelFullTime = matchJob(
+      job({
+        enrichment: { employment_type: "full_time", seniority: "intern", category: "frontend" },
+      }),
+      signals({ prefs: prefs({ employment_types: ["internship"] }) }),
+    );
     expect(comp(internLabelFullTime, "employment").state).toBe("mismatch");
-    const internshipWithoutLabel = matchJob(job({ enrichment: { employment_type: "internship", category: "frontend" } }), signals({ prefs: prefs({ employment_types: ["internship"] }) }));
+    const internshipWithoutLabel = matchJob(
+      job({ enrichment: { employment_type: "internship", category: "frontend" } }),
+      signals({ prefs: prefs({ employment_types: ["internship"] }) }),
+    );
     expect(comp(internshipWithoutLabel, "employment").state).toBe("match");
     expect(comp(internshipWithoutLabel, "seniority").value).toBe(1);
   });
 
   it("lowers fit when a posting asks for more experience than the student has", () => {
-    const asks3 = matchJob(job({ enrichment: { employment_type: "full_time", seniority: "junior", experience_years_min: 3, category: "frontend" } }), signals());
+    const asks3 = matchJob(
+      job({
+        enrichment: {
+          employment_type: "full_time",
+          seniority: "junior",
+          experience_years_min: 3,
+          category: "frontend",
+        },
+      }),
+      signals(),
+    );
     expect(comp(asks3, "seniority").value).toBe(0.3);
-    const asks6 = matchJob(job({ enrichment: { employment_type: "full_time", seniority: "junior", experience_years_min: 6, category: "frontend" } }), signals());
+    const asks6 = matchJob(
+      job({
+        enrichment: {
+          employment_type: "full_time",
+          seniority: "junior",
+          experience_years_min: 6,
+          category: "frontend",
+        },
+      }),
+      signals(),
+    );
     expect(comp(asks6, "seniority").value).toBe(0);
   });
 
   it("says when it had to assume early career, and uses the student's own level otherwise", () => {
     const assumed = matchJob(job(), signals({ experience: null }));
     expect(comp(assumed, "seniority").note).toMatch(/assuming early career/);
-    const advanced = matchJob(job({ enrichment: { employment_type: "full_time", seniority: "senior", category: "frontend" } }), signals({ experience: "advanced" }));
+    const advanced = matchJob(
+      job({
+        enrichment: { employment_type: "full_time", seniority: "senior", category: "frontend" },
+      }),
+      signals({ experience: "advanced" }),
+    );
     expect(comp(advanced, "seniority").value).toBe(0.8);
   });
 });
 
 describe("categories, location, work mode and employment type", () => {
   it("credits a related category partly and an unrelated one not at all", () => {
-    expect(comp(matchJob(job({ enrichment: { employment_type: "internship", seniority: "intern", category: "fullstack" } }), signals()), "category").value).toBe(0.6);
-    expect(comp(matchJob(job({ enrichment: { employment_type: "internship", seniority: "intern", category: "sales" } }), signals()), "category").value).toBe(0);
+    expect(
+      comp(
+        matchJob(
+          job({
+            enrichment: {
+              employment_type: "internship",
+              seniority: "intern",
+              category: "fullstack",
+            },
+          }),
+          signals(),
+        ),
+        "category",
+      ).value,
+    ).toBe(0.6);
+    expect(
+      comp(
+        matchJob(
+          job({
+            enrichment: { employment_type: "internship", seniority: "intern", category: "sales" },
+          }),
+          signals(),
+        ),
+        "category",
+      ).value,
+    ).toBe(0);
   });
 
   it("compares country and city, treats remote carefully, and leaves unknown places out", () => {
     const s = signals({ prefs: prefs({ countries: ["in"], work_modes: ["remote"] }) });
     expect(comp(matchJob(job(), s), "location").value).toBe(1);
-    expect(comp(matchJob(job({ countries: ["us"], cities: [], work_mode: "onsite" }), s), "location").value).toBe(0);
-    const remoteElsewhere = comp(matchJob(job({ countries: ["us"], cities: [], work_mode: "remote" }), s), "location");
+    expect(
+      comp(matchJob(job({ countries: ["us"], cities: [], work_mode: "onsite" }), s), "location")
+        .value,
+    ).toBe(0);
+    const remoteElsewhere = comp(
+      matchJob(job({ countries: ["us"], cities: [], work_mode: "remote" }), s),
+      "location",
+    );
     expect(remoteElsewhere.value).toBe(0.5);
     expect(remoteElsewhere.note).toMatch(/not confirmed/);
-    expect(comp(matchJob(job({ countries: [], cities: [], work_mode: "remote" }), s), "location").value).toBe(1);
-    expect(comp(matchJob(job({ countries: [], cities: [], work_mode: null }), s), "location").state).toBe("unknown");
+    expect(
+      comp(matchJob(job({ countries: [], cities: [], work_mode: "remote" }), s), "location").value,
+    ).toBe(1);
+    expect(
+      comp(matchJob(job({ countries: [], cities: [], work_mode: null }), s), "location").state,
+    ).toBe("unknown");
     const city = signals({ prefs: prefs({ cities: ["bengaluru"] }) });
     expect(comp(matchJob(job({ countries: [] }), city), "location").value).toBe(1);
   });
 
   it("compares work mode and employment type only when the student chose, and when the posting says", () => {
-    const s = signals({ prefs: prefs({ work_modes: ["remote"], employment_types: ["internship"] }) });
+    const s = signals({
+      prefs: prefs({ work_modes: ["remote"], employment_types: ["internship"] }),
+    });
     const m = matchJob(job(), s);
     expect(comp(m, "work_mode").state).toBe("mismatch");
     expect(comp(m, "employment").state).toBe("match");
@@ -140,7 +311,14 @@ describe("categories, location, work mode and employment type", () => {
 
 describe("mandatory preferences", () => {
   it("flags a posting known to break one, flags one that cannot be confirmed, and passes the rest", () => {
-    const s = signals({ prefs: prefs({ work_modes: ["remote"], must_match_work_mode: true, countries: ["in"], must_match_location: true }) });
+    const s = signals({
+      prefs: prefs({
+        work_modes: ["remote"],
+        must_match_work_mode: true,
+        countries: ["in"],
+        must_match_location: true,
+      }),
+    });
     const broken = matchJob(job(), s); // hybrid in India
     expect(broken.hard_mismatches.join(" ")).toMatch(/Work mode/);
     const unknown = matchJob(job({ work_mode: null }), s);
@@ -157,7 +335,9 @@ describe("mandatory preferences", () => {
   });
 
   it("notes a remote posting whose eligibility is unconfirmed for a mandatory location", () => {
-    const s = signals({ prefs: prefs({ countries: ["in"], work_modes: ["remote"], must_match_location: true }) });
+    const s = signals({
+      prefs: prefs({ countries: ["in"], work_modes: ["remote"], must_match_location: true }),
+    });
     const m = matchJob(job({ countries: ["us"], cities: [], work_mode: "remote" }), s);
     expect(m.hard_mismatches).toHaveLength(0);
     expect(m.unverified_constraints.join(" ")).toMatch(/not confirmed/);
@@ -167,28 +347,72 @@ describe("mandatory preferences", () => {
 describe("ordering", () => {
   it("puts the best match first, unscored postings last, then newer before older", () => {
     const strong = { job: job({ public_slug: "a" }), match: matchJob(job(), signals()) };
-    const weak = { job: job({ public_slug: "b", skills: ["rust"] }), match: matchJob(job({ skills: ["rust"] }), signals()) };
-    const none = { job: job({ public_slug: "c", skills: [], enrichment: {}, countries: [], cities: [], work_mode: null }), match: matchJob(job({ skills: [], enrichment: {}, countries: [], cities: [], work_mode: null }), signals()) };
-    const newer = { job: job({ public_slug: "d", posted_at: "2026-10-18T00:00:00Z" }), match: strong.match };
+    const weak = {
+      job: job({ public_slug: "b", skills: ["rust"] }),
+      match: matchJob(job({ skills: ["rust"] }), signals()),
+    };
+    const none = {
+      job: job({
+        public_slug: "c",
+        skills: [],
+        enrichment: {},
+        countries: [],
+        cities: [],
+        work_mode: null,
+      }),
+      match: matchJob(
+        job({ skills: [], enrichment: {}, countries: [], cities: [], work_mode: null }),
+        signals(),
+      ),
+    };
+    const newer = {
+      job: job({ public_slug: "d", posted_at: "2026-10-18T00:00:00Z" }),
+      match: strong.match,
+    };
     const sorted = [none, weak, strong, newer].sort(compareMatches).map((x) => x.job.slug);
     expect(sorted).toEqual(["d", "a", "b", "c"]);
   });
 
   it("does not let a posting that states little outrank one that states more at a similar score", () => {
-    const s = signals({ prefs: prefs({ countries: ["in"], work_modes: ["remote", "hybrid"], employment_types: ["internship"] }) });
-    const sparse = job({ public_slug: "sparse", skills: [], countries: [], cities: [], work_mode: null, enrichment: { employment_type: "internship", seniority: "intern", category: "frontend" } });
+    const s = signals({
+      prefs: prefs({
+        countries: ["in"],
+        work_modes: ["remote", "hybrid"],
+        employment_types: ["internship"],
+      }),
+    });
+    const sparse = job({
+      public_slug: "sparse",
+      skills: [],
+      countries: [],
+      cities: [],
+      work_mode: null,
+      enrichment: { employment_type: "internship", seniority: "intern", category: "frontend" },
+    });
     const rich = job({ public_slug: "rich", skills: ["react", "javascript", "typescript", "css"] });
     const ms = matchJob(sparse, s);
     const mr = matchJob(rich, s);
     expect(ms.score).toBeNull(); // a posting with no skills cannot be compared on skills, so it gets no score at all...
     expect(evidenceCoverage(ms)).toBeLessThan(evidenceCoverage(mr));
-    expect([{ job: sparse, match: ms }, { job: rich, match: mr }].sort(compareMatches).map((x) => x.job.slug)).toEqual(["rich", "sparse"]); // ...and is ranked below
+    expect(
+      [
+        { job: sparse, match: ms },
+        { job: rich, match: mr },
+      ]
+        .sort(compareMatches)
+        .map((x) => x.job.slug),
+    ).toEqual(["rich", "sparse"]); // ...and is ranked below
   });
 
   it("measures evidence coverage from the components the student gave something to compare", () => {
     const m = matchJob(job(), signals());
     expect(evidenceCoverage(m)).toBe(1);
-    expect(evidenceCoverage({ ...m, components: m.components.map((c) => ({ ...c, state: "not_set" as const, value: null })) })).toBe(0);
+    expect(
+      evidenceCoverage({
+        ...m,
+        components: m.components.map((c) => ({ ...c, state: "not_set" as const, value: null })),
+      }),
+    ).toBe(0);
   });
 
   it("is stable for equal postings", () => {
@@ -201,12 +425,24 @@ describe("ordering", () => {
 
 describe("building signals from the student's own record", () => {
   it("counts only verified results with a real status as verified skills, mapped to job skill slugs", () => {
-    expect(verifiedSkillSlugs([verifiedReact, verifiedDbms, weakVerified, demoOnly])).toEqual(["react", "sql"]);
+    expect(verifiedSkillSlugs([verifiedReact, verifiedDbms, weakVerified, demoOnly])).toEqual([
+      "react",
+      "sql",
+    ]);
   });
 
   it("derives categories from the student's roles and choices, and a skill is counted once", () => {
-    const d = deriveSignals({ profile: profile(), skills: [verifiedReact], prefs: prefs({ skills: ["react", "python"], categories: ["backend"] }) });
-    expect(d.derived_categories.sort()).toEqual(["backend", "frontend", "fullstack", "software_engineering"]);
+    const d = deriveSignals({
+      profile: profile(),
+      skills: [verifiedReact],
+      prefs: prefs({ skills: ["react", "python"], categories: ["backend"] }),
+    });
+    expect(d.derived_categories.sort()).toEqual([
+      "backend",
+      "frontend",
+      "fullstack",
+      "software_engineering",
+    ]);
     expect(d.verified_skills).toEqual(["react"]);
     expect(d.self_reported_skills).toEqual(["javascript", "python"]); // react is only counted as verified; the profile's language adds javascript
   });
@@ -217,7 +453,11 @@ describe("building signals from the student's own record", () => {
     expect(d.signals.skills.verified.size + d.signals.skills.self.size).toBe(0);
     expect(d.notes.join(" ")).toMatch(/not set placement goals/);
     expect(d.notes.join(" ")).toMatch(/could not be read/);
-    const other = deriveSignals({ profile: profile({ role_ids: ["unknown_role"], preferred_language: null }), skills: [], prefs: null });
+    const other = deriveSignals({
+      profile: profile({ role_ids: ["unknown_role"], preferred_language: null }),
+      skills: [],
+      prefs: null,
+    });
     expect(other.derived_categories).toEqual([]);
     expect(other.signals.experience).toBe("beginner");
   });
@@ -225,8 +465,23 @@ describe("building signals from the student's own record", () => {
 
 describe("confidence reflects how much the posting states", () => {
   it("is insufficient when the posting lists no skills, even if everything else matches", () => {
-    const s = signals({ prefs: prefs({ countries: ["in"], work_modes: ["remote", "hybrid"], employment_types: ["internship"] }) });
-    const sparse = matchJob(job({ skills: [], countries: [], cities: [], work_mode: null, enrichment: { employment_type: "internship", seniority: "intern", category: "frontend" } }), s);
+    const s = signals({
+      prefs: prefs({
+        countries: ["in"],
+        work_modes: ["remote", "hybrid"],
+        employment_types: ["internship"],
+      }),
+    });
+    const sparse = matchJob(
+      job({
+        skills: [],
+        countries: [],
+        cities: [],
+        work_mode: null,
+        enrichment: { employment_type: "internship", seniority: "intern", category: "frontend" },
+      }),
+      s,
+    );
     expect(sparse.score).toBeNull(); // category, seniority and place alone never read as a match
     expect(sparse.confidence).toBe("insufficient");
     const rich = matchJob(job(), s);
@@ -245,7 +500,10 @@ describe("default place", () => {
   });
 
   it("uses the student's own choice once they set one", () => {
-    const m = matchJob(job({ countries: ["my"], cities: [] }), signals({ prefs: prefs({ countries: ["my"] }) }));
+    const m = matchJob(
+      job({ countries: ["my"], cities: [] }),
+      signals({ prefs: prefs({ countries: ["my"] }) }),
+    );
     expect(comp(m, "location").state).toBe("match");
   });
 });

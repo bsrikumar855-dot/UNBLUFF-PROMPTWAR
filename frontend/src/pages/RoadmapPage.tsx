@@ -18,7 +18,9 @@ const RoadmapPage: React.FC = () => {
   const { state } = useSessionState();
   const explicit = search.get("session") ?? state.sessionId;
   // After a reload the in-memory session is gone: use the student's newest saved session before falling back to the demo.
-  const [latest, setLatest] = useState<string | null | undefined>(explicit ? null : undefined);
+  const [latest, setLatest] = useState<string | null | undefined>(
+    explicit ? null : undefined
+  );
   const sessionId = explicit ?? latest ?? null;
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<unknown>(null);
@@ -29,7 +31,10 @@ const RoadmapPage: React.FC = () => {
     let cancelled = false;
     Promise.resolve()
       .then(() => api.getSessions())
-      .then((r) => !cancelled && setLatest(r?.sessions?.[0]?.session_id ?? null), () => !cancelled && setLatest(null));
+      .then(
+        (r) => !cancelled && setLatest(r?.sessions?.[0]?.session_id ?? null),
+        () => !cancelled && setLatest(null)
+      );
     return () => {
       cancelled = true;
     };
@@ -58,7 +63,11 @@ const RoadmapPage: React.FC = () => {
             4-week <em>roadmap</em>
           </>
         }
-        description={!sessionId && latest !== undefined ? "Showing the demo report (synthetic data)." : undefined}
+        description={
+          !sessionId && latest !== undefined
+            ? "Showing the demo report (synthetic data)."
+            : undefined
+        }
         actions={
           !sessionId && latest !== undefined ? (
             <span className="inline-flex items-center gap-2 rounded-full bg-redline-soft px-4 py-2 text-sm font-medium text-redline shadow-[inset_0_0_0_1px_rgba(179,41,26,0.18)]">
@@ -101,9 +110,13 @@ const RoadmapPage: React.FC = () => {
                       {w.items.map((it, i) => (
                         <li key={i} className={cn(TILE, "p-4 text-sm")}>
                           <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-ink-primary">{it.title}</span>
+                            <span className="font-semibold text-ink-primary">
+                              {it.title}
+                            </span>
                             {it.verdict && <VerdictBadge verdict={it.verdict} />}
-                            {!it.verdict && it.state && <SkillStateBadge state={it.state} />}
+                            {!it.verdict && it.state && (
+                              <SkillStateBadge state={it.state} />
+                            )}
                             {it.comingSoon && (
                               <span className="rounded-full bg-white/80 px-2.5 py-0.5 text-xs font-semibold text-ink-secondary shadow-[inset_0_0_0_1px_rgba(24,24,27,0.1)]">
                                 Coming soon
@@ -126,7 +139,10 @@ const RoadmapPage: React.FC = () => {
             ))}
           </ol>
 
-          <aside className={cn(GLASS, "p-5 xl:sticky xl:top-4")} aria-labelledby="glance-title">
+          <aside
+            className={cn(GLASS, "p-5 xl:sticky xl:top-4")}
+            aria-labelledby="glance-title"
+          >
             <div className="flex items-start gap-3.5">
               <span
                 aria-hidden="true"
@@ -135,7 +151,10 @@ const RoadmapPage: React.FC = () => {
                 <BarChart3 size={20} strokeWidth={1.75} />
               </span>
               <div>
-                <h2 id="glance-title" className="serif text-heading font-medium text-ink-primary">
+                <h2
+                  id="glance-title"
+                  className="serif text-heading font-medium text-ink-primary"
+                >
                   Roadmap at a glance
                 </h2>
                 <p className="mt-0.5 text-sm text-ink-secondary">
@@ -145,7 +164,10 @@ const RoadmapPage: React.FC = () => {
             </div>
             <ol className="mt-4 flex flex-col gap-1.5">
               {weeks.map((w) => (
-                <li key={w.week} className="flex items-center gap-3 rounded-2xl px-2 py-2">
+                <li
+                  key={w.week}
+                  className="flex items-center gap-3 rounded-2xl px-2 py-2"
+                >
                   <span
                     aria-hidden="true"
                     className="grid size-9 shrink-0 place-items-center rounded-full bg-white/80 text-sm font-semibold text-ink-primary shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08)]"
@@ -164,9 +186,15 @@ const RoadmapPage: React.FC = () => {
               ))}
             </ol>
             <div className="mt-4 flex items-start gap-3 border-t border-black/5 pt-4">
-              <Lightbulb size={18} aria-hidden="true" className="mt-0.5 shrink-0 text-redline" />
+              <Lightbulb
+                size={18}
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-redline"
+              />
               <div>
-                <p className="text-sm font-semibold text-ink-primary">How to use this roadmap</p>
+                <p className="text-sm font-semibold text-ink-primary">
+                  How to use this roadmap
+                </p>
                 <p className="mt-0.5 text-sm leading-snug text-ink-secondary">
                   Work through each week in order, then run the interrogation again to see
                   whether the weak spots held.

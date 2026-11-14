@@ -10,10 +10,10 @@ import {
 import { claim, role } from "../helpers.js";
 import { example } from "../fixtures/claims.js";
 
-
 describe("7. readiness and coverage (hand-computed)", () => {
   it("readiness = 29", () => expect(readiness(role, example)).toBe(29));
-  it("coverage = 65 (error claims are not assessed)", () => expect(coverage(role, example)).toBe(65));
+  it("coverage = 65 (error claims are not assessed)", () =>
+    expect(coverage(role, example)).toBe(65));
 
   it("6. an error verdict is excluded from coverage", () => {
     const onlyError = [claim("CL-001", "rest_apis", "error", 0)];
@@ -55,8 +55,17 @@ describe("skill proficiency and state", () => {
 
 describe("progress", () => {
   it("counts non-pending claims and finds the next pending one", () => {
-    const cs = [claim("CL-001", "git", "defended", 0.85), claim("CL-002", "git", "pending", 0), claim("CL-003", "git", "error", 0)];
-    expect(progress(cs)).toEqual({ claims_total: 3, claims_done: 2, next_claim_id: "CL-002", next_mode: "assess" });
+    const cs = [
+      claim("CL-001", "git", "defended", 0.85),
+      claim("CL-002", "git", "pending", 0),
+      claim("CL-003", "git", "error", 0),
+    ];
+    expect(progress(cs)).toEqual({
+      claims_total: 3,
+      claims_done: 2,
+      next_claim_id: "CL-002",
+      next_mode: "assess",
+    });
     expect(progress([]).next_claim_id).toBeNull();
   });
 });

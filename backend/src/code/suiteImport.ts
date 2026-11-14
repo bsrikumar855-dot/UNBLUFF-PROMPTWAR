@@ -14,7 +14,10 @@ export interface SuiteImportReport {
   changed: boolean;
 }
 
-const stable = (f: SuiteFile): SuiteFile => ({ ...f, suites: [...f.suites].sort((a, b) => a.question_id.localeCompare(b.question_id)) });
+const stable = (f: SuiteFile): SuiteFile => ({
+  ...f,
+  suites: [...f.suites].sort((a, b) => a.question_id.localeCompare(b.question_id)),
+});
 export const serializeSuites = (f: SuiteFile): string => `${JSON.stringify(stable(f), null, 2)}\n`;
 
 export function mergeSuites(
@@ -26,9 +29,12 @@ export function mergeSuites(
   const problems: string[] = [];
   for (const s of incoming.suites) {
     if (s.source.license_status === "development_fixture" && !opts.allowFixture) {
-      problems.push(`question "${s.question_id}": development_fixture content cannot be imported as real test data`);
+      problems.push(
+        `question "${s.question_id}": development_fixture content cannot be imported as real test data`,
+      );
     }
-    if (opts.catalogue && !opts.catalogue.hasQuestion(s.question_id)) problems.push(`question "${s.question_id}" is not in the catalogue`);
+    if (opts.catalogue && !opts.catalogue.hasQuestion(s.question_id))
+      problems.push(`question "${s.question_id}" is not in the catalogue`);
   }
   const bySuite = new Map((existing?.suites ?? []).map((s) => [s.question_id, s]));
   const report: SuiteImportReport = { added: [], updated: [], unchanged: [], changed: false };
@@ -40,7 +46,9 @@ export function mergeSuites(
       report.unchanged.push(s.question_id);
       continue;
     } else if (prior.revision === s.revision) {
-      problems.push(`question "${s.question_id}": content changed but revision "${s.revision}" did not; bump the revision`);
+      problems.push(
+        `question "${s.question_id}": content changed but revision "${s.revision}" did not; bump the revision`,
+      );
     } else {
       report.updated.push(s.question_id);
     }

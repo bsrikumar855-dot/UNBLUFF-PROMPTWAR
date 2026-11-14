@@ -1,7 +1,12 @@
 import type { Claim, Role } from "../../types.js";
 import { studentBlock } from "./shared.js";
 
-export function fixTaskPrompt(role: Role, claim: Claim, missingConcepts: string[], rootCause: string | null): string {
+export function fixTaskPrompt(
+  role: Role,
+  claim: Claim,
+  missingConcepts: string[],
+  rootCause: string | null,
+): string {
   const focus = rootCause
     ? `Their root-cause gap is the prerequisite "${rootCause}". Teach that FIRST, then connect it to what they missed:`
     : "They failed to demonstrate these concepts:";

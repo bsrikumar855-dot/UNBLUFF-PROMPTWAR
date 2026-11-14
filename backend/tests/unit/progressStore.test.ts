@@ -2,7 +2,12 @@ import type { Firestore } from "@google-cloud/firestore";
 import { describe, expect, it } from "vitest";
 import { Catalogue, parseCatalogueFile } from "../../src/dsa/catalogue.js";
 import { DsaProgressService } from "../../src/dsa/progressService.js";
-import { FirestoreProgressStore, MemoryProgressStore, type ProgressRecord, type ProgressStore } from "../../src/dsa/progressStore.js";
+import {
+  FirestoreProgressStore,
+  MemoryProgressStore,
+  type ProgressRecord,
+  type ProgressStore,
+} from "../../src/dsa/progressStore.js";
 
 /** In-memory stand-in for the Firestore calls the store makes. */
 function fakeFirestore() {
@@ -10,13 +15,18 @@ function fakeFirestore() {
   const db = {
     collection: (name: string) => ({
       doc: (id: string) => ({
-        get: async () => ({ exists: docs.has(`${name}/${id}`), data: () => docs.get(`${name}/${id}`) }),
+        get: async () => ({
+          exists: docs.has(`${name}/${id}`),
+          data: () => docs.get(`${name}/${id}`),
+        }),
         set: async (data: Record<string, unknown>) => void docs.set(`${name}/${id}`, data),
         delete: async () => void docs.delete(`${name}/${id}`),
       }),
       where: (field: string, _op: string, value: unknown) => ({
         get: async () => ({
-          docs: [...docs.entries()].filter(([k, d]) => k.startsWith(`${name}/`) && d[field] === value).map(([, d]) => ({ data: () => d })),
+          docs: [...docs.entries()]
+            .filter(([k, d]) => k.startsWith(`${name}/`) && d[field] === value)
+            .map(([, d]) => ({ data: () => d })),
         }),
       }),
     }),
@@ -38,14 +48,25 @@ const rec = (uid: string, q: string, over: Partial<ProgressRecord> = {}): Progre
 const catalogue = new Catalogue(
   parseCatalogueFile({
     schema_version: 1,
-    source: { name: "t", license_status: "own_work", license_note: "t", url: null, imported_at: "2026-01-01T00:00:00Z", source_updated_at: null },
+    source: {
+      name: "t",
+      license_status: "own_work",
+      license_note: "t",
+      url: null,
+      imported_at: "2026-01-01T00:00:00Z",
+      source_updated_at: null,
+    },
     companies: [{ id: "acme", name: "Acme" }],
-    questions: [{ id: "q_1", title: "One", url: "https://example.com/1", difficulty: "easy", topics: [] }],
+    questions: [
+      { id: "q_1", title: "One", url: "https://example.com/1", difficulty: "easy", topics: [] },
+    ],
     associations: [{ company_id: "acme", question_id: "q_1" }],
   }),
 );
 
-describe.each<[string, () => { store: ProgressStore; docs?: Map<string, Record<string, unknown>> }]>([
+describe.each<
+  [string, () => { store: ProgressStore; docs?: Map<string, Record<string, unknown>> }]
+>([
   ["MemoryProgressStore", () => ({ store: new MemoryProgressStore() })],
   [
     "FirestoreProgressStore (mocked client)",
@@ -87,10 +108,19 @@ describe.each<[string, () => { store: ProgressStore; docs?: Map<string, Record<s
   it("DsaProgressService creates once and updates in place through this store", async () => {
     const { store } = make();
     let t = Date.parse("2026-05-01T00:00:00Z");
-    const svc = new DsaProgressService(store, () => catalogue, () => new Date((t += 1000)));
+    const svc = new DsaProgressService(
+      store,
+      () => catalogue,
+      () => new Date((t += 1000)),
+    );
     const first = await svc.put("alice", "q_1", { status: "attempted" });
     const second = await svc.put("alice", "q_1", { bookmarked: true, notes: "hello" });
-    expect(second).toMatchObject({ status: "attempted", bookmarked: true, notes: "hello", created_at: first.created_at });
+    expect(second).toMatchObject({
+      status: "attempted",
+      bookmarked: true,
+      notes: "hello",
+      created_at: first.created_at,
+    });
     expect(second.updated_at > first.updated_at).toBe(true);
     expect((await svc.list("alice")).progress).toHaveLength(1);
     expect((await svc.list("bob")).progress).toEqual([]);
@@ -99,7 +129,11 @@ describe.each<[string, () => { store: ProgressStore; docs?: Map<string, Record<s
   it("concurrent writes to one record never create a second record", async () => {
     const { store } = make();
     const svc = new DsaProgressService(store, () => catalogue);
-    await Promise.all([svc.put("alice", "q_1", { status: "solved" }), svc.put("alice", "q_1", { notes: "x" }), svc.put("alice", "q_1", { bookmarked: true })]);
+    await Promise.all([
+      svc.put("alice", "q_1", { status: "solved" }),
+      svc.put("alice", "q_1", { notes: "x" }),
+      svc.put("alice", "q_1", { bookmarked: true }),
+    ]);
     const list = (await svc.list("alice")).progress;
     expect(list).toHaveLength(1);
     expect(list[0]).toMatchObject({ status: "solved", notes: "x", bookmarked: true }); // serialized, so no write was lost
@@ -111,12 +145,19 @@ describe("FirestoreProgressStore specifics", () => {
     const f = fakeFirestore();
     await new FirestoreProgressStore("progress", f.db).put(rec("alice", "q_1"));
     expect([...f.docs.keys()]).toEqual(["progress/alice~q_1"]);
-    expect(f.docs.get("progress/alice~q_1")).toMatchObject({ owner_uid: "alice", question_id: "q_1" });
+    expect(f.docs.get("progress/alice~q_1")).toMatchObject({
+      owner_uid: "alice",
+      question_id: "q_1",
+    });
   });
 
   it("never returns a document whose stored owner is not the requester", async () => {
     const f = fakeFirestore();
-    f.docs.set("progress/alice~q_1", { owner_uid: "mallory", question_id: "q_1", status: "solved" });
+    f.docs.set("progress/alice~q_1", {
+      owner_uid: "mallory",
+      question_id: "q_1",
+      status: "solved",
+    });
     const store = new FirestoreProgressStore("progress", f.db);
     expect(await store.get("alice", "q_1")).toBeNull();
     expect(await store.listByOwner("alice")).toEqual([]);

@@ -19,7 +19,17 @@ import type { LearnRecord, LearnStore } from "./store.js";
 export const PASS_FRACTION = 0.75;
 const MAX_PROBLEM_MARKS = 64;
 
-const TOPIC_ORDER = ["Arrays and Strings", "Searching", "Stacks and Queues", "Heaps", "Linked Lists", "Trees", "Graphs", "Recursion and Backtracking", "Dynamic Programming"];
+const TOPIC_ORDER = [
+  "Arrays and Strings",
+  "Searching",
+  "Stacks and Queues",
+  "Heaps",
+  "Linked Lists",
+  "Trees",
+  "Graphs",
+  "Recursion and Backtracking",
+  "Dynamic Programming",
+];
 const GROUP_ORDER = ["Design", "SQL", "Transactions", "Performance", "Landscape"];
 
 const leetcodeUrl = (slug: string) => `https://leetcode.com/problems/${slug}/`;
@@ -34,8 +44,24 @@ const problemOf = (p: PatternContent["problems"][number]): PatternProblem => ({
 const nameOfPattern = (id: string) => PATTERNS.find((p) => p.id === id)!.name;
 const nameOfTopic = (id: string) => DBMS_TOPICS.find((t) => t.id === id)!.name;
 
-const patternSummary = (p: PatternContent) => ({ id: p.id, name: p.name, topic: p.topic, level: p.level, cues: p.cues, summary: p.summary, problem_count: p.problems.length });
-const topicSummary = (t: DbmsTopicContent) => ({ id: t.id, name: t.name, group: t.group, summary: t.summary, minutes: t.minutes, has_example: t.example !== null, quiz_questions: t.quiz.length });
+const patternSummary = (p: PatternContent) => ({
+  id: p.id,
+  name: p.name,
+  topic: p.topic,
+  level: p.level,
+  cues: p.cues,
+  summary: p.summary,
+  problem_count: p.problems.length,
+});
+const topicSummary = (t: DbmsTopicContent) => ({
+  id: t.id,
+  name: t.name,
+  group: t.group,
+  summary: t.summary,
+  minutes: t.minutes,
+  has_example: t.example !== null,
+  quiz_questions: t.quiz.length,
+});
 
 export interface LearnDeps {
   store: LearnStore;
@@ -57,7 +83,9 @@ export class LearnService {
   // ---------------- content ----------------
 
   patterns(): PatternsResponse {
-    const topics = [...new Set(PATTERNS.map((p) => p.topic))].sort((a, b) => (TOPIC_ORDER.indexOf(a) + 1 || 99) - (TOPIC_ORDER.indexOf(b) + 1 || 99));
+    const topics = [...new Set(PATTERNS.map((p) => p.topic))].sort(
+      (a, b) => (TOPIC_ORDER.indexOf(a) + 1 || 99) - (TOPIC_ORDER.indexOf(b) + 1 || 99),
+    );
     return { patterns: PATTERNS.map(patternSummary), topics };
   }
 
@@ -77,7 +105,9 @@ export class LearnService {
   }
 
   dbmsTopics(): DbmsTopicsResponse {
-    const groups = [...new Set(DBMS_TOPICS.map((t) => t.group))].sort((a, b) => (GROUP_ORDER.indexOf(a) + 1 || 99) - (GROUP_ORDER.indexOf(b) + 1 || 99));
+    const groups = [...new Set(DBMS_TOPICS.map((t) => t.group))].sort(
+      (a, b) => (GROUP_ORDER.indexOf(a) + 1 || 99) - (GROUP_ORDER.indexOf(b) + 1 || 99),
+    );
     return { topics: DBMS_TOPICS.map(topicSummary), groups };
   }
 
@@ -102,7 +132,9 @@ export class LearnService {
   }
 
   private view(rec: LearnRecord | null): LearnProgressResponse {
-    const progress: LearnProgress = rec ? { patterns: rec.patterns, dbms: rec.dbms, updated_at: rec.updated_at } : { patterns: {}, dbms: {}, updated_at: null };
+    const progress: LearnProgress = rec
+      ? { patterns: rec.patterns, dbms: rec.dbms, updated_at: rec.updated_at }
+      : { patterns: {}, dbms: {}, updated_at: null };
     return {
       progress,
       patterns_done: Object.values(progress.patterns).filter((p) => p.done).length,
@@ -117,13 +149,21 @@ export class LearnService {
   }
 
   /** Records which patterns and problems the student says they have finished. Self-reported, never verified. */
-  async setPatternProgress(uid: string, id: string, req: PatternProgressRequest): Promise<LearnProgressResponse> {
+  async setPatternProgress(
+    uid: string,
+    id: string,
+    req: PatternProgressRequest,
+  ): Promise<LearnProgressResponse> {
     const pattern = PATTERNS.find((p) => p.id === id);
     if (!pattern) throw new ApiError("LEARN_NOT_FOUND", `Pattern ${id} not found`);
-    if (req.done === undefined && !req.problems?.length) throw new ApiError("BAD_REQUEST", "Nothing to update.");
+    if (req.done === undefined && !req.problems?.length)
+      throw new ApiError("BAD_REQUEST", "Nothing to update.");
     const valid = new Set(pattern.problems.map((p) => p.slug ?? p.practice_id!));
-    for (const m of req.problems ?? []) if (!valid.has(m.key)) throw new ApiError("BAD_REQUEST", `"${m.key}" is not one of this pattern's problems.`);
-    if ((req.problems?.length ?? 0) > MAX_PROBLEM_MARKS) throw new ApiError("BAD_REQUEST", "Too many problems in one request.");
+    for (const m of req.problems ?? [])
+      if (!valid.has(m.key))
+        throw new ApiError("BAD_REQUEST", `"${m.key}" is not one of this pattern's problems.`);
+    if ((req.problems?.length ?? 0) > MAX_PROBLEM_MARKS)
+      throw new ApiError("BAD_REQUEST", "Too many problems in one request.");
 
     const rec = (await this.deps.store.get(uid)) ?? this.blank(uid);
     const cur = rec.patterns[id] ?? { done: false, problems_done: [] };
@@ -132,7 +172,12 @@ export class LearnService {
       if (m.done) done.add(m.key);
       else done.delete(m.key);
     }
-    rec.patterns[id] = { done: req.done ?? cur.done, problems_done: pattern.problems.map((p) => p.slug ?? p.practice_id!).filter((k) => done.has(k)) };
+    rec.patterns[id] = {
+      done: req.done ?? cur.done,
+      problems_done: pattern.problems
+        .map((p) => p.slug ?? p.practice_id!)
+        .filter((k) => done.has(k)),
+    };
     rec.updated_at = this.now().toISOString();
     await this.deps.store.put(rec);
     return this.view(rec);
@@ -143,10 +188,19 @@ export class LearnService {
     const topic = DBMS_TOPICS.find((t) => t.id === topicId);
     if (!topic) throw new ApiError("LEARN_NOT_FOUND", `DBMS topic ${topicId} not found`);
     const total = topic.quiz.length;
-    if (answers.length !== total) throw new ApiError("BAD_REQUEST", `Answer all ${total} questions.`);
-    for (const a of answers) if (!Number.isInteger(a) || a < 0 || a > 3) throw new ApiError("BAD_REQUEST", "Each answer must be the number of one of the options.");
+    if (answers.length !== total)
+      throw new ApiError("BAD_REQUEST", `Answer all ${total} questions.`);
+    for (const a of answers)
+      if (!Number.isInteger(a) || a < 0 || a > 3)
+        throw new ApiError("BAD_REQUEST", "Each answer must be the number of one of the options.");
 
-    const results = topic.quiz.map((q, i) => ({ question_id: q.id, chosen: answers[i]!, answer: q.answer, correct: answers[i] === q.answer, why: q.why }));
+    const results = topic.quiz.map((q, i) => ({
+      question_id: q.id,
+      chosen: answers[i]!,
+      answer: q.answer,
+      correct: answers[i] === q.answer,
+      why: q.why,
+    }));
     const score = results.filter((r) => r.correct).length;
     const pass_mark = Math.ceil(total * PASS_FRACTION);
     const passed = score >= pass_mark;
@@ -173,11 +227,33 @@ export class LearnService {
   }
 
   /** What the placement planner may read: each DBMS topic with its quiz record. */
-  async dbmsEvidence(uid: string): Promise<{ id: string; title: string; group: string; minutes: number; passed: boolean; attempts: number; best_score: number; total: number; last_attempt_at: string | null }[]> {
+  async dbmsEvidence(uid: string): Promise<
+    {
+      id: string;
+      title: string;
+      group: string;
+      minutes: number;
+      passed: boolean;
+      attempts: number;
+      best_score: number;
+      total: number;
+      last_attempt_at: string | null;
+    }[]
+  > {
     const rec = await this.deps.store.get(uid);
     return DBMS_TOPICS.map((t) => {
       const d = rec?.dbms[t.id];
-      return { id: t.id, title: t.name, group: t.group, minutes: t.minutes, passed: d?.passed_at !== undefined && d.passed_at !== null, attempts: d?.attempts ?? 0, best_score: d?.best_score ?? 0, total: t.quiz.length, last_attempt_at: d?.last_attempt_at ?? null };
+      return {
+        id: t.id,
+        title: t.name,
+        group: t.group,
+        minutes: t.minutes,
+        passed: d?.passed_at !== undefined && d.passed_at !== null,
+        attempts: d?.attempts ?? 0,
+        best_score: d?.best_score ?? 0,
+        total: t.quiz.length,
+        last_attempt_at: d?.last_attempt_at ?? null,
+      };
     });
   }
 }

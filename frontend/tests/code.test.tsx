@@ -6,12 +6,29 @@ import { AuthProvider } from "@/auth/AuthContext";
 import type { AuthClient, AuthUser } from "@/auth/types";
 import { api } from "@/api/endpoints";
 import { clearDrafts, loadDraft, saveDraft } from "@/lib/drafts";
-import type { CodeExerciseResponse, CodeLanguage, CodeSubmission, QuestionDetailResponse } from "@/types/contract";
+import type {
+  CodeExerciseResponse,
+  CodeLanguage,
+  CodeSubmission,
+  QuestionDetailResponse,
+} from "@/types/contract";
 
 // Monaco cannot run in jsdom (no layout, workers or canvas). The real editor is checked in a browser instead.
 vi.mock("@/components/code/CodeEditor", () => ({
-  default: ({ value, onChange, ariaLabel }: { value: string; onChange: (v: string) => void; ariaLabel: string }) => (
-    <textarea aria-label={ariaLabel} value={value} onChange={(e) => onChange(e.target.value)} />
+  default: ({
+    value,
+    onChange,
+    ariaLabel,
+  }: {
+    value: string;
+    onChange: (v: string) => void;
+    ariaLabel: string;
+  }) => (
+    <textarea
+      aria-label={ariaLabel}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+    />
   ),
 }));
 
@@ -38,7 +55,14 @@ const languages: CodeLanguage[] = [
 ];
 
 const detail: QuestionDetailResponse = {
-  question: { id: "q_fixture_06", title: "Sample Problem 06: Pair Sum", url: "https://example.com/p/6", difficulty: "easy", topics: ["Arrays"], company_ids: [] },
+  question: {
+    id: "q_fixture_06",
+    title: "Sample Problem 06: Pair Sum",
+    url: "https://example.com/p/6",
+    difficulty: "easy",
+    topics: ["Arrays"],
+    company_ids: [],
+  },
   companies: [],
   source: null,
 };
@@ -96,7 +120,7 @@ const renderWorkspace = (u: AuthUser | null) =>
       <MemoryRouter initialEntries={["/dsa/questions/q_fixture_06/code"]}>
         <AppRoutes />
       </MemoryRouter>
-    </AuthProvider>,
+    </AuthProvider>
   );
 
 /**
@@ -121,20 +145,31 @@ beforeEach(() => {
 describe("workspace layout and content", () => {
   it("shows problem metadata, the original link, the demonstration label, samples, language selector and starter code", async () => {
     renderWorkspace(user);
-    expect(await screen.findByRole("heading", { name: "Sample Problem 06: Pair Sum" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Original problem/ })).toHaveAttribute("href", "https://example.com/p/6");
-    expect(screen.getByRole("note")).toHaveTextContent(/not a real company interview question/i);
+    expect(
+      await screen.findByRole("heading", { name: "Sample Problem 06: Pair Sum" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Original problem/ })).toHaveAttribute(
+      "href",
+      "https://example.com/p/6"
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      /not a real company interview question/i
+    );
     expect(screen.getByText("Demonstration statement.")).toBeInTheDocument();
     expect(screen.getByText(/judged on 8 hidden tests/)).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Python (3.12.5)" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "C++ (GCC 14.1.0)" })).toBeInTheDocument();
     expect(await editor()).toHaveValue("# python starter\n");
     fireEvent.change(screen.getByLabelText("Language"), { target: { value: "cpp" } });
-    expect(await screen.findByLabelText(/Code editor, C\+\+/)).toHaveValue("// cpp starter\n");
+    expect(await screen.findByLabelText(/Code editor, C\+\+/)).toHaveValue(
+      "// cpp starter\n"
+    );
   });
 
   it("uses a question's own starter code when it has one", async () => {
-    mocked.getCodeExercise.mockResolvedValue(exercise({ starter_code: { python: "# custom starter\n" } }));
+    mocked.getCodeExercise.mockResolvedValue(
+      exercise({ starter_code: { python: "# custom starter\n" } })
+    );
     renderWorkspace(user);
     expect(await editor()).toHaveValue("# custom starter\n");
   });
@@ -147,19 +182,35 @@ describe("workspace layout and content", () => {
   });
 
   it("is honest when no execution service exists: no languages, Run and Submit disabled", async () => {
-    mocked.getCodeLanguages.mockResolvedValue({ languages: [], execution_available: false });
+    mocked.getCodeLanguages.mockResolvedValue({
+      languages: [],
+      execution_available: false,
+    });
     renderWorkspace(user);
-    expect(await screen.findByRole("alert")).toHaveTextContent(/Code execution isn't available right now/);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Code execution isn't available right now/
+    );
     expect(screen.getByRole("button", { name: "Run" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
     expect(screen.getByText("Choose a language to start.")).toBeInTheDocument();
   });
 
   it("explains that judging is unavailable when the question has no suite and keeps Submit disabled", async () => {
-    mocked.getCodeExercise.mockResolvedValue(exercise({ gradable: false, samples: [], hidden_test_count: 0, test_revision: null, statement: null, is_demonstration: false }));
+    mocked.getCodeExercise.mockResolvedValue(
+      exercise({
+        gradable: false,
+        samples: [],
+        hidden_test_count: 0,
+        test_revision: null,
+        statement: null,
+        is_demonstration: false,
+      })
+    );
     renderWorkspace(user);
     await editor();
-    expect(screen.getByText(/Full judging is not available for this question/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Full judging is not available for this question/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/No visible samples for this question/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Run" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
@@ -167,7 +218,9 @@ describe("workspace layout and content", () => {
   });
 
   it("shows a retryable error when the exercise cannot load", async () => {
-    mocked.getCodeExercise.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce(exercise());
+    mocked.getCodeExercise
+      .mockRejectedValueOnce(new Error("x"))
+      .mockResolvedValueOnce(exercise());
     renderWorkspace(user);
     fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
     expect(await editor()).toBeInTheDocument();
@@ -181,7 +234,9 @@ describe("signed-out visitors", () => {
     expect(screen.getByRole("button", { name: "Run" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
     expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument();
-    expect(screen.getByText("Sign in to see your submission history.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Sign in to see your submission history.")
+    ).toBeInTheDocument();
     expect(mocked.getCodeSubmissions).not.toHaveBeenCalled();
     expect(mocked.runCode).not.toHaveBeenCalled();
   });
@@ -189,27 +244,56 @@ describe("signed-out visitors", () => {
 
 describe("Run", () => {
   it("runs custom input and shows the real output and metrics, without any progress language", async () => {
-    mocked.runCode.mockResolvedValue({ status: "completed", stdout: "YES\n", stderr: "", compile_output: "", time_ms: 14, memory_kb: 4096, sample_passed: null });
+    mocked.runCode.mockResolvedValue({
+      status: "completed",
+      stdout: "YES\n",
+      stderr: "",
+      compile_output: "",
+      time_ms: 14,
+      memory_kb: 4096,
+      sample_passed: null,
+    });
     renderWorkspace(user);
     await editor();
-    fireEvent.change(screen.getByLabelText(/Custom input/), { target: { value: "4 9\n2 7 11 15\n" } });
+    fireEvent.change(screen.getByLabelText(/Custom input/), {
+      target: { value: "4 9\n2 7 11 15\n" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Run" }));
     const out = await screen.findByRole("region", { name: "Run output" });
     expect(within(out).getByText("Finished")).toBeInTheDocument();
     expect(within(out).getByText("YES")).toBeInTheDocument();
     expect(within(out).getByText(/14 ms · 4.0 MB/)).toBeInTheDocument();
-    expect(mocked.runCode).toHaveBeenCalledWith({ language: "python", source: "# python starter\n", stdin: "4 9\n2 7 11 15\n" });
+    expect(mocked.runCode).toHaveBeenCalledWith({
+      language: "python",
+      source: "# python starter\n",
+      stdin: "4 9\n2 7 11 15\n",
+    });
     expect(mocked.submitCode).not.toHaveBeenCalled();
     expect(within(out).getByText(/never changes your progress/)).toBeInTheDocument();
   });
 
   it("runs a visible sample and reports whether it matched", async () => {
-    mocked.runCode.mockResolvedValue({ status: "completed", stdout: "NO\n", stderr: "", compile_output: "", time_ms: 9, memory_kb: 3000, sample_passed: false });
+    mocked.runCode.mockResolvedValue({
+      status: "completed",
+      stdout: "NO\n",
+      stderr: "",
+      compile_output: "",
+      time_ms: 9,
+      memory_kb: 3000,
+      sample_passed: false,
+    });
     renderWorkspace(user);
     await editor();
     fireEvent.click(screen.getByRole("button", { name: "Run sample 1" }));
-    expect(await screen.findByText("Output does not match the sample.")).toBeInTheDocument();
-    expect(mocked.runCode).toHaveBeenCalledWith({ language: "python", source: "# python starter\n", question_id: "q_fixture_06", sample_index: 0 });
+    expect(
+      await screen.findByText("Output does not match the sample.")
+    ).toBeInTheDocument();
+    expect(mocked.runCode).toHaveBeenCalledWith({
+      language: "python",
+      source: "# python starter\n",
+      question_id: "q_fixture_06",
+      sample_index: 0,
+    });
   });
 
   it("copies a sample into the custom input box", async () => {
@@ -220,12 +304,31 @@ describe("Run", () => {
   });
 
   it.each([
-    ["compile_error", "Compilation error", { compile_output: "error: expected ';'" }, "error: expected ';'"],
-    ["runtime_error", "Runtime error", { stderr: "ZeroDivisionError" }, "ZeroDivisionError"],
+    [
+      "compile_error",
+      "Compilation error",
+      { compile_output: "error: expected ';'" },
+      "error: expected ';'",
+    ],
+    [
+      "runtime_error",
+      "Runtime error",
+      { stderr: "ZeroDivisionError" },
+      "ZeroDivisionError",
+    ],
     ["time_limit_exceeded", "Time limit exceeded", {}, null],
     ["judge_error", "Judge error", {}, null],
   ] as const)("shows %s diagnostics", async (status, label, extra, text) => {
-    mocked.runCode.mockResolvedValue({ status, stdout: "", stderr: "", compile_output: "", time_ms: null, memory_kb: null, sample_passed: null, ...extra });
+    mocked.runCode.mockResolvedValue({
+      status,
+      stdout: "",
+      stderr: "",
+      compile_output: "",
+      time_ms: null,
+      memory_kb: null,
+      sample_passed: null,
+      ...extra,
+    });
     renderWorkspace(user);
     await editor();
     fireEvent.click(screen.getByRole("button", { name: "Run" }));
@@ -240,7 +343,9 @@ describe("Run", () => {
     renderWorkspace(user);
     await editor();
     fireEvent.click(screen.getByRole("button", { name: "Run" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/Code execution is not available right now/);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Code execution is not available right now/
+    );
     expect(screen.queryByRole("region", { name: "Run output" })).not.toBeInTheDocument();
   });
 
@@ -252,17 +357,35 @@ describe("Run", () => {
     fireEvent.click(screen.getByRole("button", { name: "Run" }));
     expect(await screen.findByRole("button", { name: "Running…" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
-    finish({ status: "completed", stdout: "", stderr: "", compile_output: "", time_ms: 1, memory_kb: 1, sample_passed: null } as never);
+    finish({
+      status: "completed",
+      stdout: "",
+      stderr: "",
+      compile_output: "",
+      time_ms: 1,
+      memory_kb: 1,
+      sample_passed: null,
+    } as never);
     await screen.findByRole("region", { name: "Run output" });
   });
 });
 
 describe("Submit and history", () => {
   it("shows an accepted verdict, the solved notice and refreshes the history", async () => {
-    mocked.submitCode.mockResolvedValue(sub({ verdict: "accepted", passed: 8, total: 8, failed_test: null, progress_updated: true }));
+    mocked.submitCode.mockResolvedValue(
+      sub({
+        verdict: "accepted",
+        passed: 8,
+        total: 8,
+        failed_test: null,
+        progress_updated: true,
+      })
+    );
     mocked.getCodeSubmissions
       .mockResolvedValueOnce({ submissions: [] })
-      .mockResolvedValueOnce({ submissions: [sub({ verdict: "accepted", passed: 8, failed_test: null })] });
+      .mockResolvedValueOnce({
+        submissions: [sub({ verdict: "accepted", passed: 8, failed_test: null })],
+      });
     renderWorkspace(user);
     await editor();
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
@@ -270,7 +393,11 @@ describe("Submit and history", () => {
     expect(within(res).getByText("Accepted")).toBeInTheDocument();
     expect(within(res).getByText(/8 of 8 hidden tests passed/)).toBeInTheDocument();
     expect(within(res).getByText(/now marked solved/)).toBeInTheDocument();
-    expect(mocked.submitCode).toHaveBeenCalledWith({ question_id: "q_fixture_06", language: "python", source: "# python starter\n" });
+    expect(mocked.submitCode).toHaveBeenCalledWith({
+      question_id: "q_fixture_06",
+      language: "python",
+      source: "# python starter\n",
+    });
     expect(await screen.findByText(/python · 8\/8/)).toBeInTheDocument();
   });
 
@@ -281,14 +408,19 @@ describe("Submit and history", () => {
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
     const res = await screen.findByRole("region", { name: "Submission result" });
     expect(within(res).getByText("Wrong answer")).toBeInTheDocument();
-    expect(within(res).getByText(/3 of 8 hidden tests passed \(first failure: test 4\)/)).toBeInTheDocument();
+    expect(
+      within(res).getByText(/3 of 8 hidden tests passed \(first failure: test 4\)/)
+    ).toBeInTheDocument();
     expect(within(res).getByText(/Hidden test data is never shown/)).toBeInTheDocument();
     expect(within(res).queryByText(/marked solved/)).not.toBeInTheDocument();
   });
 
   it("lists history, shows a past submission's code, loads it into the editor, and deletes it", async () => {
     mocked.getCodeSubmissions.mockResolvedValue({ submissions: [sub()] });
-    mocked.getCodeSubmission.mockResolvedValue({ ...sub(), source: "print('old attempt')" });
+    mocked.getCodeSubmission.mockResolvedValue({
+      ...sub(),
+      source: "print('old attempt')",
+    });
     mocked.deleteCodeSubmission.mockResolvedValue(undefined);
     renderWorkspace(user);
     await editor();
@@ -296,11 +428,19 @@ describe("Submit and history", () => {
     fireEvent.click(screen.getByRole("button", { name: "View code" }));
     expect(await screen.findByText("print('old attempt')")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Load into editor" }));
-    await waitFor(() => expect(screen.getByLabelText(/Code editor, Python/)).toHaveValue("print('old attempt')"));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/Code editor, Python/)).toHaveValue(
+        "print('old attempt')"
+      )
+    );
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    await waitFor(() => expect(mocked.deleteCodeSubmission).toHaveBeenCalledWith("sub_1"));
+    await waitFor(() =>
+      expect(mocked.deleteCodeSubmission).toHaveBeenCalledWith("sub_1")
+    );
     expect(await screen.findByText(/No submissions yet/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Load into editor" })).not.toBeInTheDocument(); // the viewer closed with it
+    expect(
+      screen.queryByRole("button", { name: "Load into editor" })
+    ).not.toBeInTheDocument(); // the viewer closed with it
   });
 
   it("shows grading-unavailable errors from the server", async () => {
@@ -318,7 +458,10 @@ describe("drafts", () => {
     const first = renderWorkspace(user);
     const box = await editor();
     fireEvent.change(box, { target: { value: "print('my draft')" } });
-    await waitFor(() => expect(loadDraft("u1", "q_fixture_06", "python")).toBe("print('my draft')"), { timeout: 3000 });
+    await waitFor(
+      () => expect(loadDraft("u1", "q_fixture_06", "python")).toBe("print('my draft')"),
+      { timeout: 3000 }
+    );
     first.unmount();
     renderWorkspace(user);
     expect(await editor()).toHaveValue("print('my draft')");

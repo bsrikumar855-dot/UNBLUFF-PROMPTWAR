@@ -34,27 +34,115 @@ const PROFILE = {
 async function seedAlice(app: ReturnType<typeof testApp>) {
   const ids: Record<string, string> = {};
   const ok = (res: request.Response, what: string) => {
-    expect([200, 201, 204], `${what}: ${res.status} ${JSON.stringify(res.body).slice(0, 200)}`).toContain(res.status);
+    expect(
+      [200, 201, 204],
+      `${what}: ${res.status} ${JSON.stringify(res.body).slice(0, 200)}`,
+    ).toContain(res.status);
     return res;
   };
   // interview session
-  const ext = ok(await request(app).post("/api/claims/extract").set(alice).send({ role_id: "frontend_developer", resume_text: `${sampleResume}\nSide project: ${CANARY}-project built with React.` }), "session");
+  const ext = ok(
+    await request(app)
+      .post("/api/claims/extract")
+      .set(alice)
+      .send({
+        role_id: "frontend_developer",
+        resume_text: `${sampleResume}\nSide project: ${CANARY}-project built with React.`,
+      }),
+    "session",
+  );
   ids.session = ext.body.session_id;
   // DSA progress
-  ok(await request(app).put("/api/me/dsa-progress/q_fixture_03").set(alice).send({ status: "solved", notes: `${CANARY}-note`, bookmarked: true }), "dsa progress");
+  ok(
+    await request(app)
+      .put("/api/me/dsa-progress/q_fixture_03")
+      .set(alice)
+      .send({ status: "solved", notes: `${CANARY}-note`, bookmarked: true }),
+    "dsa progress",
+  );
   // mentor: a conversation and a memory
-  const chat = ok(await request(app).post("/api/mentor/chat").set(alice).send({ mode: "dsa_coach", message: `Please help me with ${CANARY}-question`, client_message_id: "cm_alice_0001" }), "mentor chat");
+  const chat = ok(
+    await request(app)
+      .post("/api/mentor/chat")
+      .set(alice)
+      .send({
+        mode: "dsa_coach",
+        message: `Please help me with ${CANARY}-question`,
+        client_message_id: "cm_alice_0001",
+      }),
+    "mentor chat",
+  );
   ids.conversation = chat.body.conversation.id;
-  const mem = ok(await request(app).post("/api/mentor/memories").set(alice).send({ type: "goal", content: `${CANARY}-goal` }), "mentor memory");
+  const mem = ok(
+    await request(app)
+      .post("/api/mentor/memories")
+      .set(alice)
+      .send({ type: "goal", content: `${CANARY}-goal` }),
+    "mentor memory",
+  );
   ids.memory = mem.body.id ?? mem.body.memory?.id;
   // placement, career, LeetCode, résumé, learn
-  ok(await request(app).put("/api/placement/profile").set(alice).send(PROFILE), "placement profile");
-  ok(await request(app).put("/api/career/preferences").set(alice).send({ categories: ["frontend"], skills: ["react"], countries: ["in"], cities: [`${CANARY}-city`], work_modes: ["remote"], employment_types: ["internship"], must_match_location: false, must_match_work_mode: false, must_match_employment: false }), "career preferences");
-  ok(await request(app).put("/api/leetcode/connection").set(alice).send({ profile: "https://leetcode.com/u/CanaryAlice77/" }), "leetcode connection");
-  ok(await request(app).put("/api/resume").set(alice).send({ latex: `\\documentclass{article}\\begin{document}${CANARY}-resume\\end{document}` }), "resume");
-  ok(await request(app).put("/api/learn/patterns/two-pointers-opposite/progress").set(alice).send({ done: true }), "learn progress");
-  ok(await request(app).post("/api/learn/dbms/joins/quiz").set(alice).send({ answers: [0, 0, 0, 0] }), "dbms quiz");
-  ok(await request(app).put("/api/me/profile").set(alice).send({ display_name: `${CANARY}-name`, college: `${CANARY}-college`, graduation_year: 2026, target_role_id: "frontend_developer" }), "account profile");
+  ok(
+    await request(app).put("/api/placement/profile").set(alice).send(PROFILE),
+    "placement profile",
+  );
+  ok(
+    await request(app)
+      .put("/api/career/preferences")
+      .set(alice)
+      .send({
+        categories: ["frontend"],
+        skills: ["react"],
+        countries: ["in"],
+        cities: [`${CANARY}-city`],
+        work_modes: ["remote"],
+        employment_types: ["internship"],
+        must_match_location: false,
+        must_match_work_mode: false,
+        must_match_employment: false,
+      }),
+    "career preferences",
+  );
+  ok(
+    await request(app)
+      .put("/api/leetcode/connection")
+      .set(alice)
+      .send({ profile: "https://leetcode.com/u/CanaryAlice77/" }),
+    "leetcode connection",
+  );
+  ok(
+    await request(app)
+      .put("/api/resume")
+      .set(alice)
+      .send({ latex: `\\documentclass{article}\\begin{document}${CANARY}-resume\\end{document}` }),
+    "resume",
+  );
+  ok(
+    await request(app)
+      .put("/api/learn/patterns/two-pointers-opposite/progress")
+      .set(alice)
+      .send({ done: true }),
+    "learn progress",
+  );
+  ok(
+    await request(app)
+      .post("/api/learn/dbms/joins/quiz")
+      .set(alice)
+      .send({ answers: [0, 0, 0, 0] }),
+    "dbms quiz",
+  );
+  ok(
+    await request(app)
+      .put("/api/me/profile")
+      .set(alice)
+      .send({
+        display_name: `${CANARY}-name`,
+        college: `${CANARY}-college`,
+        graduation_year: 2026,
+        target_role_id: "frontend_developer",
+      }),
+    "account profile",
+  );
   return ids;
 }
 
@@ -88,7 +176,9 @@ describe("tenant isolation", () => {
     const app = testApp({ autoAuth: false });
     await seedAlice(app);
     // sanity: Alice does see her own canary somewhere, so the check below is meaningful
-    const aliceSees = await Promise.all(READ_ROUTES.map(async (p) => JSON.stringify((await request(app).get(p).set(alice)).body)));
+    const aliceSees = await Promise.all(
+      READ_ROUTES.map(async (p) => JSON.stringify((await request(app).get(p).set(alice)).body)),
+    );
     expect(aliceSees.filter((b) => b.includes(CANARY)).length).toBeGreaterThanOrEqual(6);
     for (const path of READ_ROUTES) {
       const res = await request(app).get(path).set(bob);
@@ -108,12 +198,38 @@ describe("tenant isolation", () => {
       ["report", request(app).get(`/api/report/${ids.session}`).set(bob)],
       ["resume session", request(app).get(`/api/sessions/${ids.session}`).set(bob)],
       ["delete session", request(app).delete(`/api/sessions/${ids.session}`).set(bob)],
-      ["get conversation", request(app).get(`/api/mentor/conversations/${ids.conversation}`).set(bob)],
-      ["summarise conversation", request(app).post(`/api/mentor/conversations/${ids.conversation}/summary`).set(bob).send({})],
-      ["delete conversation", request(app).delete(`/api/mentor/conversations/${ids.conversation}`).set(bob)],
-      ["patch memory", request(app).patch(`/api/mentor/memories/${ids.memory}`).set(bob).send({ content: "hijacked" })],
+      [
+        "get conversation",
+        request(app).get(`/api/mentor/conversations/${ids.conversation}`).set(bob),
+      ],
+      [
+        "summarise conversation",
+        request(app)
+          .post(`/api/mentor/conversations/${ids.conversation}/summary`)
+          .set(bob)
+          .send({}),
+      ],
+      [
+        "delete conversation",
+        request(app).delete(`/api/mentor/conversations/${ids.conversation}`).set(bob),
+      ],
+      [
+        "patch memory",
+        request(app)
+          .patch(`/api/mentor/memories/${ids.memory}`)
+          .set(bob)
+          .send({ content: "hijacked" }),
+      ],
       ["delete memory", request(app).delete(`/api/mentor/memories/${ids.memory}`).set(bob)],
-      ["continue conversation", request(app).post("/api/mentor/chat").set(bob).send({ conversation_id: ids.conversation, mode: "dsa_coach", message: "hello", client_message_id: "cm_bob_0001" })],
+      [
+        "continue conversation",
+        request(app).post("/api/mentor/chat").set(bob).send({
+          conversation_id: ids.conversation,
+          mode: "dsa_coach",
+          message: "hello",
+          client_message_id: "cm_bob_0001",
+        }),
+      ],
     ];
     for (const [what, req] of attempts) {
       const res = await req;
@@ -121,12 +237,21 @@ describe("tenant isolation", () => {
       expect(JSON.stringify(res.body), what).not.toContain(CANARY);
     }
     // Alice's data is intact
-    expect((await request(app).get(`/api/mentor/conversations/${ids.conversation}`).set(alice).expect(200)).body.messages.length).toBeGreaterThan(0);
+    expect(
+      (
+        await request(app)
+          .get(`/api/mentor/conversations/${ids.conversation}`)
+          .set(alice)
+          .expect(200)
+      ).body.messages.length,
+    ).toBeGreaterThan(0);
     const memories = (await request(app).get("/api/mentor/memories").set(alice).expect(200)).body;
     expect(JSON.stringify(memories)).toContain(`${CANARY}-goal`);
     expect(JSON.stringify(memories)).not.toContain("hijacked");
     expect((await request(app).get(`/api/report/${ids.session}`).set(alice)).status).toBe(200);
-    expect(JSON.stringify((await request(app).get("/api/me/dsa-progress").set(alice)).body)).toContain(`${CANARY}-note`);
+    expect(
+      JSON.stringify((await request(app).get("/api/me/dsa-progress").set(alice)).body),
+    ).toContain(`${CANARY}-note`);
   });
 
   it("Bob's own deletes and resets never touch Alice's data", async () => {
@@ -142,12 +267,28 @@ describe("tenant isolation", () => {
       ["delete", "/api/github/connection"],
       ["delete", "/api/me"],
     ] as const) {
-      const res = await request(app)[method](path).set(bob).send(path === "/api/me" ? { confirm: "DELETE MY DATA" } : {});
+      const agent = request(app);
+      const res = await agent[method](path)
+        .set(bob)
+        .send(path === "/api/me" ? { confirm: "DELETE MY DATA" } : {});
       expect(res.status, `${method} ${path}`).toBeLessThan(500);
     }
-    const after = await Promise.all(READ_ROUTES.map(async (p) => JSON.stringify((await request(app).get(p).set(alice)).body)));
-    for (const canary of [`${CANARY}-note`, `${CANARY}-topic`, `${CANARY}-city`, `${CANARY}-resume`, `${CANARY}-goal`, `${CANARY}-college`, "CanaryAlice77"]) {
-      expect(after.some((b) => b.includes(canary)), canary).toBe(true);
+    const after = await Promise.all(
+      READ_ROUTES.map(async (p) => JSON.stringify((await request(app).get(p).set(alice)).body)),
+    );
+    for (const canary of [
+      `${CANARY}-note`,
+      `${CANARY}-topic`,
+      `${CANARY}-city`,
+      `${CANARY}-resume`,
+      `${CANARY}-goal`,
+      `${CANARY}-college`,
+      "CanaryAlice77",
+    ]) {
+      expect(
+        after.some((b) => b.includes(canary)),
+        canary,
+      ).toBe(true);
     }
   });
 
@@ -161,26 +302,52 @@ describe("tenant isolation", () => {
       expect(JSON.stringify(res.body), path).not.toContain(CANARY);
     }
     // a body that names another owner is rejected outright, and a normal write always lands on the token's own student
-    const named = await request(app).put("/api/me/dsa-progress/q_fixture_05").set(bob).send({ status: "attempted", notes: "bob-named", owner_uid: "alice" });
+    const named = await request(app)
+      .put("/api/me/dsa-progress/q_fixture_05")
+      .set(bob)
+      .send({ status: "attempted", notes: "bob-named", owner_uid: "alice" });
     expect(named.status).toBe(400);
-    await request(app).put("/api/me/dsa-progress/q_fixture_05").set(bob).send({ status: "attempted", notes: "bob-note" }).expect(200);
-    expect(JSON.stringify((await request(app).get("/api/me/dsa-progress").set(alice)).body)).not.toContain("bob-");
-    expect(JSON.stringify((await request(app).get("/api/me/dsa-progress").set(bob)).body)).toContain("bob-note");
+    await request(app)
+      .put("/api/me/dsa-progress/q_fixture_05")
+      .set(bob)
+      .send({ status: "attempted", notes: "bob-note" })
+      .expect(200);
+    expect(
+      JSON.stringify((await request(app).get("/api/me/dsa-progress").set(alice)).body),
+    ).not.toContain("bob-");
+    expect(
+      JSON.stringify((await request(app).get("/api/me/dsa-progress").set(bob)).body),
+    ).toContain("bob-note");
   });
 
   it("every private route refuses a missing, malformed or forged token", async () => {
     const app = testApp({ autoAuth: false });
     for (const path of READ_ROUTES) {
       expect((await request(app).get(path)).status, `${path} without a token`).toBe(401);
-      expect((await request(app).get(path).set({ Authorization: "Bearer not-a-real-token" })).status, `${path} forged`).toBe(401);
-      expect((await request(app).get(path).set({ Authorization: "Basic YWxpY2U6eA==" })).status, `${path} wrong scheme`).toBe(401);
+      expect(
+        (await request(app).get(path).set({ Authorization: "Bearer not-a-real-token" })).status,
+        `${path} forged`,
+      ).toBe(401);
+      expect(
+        (await request(app).get(path).set({ Authorization: "Basic YWxpY2U6eA==" })).status,
+        `${path} wrong scheme`,
+      ).toBe(401);
     }
   });
 
   it("public routes carry no student data", async () => {
     const app = testApp({ autoAuth: false });
     await seedAlice(app);
-    for (const path of ["/api/health", "/api/roles", "/api/learn/patterns", "/api/learn/dbms", "/api/companies?page=1&page_size=5", "/api/questions?page=1&page_size=5", "/api/code/languages", "/api/demo/report"]) {
+    for (const path of [
+      "/api/health",
+      "/api/roles",
+      "/api/learn/patterns",
+      "/api/learn/dbms",
+      "/api/companies?page=1&page_size=5",
+      "/api/questions?page=1&page_size=5",
+      "/api/code/languages",
+      "/api/demo/report",
+    ]) {
       const res = await request(app).get(path);
       expect(res.status, path).toBe(200);
       expect(JSON.stringify(res.body), path).not.toContain(CANARY);
@@ -201,17 +368,37 @@ describe("tenant isolation", () => {
       logger: silentLogger,
     });
     const app = testApp({ autoAuth: false, code, catalogue, progressStore });
-    const sub = await request(app).post("/api/code/submit").set(alice).send({ question_id: "q_fixture_06", language: "python", source: `# ${CANARY}-source\nprint("YES")` });
+    const sub = await request(app)
+      .post("/api/code/submit")
+      .set(alice)
+      .send({
+        question_id: "q_fixture_06",
+        language: "python",
+        source: `# ${CANARY}-source\nprint("YES")`,
+      });
     expect(sub.status, JSON.stringify(sub.body).slice(0, 200)).toBeLessThan(300);
     const id = sub.body.submission_id ?? sub.body.id ?? sub.body.submission?.id;
     expect(id).toBeTruthy();
-    expect(JSON.stringify((await request(app).get(`/api/code/submissions/${id}`).set(alice).expect(200)).body)).toContain(CANARY);
-    expect(JSON.stringify((await request(app).get("/api/code/submissions").set(bob).expect(200)).body)).not.toContain(CANARY);
-    expect([403, 404]).toContain((await request(app).get(`/api/code/submissions/${id}`).set(bob)).status);
-    expect([403, 404]).toContain((await request(app).delete(`/api/code/submissions/${id}`).set(bob)).status);
+    expect(
+      JSON.stringify(
+        (await request(app).get(`/api/code/submissions/${id}`).set(alice).expect(200)).body,
+      ),
+    ).toContain(CANARY);
+    expect(
+      JSON.stringify((await request(app).get("/api/code/submissions").set(bob).expect(200)).body),
+    ).not.toContain(CANARY);
+    expect([403, 404]).toContain(
+      (await request(app).get(`/api/code/submissions/${id}`).set(bob)).status,
+    );
+    expect([403, 404]).toContain(
+      (await request(app).delete(`/api/code/submissions/${id}`).set(bob)).status,
+    );
     expect((await request(app).get(`/api/code/submissions/${id}`).set(alice)).status).toBe(200);
     // the hidden tests are never sent to anyone
-    const exercise = await request(app).get("/api/code/exercises/q_fixture_06").set(bob).expect(200);
+    const exercise = await request(app)
+      .get("/api/code/exercises/q_fixture_06")
+      .set(bob)
+      .expect(200);
     expect(exercise.body.tests).toBeUndefined();
     const suite = fixtureSuites().suite("q_fixture_06");
     const shown = JSON.stringify(exercise.body);

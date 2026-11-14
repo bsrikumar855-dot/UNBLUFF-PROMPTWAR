@@ -101,7 +101,10 @@ export class FirestoreLeetCodeStore implements LeetCodeStore {
 
   constructor(
     private readonly db: Firestore = new Firestore({ ignoreUndefinedProperties: true }),
-    names = { connections: "unbluff_leetcode_connections", snapshots: "unbluff_leetcode_snapshots" },
+    names = {
+      connections: "unbluff_leetcode_connections",
+      snapshots: "unbluff_leetcode_snapshots",
+    },
   ) {
     this.connections = db.collection(names.connections);
     this.snapshots = db.collection(names.snapshots);

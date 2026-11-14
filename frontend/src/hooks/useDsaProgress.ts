@@ -28,23 +28,32 @@ export function useDsaProgress() {
     else setRecords(null);
   }, [signedIn, load]);
 
-  const byQuestion = useMemo(() => new Map((records ?? []).map((r) => [r.question_id, r])), [records]);
+  const byQuestion = useMemo(
+    () => new Map((records ?? []).map((r) => [r.question_id, r])),
+    [records]
+  );
 
   /** Saves a change and replaces the local copy with the server's record (the server is the source of truth). */
-  const update = useCallback(async (questionId: string, patch: DsaProgressUpdate): Promise<boolean> => {
-    setSaving(true);
-    setError(null);
-    try {
-      const saved = await api.putDsaProgress(questionId, patch);
-      setRecords((prev) => [saved, ...(prev ?? []).filter((r) => r.question_id !== questionId)]);
-      return true;
-    } catch (e) {
-      setError(e);
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+  const update = useCallback(
+    async (questionId: string, patch: DsaProgressUpdate): Promise<boolean> => {
+      setSaving(true);
+      setError(null);
+      try {
+        const saved = await api.putDsaProgress(questionId, patch);
+        setRecords((prev) => [
+          saved,
+          ...(prev ?? []).filter((r) => r.question_id !== questionId),
+        ]);
+        return true;
+      } catch (e) {
+        setError(e);
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    []
+  );
 
   const remove = useCallback(async (questionId: string): Promise<boolean> => {
     setSaving(true);
@@ -61,5 +70,15 @@ export function useDsaProgress() {
     }
   }, []);
 
-  return { signedIn, authLoading: status === "loading", records, byQuestion, error, saving, update, remove, reload: load };
+  return {
+    signedIn,
+    authLoading: status === "loading",
+    records,
+    byQuestion,
+    error,
+    saving,
+    update,
+    remove,
+    reload: load,
+  };
 }

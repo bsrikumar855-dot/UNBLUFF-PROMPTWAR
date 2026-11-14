@@ -41,7 +41,14 @@ import {
 } from "./freehire.js";
 import { compareMatches, DEFAULT_COUNTRIES, matchJob, type CareerSignals } from "./match.js";
 import { descriptionText, normalizeJob } from "./normalize.js";
-import { MAX_RESUME_CHARS, MAX_RESUME_SKILLS, SKILL_VOCABULARY, extractResumeSkills, isKnownSkill, skillLabel } from "./resumeSkills.js";
+import {
+  MAX_RESUME_CHARS,
+  MAX_RESUME_SKILLS,
+  SKILL_VOCABULARY,
+  extractResumeSkills,
+  isKnownSkill,
+  skillLabel,
+} from "./resumeSkills.js";
 import { deriveSignals, type DerivedProfile } from "./signals.js";
 import { SAFE_SLUG, type CareerStore, type TrackedRecord } from "./store.js";
 
@@ -54,7 +61,10 @@ import { SAFE_SLUG, type CareerStore, type TrackedRecord } from "./store.js";
 export const SOURCE: CareerSourceInfo = { name: "Freehire", url: FREEHIRE_SITE, api: FREEHIRE_API };
 
 /** Statuses a student can move to from each state. `null` is "no status yet". Backward moves exist to correct mistakes. */
-export const STATUS_TRANSITIONS: Record<CareerApplicationStatus | "none", CareerApplicationStatus[]> = {
+export const STATUS_TRANSITIONS: Record<
+  CareerApplicationStatus | "none",
+  CareerApplicationStatus[]
+> = {
   none: ["saved", "interested", "applied"],
   saved: ["interested", "applied", "withdrawn"],
   interested: ["saved", "applied", "withdrawn"],
@@ -112,9 +122,33 @@ export interface CareerDeps {
 }
 
 export const PreferencesSchema = z.strictObject({
-  categories: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9_]{1,40}$/, "invalid category")).max(6),
-  skills: z.array(z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9_.+#-]{0,63}$/, "invalid skill")).max(20),
-  countries: z.array(z.string().trim().toLowerCase().regex(/^[a-z]{2}$/, "use two-letter country codes like in or us")).max(8),
+  categories: z
+    .array(
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .regex(/^[a-z0-9_]{1,40}$/, "invalid category"),
+    )
+    .max(6),
+  skills: z
+    .array(
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .regex(/^[a-z0-9][a-z0-9_.+#-]{0,63}$/, "invalid skill"),
+    )
+    .max(20),
+  countries: z
+    .array(
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .regex(/^[a-z]{2}$/, "use two-letter country codes like in or us"),
+    )
+    .max(8),
   cities: z.array(z.string().trim().min(1).max(60)).max(8),
   work_modes: z.array(z.enum(WORK_MODES)).max(3),
   employment_types: z.array(z.enum(EMPLOYMENT_TYPES)).max(5),
@@ -123,9 +157,10 @@ export const PreferencesSchema = z.strictObject({
   must_match_employment: z.boolean(),
 });
 
-const dedupe = <T,>(l: T[]): T[] => [...new Set(l)];
-// eslint-disable-next-line no-control-regex -- strips control characters from student-typed notes
-const stripControl = (s: string) => s.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "");
+const dedupe = <T>(l: T[]): T[] => [...new Set(l)];
+const stripControl = (s: string) =>
+  // eslint-disable-next-line no-control-regex -- strips control characters from student-typed notes
+  s.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "");
 
 export class CareerService {
   private readonly cache = new Map<string, { at: number; value: unknown }>();
@@ -154,10 +189,23 @@ export class CareerService {
   private upstream(err: unknown): never {
     if (err instanceof FreehireError) {
       this.deps.logger.warn({ kind: err.kind }, "career: upstream request failed");
-      if (err.kind === "rate_limited") throw new ApiError("CAREER_RATE_LIMITED", err.retryAfterSeconds ? `The job source is limiting requests. Try again in about ${err.retryAfterSeconds} seconds.` : "The job source is limiting requests. Try again shortly.");
-      if (err.kind === "not_found") throw new ApiError("CAREER_JOB_NOT_FOUND", "That listing could not be found. It may have been removed.");
+      if (err.kind === "rate_limited")
+        throw new ApiError(
+          "CAREER_RATE_LIMITED",
+          err.retryAfterSeconds
+            ? `The job source is limiting requests. Try again in about ${err.retryAfterSeconds} seconds.`
+            : "The job source is limiting requests. Try again shortly.",
+        );
+      if (err.kind === "not_found")
+        throw new ApiError(
+          "CAREER_JOB_NOT_FOUND",
+          "That listing could not be found. It may have been removed.",
+        );
       if (err.kind === "rejected") throw new ApiError("BAD_REQUEST", err.message);
-      throw new ApiError("CAREER_UNAVAILABLE", "The job source could not be reached or answered unexpectedly. Nothing was changed; try again in a moment.");
+      throw new ApiError(
+        "CAREER_UNAVAILABLE",
+        "The job source could not be reached or answered unexpectedly. Nothing was changed; try again in a moment.",
+      );
     }
     throw err;
   }
@@ -174,13 +222,39 @@ export class CareerService {
 
   // ---------------- the student's profile ----------------
 
-  private async derive(uid: string): Promise<{ derived: DerivedProfile; prefs: CareerPreferences | null; roleNames: string[]; placementDate: string | null; resumeSavedAt: string | null }> {
-    const [prefsRec, profileRes, resumeRec] = await Promise.all([this.deps.store.getPrefs(uid), this.deps.placement.getProfile(uid).catch(() => null), this.deps.store.getResume(uid)]);
-    const skills = await this.deps.placement.dashboard(uid).then((d) => d.skills.skills).catch(() => null);
+  private async derive(uid: string): Promise<{
+    derived: DerivedProfile;
+    prefs: CareerPreferences | null;
+    roleNames: string[];
+    placementDate: string | null;
+    resumeSavedAt: string | null;
+  }> {
+    const [prefsRec, profileRes, resumeRec] = await Promise.all([
+      this.deps.store.getPrefs(uid),
+      this.deps.placement.getProfile(uid).catch(() => null),
+      this.deps.store.getResume(uid),
+    ]);
+    const skills = await this.deps.placement
+      .dashboard(uid)
+      .then((d) => d.skills.skills)
+      .catch(() => null);
     const prefs = prefsRec?.preferences ?? null;
-    const derived = deriveSignals({ profile: profileRes?.profile ?? null, skills, prefs, resumeSkills: (resumeRec?.skills ?? []).map((s) => s.slug) });
-    const roleNames = (profileRes?.profile?.role_ids ?? []).map((id) => profileRes?.roles.find((r) => r.id === id)?.name ?? id);
-    return { derived, prefs, roleNames, placementDate: profileRes?.profile?.placement_date ?? null, resumeSavedAt: resumeRec?.saved_at ?? null };
+    const derived = deriveSignals({
+      profile: profileRes?.profile ?? null,
+      skills,
+      prefs,
+      resumeSkills: (resumeRec?.skills ?? []).map((s) => s.slug),
+    });
+    const roleNames = (profileRes?.profile?.role_ids ?? []).map(
+      (id) => profileRes?.roles.find((r) => r.id === id)?.name ?? id,
+    );
+    return {
+      derived,
+      prefs,
+      roleNames,
+      placementDate: profileRes?.profile?.placement_date ?? null,
+      resumeSavedAt: resumeRec?.saved_at ?? null,
+    };
   }
 
   async preferences(uid: string): Promise<CareerPreferencesResponse> {
@@ -206,7 +280,11 @@ export class CareerService {
 
   async putPreferences(uid: string, raw: unknown): Promise<CareerPreferencesResponse> {
     const r = PreferencesSchema.safeParse(raw);
-    if (!r.success) throw new ApiError("BAD_REQUEST", r.error.issues.map((i) => `${i.path.join(".") || "preferences"}: ${i.message}`).join("; "));
+    if (!r.success)
+      throw new ApiError(
+        "BAD_REQUEST",
+        r.error.issues.map((i) => `${i.path.join(".") || "preferences"}: ${i.message}`).join("; "),
+      );
     const p = r.data;
     const preferences: CareerPreferences = {
       ...p,
@@ -219,7 +297,12 @@ export class CareerService {
     };
     const now = this.now().toISOString();
     const prev = await this.deps.store.getPrefs(uid);
-    await this.deps.store.savePrefs({ owner_uid: uid, preferences, created_at: prev?.created_at ?? now, updated_at: now });
+    await this.deps.store.savePrefs({
+      owner_uid: uid,
+      preferences,
+      created_at: prev?.created_at ?? now,
+      updated_at: now,
+    });
     return this.preferences(uid);
   }
 
@@ -231,9 +314,21 @@ export class CareerService {
    */
   extractFromResume(text: string): ResumeSkillsExtractResponse {
     const t = text.trim();
-    if (t.length === 0) throw new ApiError("BAD_REQUEST", "There is no resume text to read. Upload a PDF or paste your resume.");
-    if (t.length > MAX_RESUME_CHARS) throw new ApiError("BAD_REQUEST", `The resume text is too long (at most ${MAX_RESUME_CHARS.toLocaleString("en-US")} characters).`);
-    return { skills: extractResumeSkills(t), text_chars: t.length, vocabulary_size: SKILL_VOCABULARY.length };
+    if (t.length === 0)
+      throw new ApiError(
+        "BAD_REQUEST",
+        "There is no resume text to read. Upload a PDF or paste your resume.",
+      );
+    if (t.length > MAX_RESUME_CHARS)
+      throw new ApiError(
+        "BAD_REQUEST",
+        `The resume text is too long (at most ${MAX_RESUME_CHARS.toLocaleString("en-US")} characters).`,
+      );
+    return {
+      skills: extractResumeSkills(t),
+      text_chars: t.length,
+      vocabulary_size: SKILL_VOCABULARY.length,
+    };
   }
 
   async resumeSkills(uid: string): Promise<ResumeSkillsResponse> {
@@ -245,8 +340,10 @@ export class CareerService {
   async saveResumeSkills(uid: string, slugs: string[]): Promise<ResumeSkillsResponse> {
     const unique = [...new Set(slugs)];
     const unknown = unique.filter((s) => !isKnownSkill(s));
-    if (unknown.length > 0) throw new ApiError("BAD_REQUEST", `Unknown skill: ${unknown.slice(0, 3).join(", ")}.`);
-    if (unique.length > MAX_RESUME_SKILLS) throw new ApiError("BAD_REQUEST", `At most ${MAX_RESUME_SKILLS} skills can be saved.`);
+    if (unknown.length > 0)
+      throw new ApiError("BAD_REQUEST", `Unknown skill: ${unknown.slice(0, 3).join(", ")}.`);
+    if (unique.length > MAX_RESUME_SKILLS)
+      throw new ApiError("BAD_REQUEST", `At most ${MAX_RESUME_SKILLS} skills can be saved.`);
     if (unique.length === 0) {
       await this.deps.store.deleteResume(uid);
       return { skills: [], saved_at: null };
@@ -264,7 +361,11 @@ export class CareerService {
   // ---------------- feeds ----------------
 
   /** The documented upstream query for a tab, from the student's own filters. */
-  private queryFor(tab: CareerTab, p: FeedParams, base: Partial<FreehireQuery> = {}): FreehireQuery {
+  private queryFor(
+    tab: CareerTab,
+    p: FeedParams,
+    base: Partial<FreehireQuery> = {},
+  ): FreehireQuery {
     const q: FreehireQuery = { ...base };
     const text = p.q?.trim();
     if (text) {
@@ -288,9 +389,15 @@ export class CareerService {
       q.employment_type = ["internship"]; // employment type is the semantic; seniority is NOT required to be "intern"
       if (p.seniority?.length) q.seniority = p.seniority;
     } else if (tab === "jobs") {
-      q.employment_type = p.employment_type?.length ? p.employment_type.filter((e) => e !== "internship") : ["full_time"];
+      q.employment_type = p.employment_type?.length
+        ? p.employment_type.filter((e) => e !== "internship")
+        : ["full_time"];
       if (q.employment_type.length === 0) q.employment_type = ["full_time"];
-      q.seniority = p.seniority?.length ? p.seniority : p.broaden ? ["intern", "junior", "middle"] : ["intern", "junior"];
+      q.seniority = p.seniority?.length
+        ? p.seniority
+        : p.broaden
+          ? ["intern", "junior", "middle"]
+          : ["intern", "junior"];
     } else {
       if (p.employment_type?.length) q.employment_type = p.employment_type;
       if (p.seniority?.length) q.seniority = p.seniority;
@@ -298,7 +405,11 @@ export class CareerService {
     return q;
   }
 
-  private card(job: CareerJob, signals: CareerSignals, tracked: Map<string, TrackedRecord>): CareerJobCard {
+  private card(
+    job: CareerJob,
+    signals: CareerSignals,
+    tracked: Map<string, TrackedRecord>,
+  ): CareerJobCard {
     const rec = tracked.get(job.slug);
     return { job, match: matchJob(job, signals), tracker: rec ? this.toTracker(rec) : null };
   }
@@ -311,15 +422,20 @@ export class CareerService {
   async feed(uid: string, tab: CareerTab, params: FeedParams): Promise<CareerFeedResponse> {
     const limit = Math.min(Math.max(params.limit ?? FEED_DEFAULT_LIMIT, 1), FEED_MAX_LIMIT);
     const offset = Math.max(params.offset ?? 0, 0);
-    const [{ derived, prefs }, tracked] = await Promise.all([this.derive(uid), this.trackedMap(uid)]);
+    const [{ derived, prefs }, tracked] = await Promise.all([
+      this.derive(uid),
+      this.trackedMap(uid),
+    ]);
     const signals = derived.signals;
     const personalization = this.personalization(derived, prefs);
 
-    if (tab === "for_you") return this.forYou(params, limit, offset, signals, personalization, tracked, prefs);
+    if (tab === "for_you")
+      return this.forYou(params, limit, offset, signals, personalization, tracked, prefs);
 
     // Internships and Jobs rank by default; Explore passes Freehire's own order through unless the student asks to rank.
     const ranked = tab === "explore" ? params.sort === "best_match" : params.sort !== "newest";
-    if (ranked) return this.rankedFeed(tab, params, limit, offset, signals, personalization, tracked);
+    if (ranked)
+      return this.rankedFeed(tab, params, limit, offset, signals, personalization, tracked);
 
     const query = this.queryFor(tab, params, { limit, offset });
     const res = await this.search(query);
@@ -330,7 +446,10 @@ export class CareerService {
       total: res.meta.total,
       limit,
       offset,
-      has_more: res.meta.total !== null ? offset + res.jobs.length < Math.min(res.meta.total, MAX_DEPTH) : res.jobs.length === limit && offset + limit < MAX_DEPTH,
+      has_more:
+        res.meta.total !== null
+          ? offset + res.jobs.length < Math.min(res.meta.total, MAX_DEPTH)
+          : res.jobs.length === limit && offset + limit < MAX_DEPTH,
       ranked_window: null,
       filters: describeFilters(query),
       relaxed: [],
@@ -342,12 +461,24 @@ export class CareerService {
   }
 
   /** One Freehire request for the most recent candidates, scored and ordered here, then paged over locally. */
-  private async rankedFeed(tab: CareerTab, p: FeedParams, limit: number, offset: number, signals: CareerSignals, personalization: CareerFeedResponse["personalization"], tracked: Map<string, TrackedRecord>): Promise<CareerFeedResponse> {
+  private async rankedFeed(
+    tab: CareerTab,
+    p: FeedParams,
+    limit: number,
+    offset: number,
+    signals: CareerSignals,
+    personalization: CareerFeedResponse["personalization"],
+    tracked: Map<string, TrackedRecord>,
+  ): Promise<CareerFeedResponse> {
     const query = this.queryFor(tab, p, { limit: RANK_WINDOW, offset: 0 });
     const res = await this.search(query);
     const cards = res.jobs.map((raw) => this.card(normalizeJob(raw), signals, tracked));
     // A posting known to break a must-have goes after everything else rather than disappearing: this is a browsing tab.
-    cards.sort((a, b) => (a.match.hard_mismatches.length > 0 ? 1 : 0) - (b.match.hard_mismatches.length > 0 ? 1 : 0) || compareMatches(a, b));
+    cards.sort(
+      (a, b) =>
+        (a.match.hard_mismatches.length > 0 ? 1 : 0) -
+          (b.match.hard_mismatches.length > 0 ? 1 : 0) || compareMatches(a, b),
+    );
     return {
       tab,
       jobs: cards.slice(offset, offset + limit),
@@ -365,18 +496,41 @@ export class CareerService {
     };
   }
 
-  private personalization(d: DerivedProfile, prefs: CareerPreferences | null): CareerFeedResponse["personalization"] {
+  private personalization(
+    d: DerivedProfile,
+    prefs: CareerPreferences | null,
+  ): CareerFeedResponse["personalization"] {
     const s = d.signals;
     const hasCategory = s.categories.primary.length > 0;
     const hasSkills = s.skills.verified.size + s.skills.self.size > 0;
-    const level = hasCategory && hasSkills && s.experience ? "full" : !hasCategory && !hasSkills && !prefs ? "none" : "limited";
+    const level =
+      hasCategory && hasSkills && s.experience
+        ? "full"
+        : !hasCategory && !hasSkills && !prefs
+          ? "none"
+          : "limited";
     return { level, notes: d.notes };
   }
 
-  private async forYou(p: FeedParams, limit: number, offset: number, signals: CareerSignals, personalization: CareerFeedResponse["personalization"], tracked: Map<string, TrackedRecord>, prefs: CareerPreferences | null): Promise<CareerFeedResponse> {
-    const wanted = prefs?.employment_types.length ? prefs.employment_types : (["internship", "full_time"] as CareerEmployment[]);
+  private async forYou(
+    p: FeedParams,
+    limit: number,
+    offset: number,
+    signals: CareerSignals,
+    personalization: CareerFeedResponse["personalization"],
+    tracked: Map<string, TrackedRecord>,
+    prefs: CareerPreferences | null,
+  ): Promise<CareerFeedResponse> {
+    const wanted = prefs?.employment_types.length
+      ? prefs.employment_types
+      : (["internship", "full_time"] as CareerEmployment[]);
     const level = signals.experience ?? "beginner";
-    const band: CareerSeniority[] = level === "beginner" ? ["intern", "junior"] : level === "intermediate" ? ["intern", "junior", "middle"] : ["junior", "middle", "senior"];
+    const band: CareerSeniority[] =
+      level === "beginner"
+        ? ["intern", "junior"]
+        : level === "intermediate"
+          ? ["intern", "junior", "middle"]
+          : ["junior", "middle", "senior"];
     const categories = dedupe([...signals.categories.primary, ...signals.categories.related]);
 
     const base: Partial<FreehireQuery> = { limit: FOR_YOU_WINDOW, offset: 0 };
@@ -391,13 +545,23 @@ export class CareerService {
     // Internships are selected by employment type alone: upstream's seniority label is not reliable for them.
     if (wanted.includes("internship")) groups.push({ employment_type: ["internship"] });
     const others = wanted.filter((e) => e !== "internship");
-    if (others.length) groups.push({ employment_type: others, seniority: p.seniority?.length ? p.seniority : band });
+    if (others.length)
+      groups.push({ employment_type: others, seniority: p.seniority?.length ? p.seniority : band });
 
     const relaxed: string[] = [];
     const run = async (useCategories: boolean) => {
       const results: { query: FreehireQuery; res: FreehireSearchResult }[] = [];
       for (const g of groups) {
-        const query = this.queryFor("for_you", { ...p, category: useCategories && categories.length ? categories : undefined, employment_type: undefined, seniority: undefined }, { ...base, ...g });
+        const query = this.queryFor(
+          "for_you",
+          {
+            ...p,
+            category: useCategories && categories.length ? categories : undefined,
+            employment_type: undefined,
+            seniority: undefined,
+          },
+          { ...base, ...g },
+        );
         results.push({ query, res: await this.search(query) });
       }
       return results;
@@ -422,7 +586,9 @@ export class CareerService {
     eligible.sort((a, b) => compareMatches(a, b));
     const page = eligible.slice(offset, offset + limit);
     const totals = results.map((r) => r.res.meta.total);
-    const total = totals.every((t) => t !== null) ? (totals as number[]).reduce((a, b) => a + b, 0) : null;
+    const total = totals.every((t) => t !== null)
+      ? (totals as number[]).reduce((a, b) => a + b, 0)
+      : null;
     const ignored = results.flatMap((r) => r.res.meta.ignored_params);
     return {
       tab: "for_you",
@@ -442,14 +608,29 @@ export class CareerService {
   }
 
   async facets(params: FeedParams): Promise<CareerFacetsResponse> {
-    const query = this.queryFor("explore", { ...params, include_stale: params.include_stale ?? true }, {});
+    const query = this.queryFor(
+      "explore",
+      { ...params, include_stale: params.include_stale ?? true },
+      {},
+    );
     delete query.limit;
     delete query.offset;
     try {
-      const names = ["category", "seniority", "employment_type", "work_mode", "reality", "skills", "countries"] as const satisfies readonly (typeof FACET_NAMES)[number][];
-      const res = await this.cached(`f:${JSON.stringify(query)}`, FACET_TTL_MS, () => this.deps.freehire.facets(query, names));
+      const names = [
+        "category",
+        "seniority",
+        "employment_type",
+        "work_mode",
+        "reality",
+        "skills",
+        "countries",
+      ] as const satisfies readonly (typeof FACET_NAMES)[number][];
+      const res = await this.cached(`f:${JSON.stringify(query)}`, FACET_TTL_MS, () =>
+        this.deps.freehire.facets(query, names),
+      );
       const facets: CareerFacetsResponse["facets"] = {};
-      for (const [k, v] of Object.entries(res.facets)) facets[k] = k === "skills" || k === "countries" ? v.slice(0, 60) : v.slice(0, 60);
+      for (const [k, v] of Object.entries(res.facets))
+        facets[k] = k === "skills" || k === "countries" ? v.slice(0, 60) : v.slice(0, 60);
       return { total: res.total, facets, source: SOURCE, fetched_at: this.now().toISOString() };
     } catch (e) {
       return this.upstream(e);
@@ -466,7 +647,11 @@ export class CareerService {
       raw = (await this.deps.freehire.getJob(slug)).job;
     } catch (e) {
       if (e instanceof FreehireError && e.kind === "not_found" && existing) {
-        await this.deps.store.saveTracked({ ...existing, posting_state: "possibly_unavailable", updated_at: this.now().toISOString() });
+        await this.deps.store.saveTracked({
+          ...existing,
+          posting_state: "possibly_unavailable",
+          updated_at: this.now().toISOString(),
+        });
       }
       return this.upstream(e);
     }
@@ -474,26 +659,63 @@ export class CareerService {
     let tracker: CareerTracker | null = null;
     if (existing) {
       const state = job.closed_at ? "possibly_unavailable" : "unknown";
-      const next = state !== existing.posting_state ? { ...existing, posting_state: state as TrackedRecord["posting_state"], updated_at: this.now().toISOString() } : existing;
+      const next =
+        state !== existing.posting_state
+          ? {
+              ...existing,
+              posting_state: state as TrackedRecord["posting_state"],
+              updated_at: this.now().toISOString(),
+            }
+          : existing;
       if (next !== existing) await this.deps.store.saveTracked(next);
       tracker = this.toTracker(next);
     }
     const { derived } = await this.derive(uid);
-    return { job, description: descriptionText(raw), match: matchJob(job, derived.signals), tracker, source: SOURCE };
+    return {
+      job,
+      description: descriptionText(raw),
+      match: matchJob(job, derived.signals),
+      tracker,
+      source: SOURCE,
+    };
   }
 
   // ---------------- tracker ----------------
 
   private toTracker(r: TrackedRecord): CareerTracker {
-    return { saved: r.saved, status: r.status, applied_on: r.applied_on, follow_up_on: r.follow_up_on, notes: r.notes, posting_state: r.posting_state, updated_at: r.updated_at };
+    return {
+      saved: r.saved,
+      status: r.status,
+      applied_on: r.applied_on,
+      follow_up_on: r.follow_up_on,
+      notes: r.notes,
+      posting_state: r.posting_state,
+      updated_at: r.updated_at,
+    };
   }
   private toItem(r: TrackedRecord): CareerTrackedItem {
-    return { slug: r.slug, title: r.title, company: r.company, apply_url: r.apply_url, freehire_url: `${FREEHIRE_SITE}/jobs/${encodeURIComponent(r.slug)}`, tracker: this.toTracker(r) };
+    return {
+      slug: r.slug,
+      title: r.title,
+      company: r.company,
+      apply_url: r.apply_url,
+      freehire_url: `${FREEHIRE_SITE}/jobs/${encodeURIComponent(r.slug)}`,
+      tracker: this.toTracker(r),
+    };
   }
 
-  async tracked(uid: string, filter: "saved" | "applications" | "all"): Promise<CareerTrackedResponse> {
+  async tracked(
+    uid: string,
+    filter: "saved" | "applications" | "all",
+  ): Promise<CareerTrackedResponse> {
     const all = await this.deps.store.listTracked(uid, TRACKED_LIMIT);
-    const rows = all.filter((r) => (filter === "saved" ? r.saved : filter === "applications" ? r.status !== null && r.status !== "saved" : true));
+    const rows = all.filter((r) =>
+      filter === "saved"
+        ? r.saved
+        : filter === "applications"
+          ? r.status !== null && r.status !== "saved"
+          : true,
+    );
     rows.sort((a, b) => {
       if (filter === "applications") {
         const fa = a.follow_up_on ?? "9999-12-31";
@@ -510,7 +732,11 @@ export class CareerService {
    * Freehire (never from the browser), so a student cannot store an arbitrary link under a job. Returns null when the
    * update leaves nothing worth keeping (an un-bookmarked job with no history).
    */
-  async updateTracker(uid: string, slug: string, update: CareerTrackerUpdate): Promise<CareerTrackedItem | null> {
+  async updateTracker(
+    uid: string,
+    slug: string,
+    update: CareerTrackerUpdate,
+  ): Promise<CareerTrackedItem | null> {
     if (!SAFE_SLUG.test(slug)) throw new ApiError("BAD_REQUEST", "That is not a valid listing id.");
     const nowIso = this.now().toISOString();
     let rec = await this.deps.store.getTracked(uid, slug);
@@ -522,14 +748,32 @@ export class CareerService {
         return this.upstream(e);
       }
       const job = normalizeJob(raw);
-      rec = { owner_uid: uid, source: "freehire", slug, title: job.title, company: job.company, apply_url: job.apply_url, saved: false, status: null, applied_on: null, follow_up_on: null, notes: "", posting_state: job.closed_at ? "possibly_unavailable" : "unknown", created_at: nowIso, updated_at: nowIso };
+      rec = {
+        owner_uid: uid,
+        source: "freehire",
+        slug,
+        title: job.title,
+        company: job.company,
+        apply_url: job.apply_url,
+        saved: false,
+        status: null,
+        applied_on: null,
+        follow_up_on: null,
+        notes: "",
+        posting_state: job.closed_at ? "possibly_unavailable" : "unknown",
+        created_at: nowIso,
+        updated_at: nowIso,
+      };
     }
     const next: TrackedRecord = { ...rec };
 
     if (update.status !== undefined && update.status !== null) {
       const from = rec.status ?? "none";
       if (update.status !== rec.status && !STATUS_TRANSITIONS[from].includes(update.status)) {
-        throw new ApiError("BAD_REQUEST", `You can't move an application from "${from === "none" ? "no status" : from}" to "${update.status}". Allowed next steps: ${STATUS_TRANSITIONS[from].join(", ")}.`);
+        throw new ApiError(
+          "BAD_REQUEST",
+          `You can't move an application from "${from === "none" ? "no status" : from}" to "${update.status}". Allowed next steps: ${STATUS_TRANSITIONS[from].join(", ")}.`,
+        );
       }
       next.status = update.status;
     } else if (update.status === null) next.status = null;
@@ -538,17 +782,25 @@ export class CareerService {
       next.saved = update.saved;
       if (update.saved && next.status === null) next.status = "saved";
     }
-    if (update.applied_on !== undefined) next.applied_on = this.date(update.applied_on, "applied_on", true);
-    if (update.follow_up_on !== undefined) next.follow_up_on = this.date(update.follow_up_on, "follow_up_on", false);
-    if (next.applied_on && next.follow_up_on && next.follow_up_on < next.applied_on) throw new ApiError("BAD_REQUEST", "The follow-up date can't be before the date you applied.");
+    if (update.applied_on !== undefined)
+      next.applied_on = this.date(update.applied_on, "applied_on", true);
+    if (update.follow_up_on !== undefined)
+      next.follow_up_on = this.date(update.follow_up_on, "follow_up_on", false);
+    if (next.applied_on && next.follow_up_on && next.follow_up_on < next.applied_on)
+      throw new ApiError("BAD_REQUEST", "The follow-up date can't be before the date you applied.");
     if (update.notes !== undefined) {
       const notes = stripControl(update.notes).trim();
-      if (notes.length > 2000) throw new ApiError("BAD_REQUEST", "Notes can be at most 2000 characters.");
+      if (notes.length > 2000)
+        throw new ApiError("BAD_REQUEST", "Notes can be at most 2000 characters.");
       next.notes = notes;
     }
     next.updated_at = nowIso;
 
-    const hasHistory = (next.status !== null && next.status !== "saved") || next.notes !== "" || next.applied_on !== null || next.follow_up_on !== null;
+    const hasHistory =
+      (next.status !== null && next.status !== "saved") ||
+      next.notes !== "" ||
+      next.applied_on !== null ||
+      next.follow_up_on !== null;
     if (!next.saved && !hasHistory) {
       await this.deps.store.deleteTracked(uid, slug);
       return null;
@@ -559,9 +811,12 @@ export class CareerService {
 
   private date(v: string | null, name: string, notFuture: boolean): string | null {
     if (v === null) return null;
-    if (!isValidYmd(v)) throw new ApiError("BAD_REQUEST", `${name} must be a real date like 2026-12-01.`);
-    if (notFuture && diffDays(v, ymd(this.now())) > 1) throw new ApiError("BAD_REQUEST", "The date you applied can't be in the future.");
-    if (!notFuture && diffDays(v, addDays(ymd(this.now()), 3650)) > 0) throw new ApiError("BAD_REQUEST", "That follow-up date is too far away.");
+    if (!isValidYmd(v))
+      throw new ApiError("BAD_REQUEST", `${name} must be a real date like 2026-12-01.`);
+    if (notFuture && diffDays(v, ymd(this.now())) > 1)
+      throw new ApiError("BAD_REQUEST", "The date you applied can't be in the future.");
+    if (!notFuture && diffDays(v, addDays(ymd(this.now()), 3650)) > 0)
+      throw new ApiError("BAD_REQUEST", "That follow-up date is too far away.");
     return v;
   }
 
@@ -569,7 +824,10 @@ export class CareerService {
   async unsave(uid: string, slug: string): Promise<CareerTrackedItem | null> {
     const rec = await this.deps.store.getTracked(uid, slug);
     if (!rec) return null;
-    return this.updateTracker(uid, slug, { saved: false, ...(rec.status === "saved" ? { status: null } : {}) });
+    return this.updateTracker(uid, slug, {
+      saved: false,
+      ...(rec.status === "saved" ? { status: null } : {}),
+    });
   }
 
   /** Removes the whole record (bookmark, status, dates and notes). */
@@ -595,30 +853,52 @@ export class CareerService {
       feed = await this.feed(uid, "for_you", { limit: 8 });
     } catch (e) {
       this.deps.logger.warn({ err: (e as Error).message }, "career: mentor context unavailable");
-      return { text: "The job listings could not be loaded right now, so there are no matches to discuss. Do not invent any.", available: false };
+      return {
+        text: "The job listings could not be loaded right now, so there are no matches to discuss. Do not invent any.",
+        available: false,
+      };
     }
     const tracked = await this.tracked(uid, "all").catch(() => ({ items: [], total: 0 }));
-    const clean = (s: string | null, n: number) => (s ? stripControl(s).replace(/\s+/g, " ").slice(0, n) : "an unnamed employer");
+    const clean = (s: string | null, n: number) =>
+      s ? stripControl(s).replace(/\s+/g, " ").slice(0, n) : "an unnamed employer";
     const lines = feed.jobs.map((c, i) => {
       const m = c.match;
-      const kind = [c.job.employment_type?.replace("_", "-"), c.job.seniority, c.job.work_mode].filter(Boolean).join(", ") || "type not stated";
-      const score = m.score === null ? "not scored (not enough information)" : `${m.score}/100 (${m.confidence} confidence)`;
+      const kind =
+        [c.job.employment_type?.replace("_", "-"), c.job.seniority, c.job.work_mode]
+          .filter(Boolean)
+          .join(", ") || "type not stated";
+      const score =
+        m.score === null
+          ? "not scored (not enough information)"
+          : `${m.score}/100 (${m.confidence} confidence)`;
       return `${i + 1}. "${clean(c.job.title, 80)}" at ${clean(c.job.company, 60)} | ${kind} | match ${score} | matches: ${m.matched_skills.map((s) => s.skill).join(", ") || "none"} | not in profile: ${m.missing_skills.slice(0, 5).join(", ") || "none listed"}`;
     });
     const missingCount = new Map<string, number>();
-    for (const c of feed.jobs) for (const s of c.match.missing_skills) missingCount.set(s, (missingCount.get(s) ?? 0) + 1);
-    const topMissing = [...missingCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 6).map(([s, n]) => `${s} (${n} of ${feed.jobs.length})`);
-    const open = tracked.items.filter((t) => t.tracker.status && !["rejected", "withdrawn", "offer"].includes(t.tracker.status));
-    const follow = open.filter((t) => t.tracker.follow_up_on).sort((a, b) => (a.tracker.follow_up_on ?? "").localeCompare(b.tracker.follow_up_on ?? "")).slice(0, 5);
+    for (const c of feed.jobs)
+      for (const s of c.match.missing_skills) missingCount.set(s, (missingCount.get(s) ?? 0) + 1);
+    const topMissing = [...missingCount.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, 6)
+      .map(([s, n]) => `${s} (${n} of ${feed.jobs.length})`);
+    const open = tracked.items.filter(
+      (t) => t.tracker.status && !["rejected", "withdrawn", "offer"].includes(t.tracker.status),
+    );
+    const follow = open
+      .filter((t) => t.tracker.follow_up_on)
+      .sort((a, b) => (a.tracker.follow_up_on ?? "").localeCompare(b.tracker.follow_up_on ?? ""))
+      .slice(0, 5);
     const text = [
       `Source: Freehire public job listings, read just now. Match scores are computed by the application from the student's own profile; they are not chances of being hired. ${feed.total ?? "an unknown number of"} postings matched the search; the ${feed.jobs.length} best-ranked are:`,
       ...(lines.length ? lines : ["(no postings matched)"]),
       `Skills the best matches list that are not in the student's profile: ${topMissing.join(", ") || "none"}.`,
       `Personalization: ${feed.personalization.level}${feed.personalization.notes.length ? ` (${feed.personalization.notes.join(" ")})` : ""}`,
       `The student has ${tracked.items.filter((t) => t.tracker.saved).length} saved job(s) and ${tracked.items.filter((t) => t.tracker.status && t.tracker.status !== "saved").length} tracked application(s).`,
-      ...(follow.length ? [`Upcoming follow-ups: ${follow.map((t) => `"${clean(t.title, 60)}" on ${t.tracker.follow_up_on}`).join("; ")}.`] : []),
+      ...(follow.length
+        ? [
+            `Upcoming follow-ups: ${follow.map((t) => `"${clean(t.title, 60)}" on ${t.tracker.follow_up_on}`).join("; ")}.`,
+          ]
+        : []),
     ].join("\n");
     return { text: text.slice(0, 4500), available: true };
   }
 }
-

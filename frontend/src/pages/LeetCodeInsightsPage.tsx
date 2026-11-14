@@ -139,7 +139,9 @@ const LeetCodeInsightsPage: React.FC = () => {
               <ShieldCheck size={22} strokeWidth={1.75} />
             </span>
             <div>
-              <p className="text-sm font-semibold text-ink-primary">Self-reported data only</p>
+              <p className="text-sm font-semibold text-ink-primary">
+                Self-reported data only
+              </p>
               <p className="mt-0.5 text-xs leading-snug text-ink-secondary">
                 {lookupAvailable
                   ? "Numbers are not kept in sync with LeetCode and are not verified as yours."
@@ -199,12 +201,22 @@ const LeetCodeInsightsPage: React.FC = () => {
               <Block id="lc-totals" title="Problems solved, as you reported them">
                 <SourceBanner source={data.source} />
                 <div className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <StatTile icon={ListChecks} label="Total solved" hint="the total you supplied">
+                  <StatTile
+                    icon={ListChecks}
+                    label="Total solved"
+                    hint="the total you supplied"
+                  >
                     {data.totals.solved}
                   </StatTile>
-                  <StatTile icon={Gauge} label="Easy">{data.totals.easy ?? "–"}</StatTile>
-                  <StatTile icon={Gauge} label="Medium">{data.totals.medium ?? "–"}</StatTile>
-                  <StatTile icon={Gauge} label="Hard">{data.totals.hard ?? "–"}</StatTile>
+                  <StatTile icon={Gauge} label="Easy">
+                    {data.totals.easy ?? "–"}
+                  </StatTile>
+                  <StatTile icon={Gauge} label="Medium">
+                    {data.totals.medium ?? "–"}
+                  </StatTile>
+                  <StatTile icon={Gauge} label="Hard">
+                    {data.totals.hard ?? "–"}
+                  </StatTile>
                 </div>
                 {data.connection.profile_url && (
                   <p className="mt-3 text-sm text-ink-secondary">
@@ -256,9 +268,15 @@ const LeetCodeInsightsPage: React.FC = () => {
               <Block id="lc-contest" title="Contests">
                 {data.contest ? (
                   <div className="grid grid-cols-[minmax(0,1fr)] gap-4 sm:grid-cols-3">
-                    <StatTile icon={Trophy} label="Rating">{data.contest.rating ?? "–"}</StatTile>
-                    <StatTile icon={TrendingUp} label="Global rank">{data.contest.global_rank ?? "–"}</StatTile>
-                    <StatTile icon={ListChecks} label="Attended">{data.contest.attended ?? "–"}</StatTile>
+                    <StatTile icon={Trophy} label="Rating">
+                      {data.contest.rating ?? "–"}
+                    </StatTile>
+                    <StatTile icon={TrendingUp} label="Global rank">
+                      {data.contest.global_rank ?? "–"}
+                    </StatTile>
+                    <StatTile icon={ListChecks} label="Attended">
+                      {data.contest.attended ?? "–"}
+                    </StatTile>
                   </div>
                 ) : (
                   <Unavailable

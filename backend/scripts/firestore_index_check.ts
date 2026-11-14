@@ -14,17 +14,30 @@ import { Firestore } from "@google-cloud/firestore";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseServiceAccount } from "../src/config.js";
-import { checkSubmissionIndex, indexFileProblems, REQUIRED_COMPOSITE_INDEXES } from "../src/code/indexes.js";
+import {
+  checkSubmissionIndex,
+  indexFileProblems,
+  REQUIRED_COMPOSITE_INDEXES,
+} from "../src/code/indexes.js";
 
 const repoRoot = resolve(import.meta.dirname, "..", "..");
 
 function configProblems(): string[] {
   const problems: string[] = [];
   try {
-    const firebase = JSON.parse(readFileSync(resolve(repoRoot, "firebase.json"), "utf8")) as { firestore?: { indexes?: string } };
+    const firebase = JSON.parse(readFileSync(resolve(repoRoot, "firebase.json"), "utf8")) as {
+      firestore?: { indexes?: string };
+    };
     const path = firebase.firestore?.indexes;
-    if (path !== "firestore.indexes.json") problems.push(`firebase.json must reference firestore.indexes.json under "firestore.indexes" (found ${JSON.stringify(path)})`);
-    problems.push(...indexFileProblems(JSON.parse(readFileSync(resolve(repoRoot, path ?? "firestore.indexes.json"), "utf8"))));
+    if (path !== "firestore.indexes.json")
+      problems.push(
+        `firebase.json must reference firestore.indexes.json under "firestore.indexes" (found ${JSON.stringify(path)})`,
+      );
+    problems.push(
+      ...indexFileProblems(
+        JSON.parse(readFileSync(resolve(repoRoot, path ?? "firestore.indexes.json"), "utf8")),
+      ),
+    );
   } catch (err) {
     problems.push(`could not read the index configuration: ${(err as Error).message}`);
   }
@@ -37,27 +50,40 @@ async function main(): Promise<number> {
     console.error("Index configuration problems:\n  - " + problems.join("\n  - "));
     return 1;
   }
-  console.log(`Index configuration OK (${REQUIRED_COMPOSITE_INDEXES.length} composite index${REQUIRED_COMPOSITE_INDEXES.length === 1 ? "" : "es"} defined and wired into firebase.json).`);
+  console.log(
+    `Index configuration OK (${REQUIRED_COMPOSITE_INDEXES.length} composite index${REQUIRED_COMPOSITE_INDEXES.length === 1 ? "" : "es"} defined and wired into firebase.json).`,
+  );
   if (process.argv.includes("--config-only")) {
-    console.log("This only checks the files. Deploying them, and confirming they are built, is an operator step (see docs/phase-5.1-operational-readiness.md).");
+    console.log(
+      "This only checks the files. Deploying them, and confirming they are built, is an operator step (see docs/phase-5.1-operational-readiness.md).",
+    );
     return 0;
   }
 
   const projectId = process.env.FIREBASE_PROJECT_ID ?? process.env.GOOGLE_CLOUD_PROJECT;
   if (!projectId) {
-    console.error("Set FIREBASE_PROJECT_ID to the non-production project to check (or use --config-only).");
+    console.error(
+      "Set FIREBASE_PROJECT_ID to the non-production project to check (or use --config-only).",
+    );
     return 2;
   }
-  const account = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ? parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON) : null;
+  const account = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+    ? parseServiceAccount(process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+    : null;
   const emulator = Boolean(process.env.FIRESTORE_EMULATOR_HOST);
   const db = new Firestore({
     projectId,
-    ...(account ? { credentials: { client_email: account.client_email, private_key: account.private_key } } : {}),
+    ...(account
+      ? { credentials: { client_email: account.client_email, private_key: account.private_key } }
+      : {}),
   });
   const result = await checkSubmissionIndex(db);
   await db.terminate();
   console.log(`${result.ok ? "PASS" : "FAIL"}  ${result.detail}`);
-  if (emulator) console.log("WARNING: this ran against the Firestore emulator, which does not enforce indexes. It does not show that indexes are deployed.");
+  if (emulator)
+    console.log(
+      "WARNING: this ran against the Firestore emulator, which does not enforce indexes. It does not show that indexes are deployed.",
+    );
   return result.ok ? 0 : 1;
 }
 
