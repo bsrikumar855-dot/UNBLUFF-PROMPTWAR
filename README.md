@@ -93,8 +93,8 @@ All figures from commands run on 14 Nov 2026.
 | Code quality | `npm run verify` exits 0; ESLint `--max-warnings 0` passes in both packages; no TODO/FIXME/console.log in SkillForge files (`git grep`); thresholds documented in code and [DECISIONS.md](DECISIONS.md) |
 | Security | `npm audit --omit=dev`: 0 vulnerabilities in backend and frontend; 114 routes, private by default (17 public, audited by `tests/integration/routeAudit.test.ts`); log redaction tested; demo auth and the unlicensed dataset refused in production. See [SECURITY.md](SECURITY.md) |
 | Efficiency | 0 model calls for any SkillForge decision and ≤1 (mentor) per event, enforced by `tests/integration/learningPathBudget.test.ts`; `/learning-path` is a lazy chunk of 23.3 kB (6.9 kB gzip) |
-| Testing | Backend 1,309 tests (87 files), frontend 406 (30 files), Firestore emulator 58 (13 files); `src/core` and `src/agents` 100% line coverage |
-| Accessibility | axe-core (WCAG 2.0/2.1 A, AA): 0 serious/critical on landing, demo report, login and 3 Learning Path states; axe tests in `frontend/tests/learningPath.test.tsx`; reduced motion skips the intro |
+| Testing | Backend 1,309 tests (87 files), frontend 407 (31 files), Firestore emulator 58 (13 files); `src/core` and `src/agents` 100% line coverage |
+| Accessibility | axe-core (WCAG 2.0/2.1 A, AA): 0 serious/critical on landing, demo report, login and 3 Learning Path states; axe tests in `frontend/tests/learningPath.test.tsx`; the skip link is the first Tab stop (`frontend/tests/skipLink.test.tsx`); reduced motion skips the intro |
 | PS alignment | Table above; scenario test and UI script both pass |
 
 ## Tech stack and layout
@@ -119,4 +119,3 @@ UNBLUFF (claim interrogation, evidence-guarded grading, placement planner, mento
 - Certification mapping covers 16 curated rules; generic cloud certifications are deliberately unmapped.
 - Code execution needs Judge0 or Docker, the résumé PDF build needs Docker, GitHub insights need an OAuth app; none is enabled by default.
 - The Firestore learning-path store is emulator-tested only, not verified in a live deployment.
-- A fresh page load's first Tab reaches the sidebar before the skip link (Shift+Tab reaches it).

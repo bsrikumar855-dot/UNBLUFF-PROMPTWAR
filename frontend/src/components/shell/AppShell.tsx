@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/context";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -36,7 +36,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }, [rail]);
 
   // A route change moves focus to the new page, so keyboard and screen-reader users start at the top of the content.
+  // Only when the path actually changes: a fresh page load leaves focus at the start, so the first Tab reaches the skip
+  // link. Comparing with the previous path (not a "first render" flag) also holds when React runs effects twice in dev.
+  const shownPath = useRef(pathname);
   useEffect(() => {
+    if (shownPath.current === pathname) return;
+    shownPath.current = pathname;
     document.getElementById("main")?.focus({ preventScroll: true });
   }, [pathname]);
 
