@@ -392,3 +392,16 @@ everything once gcloud is available.
 - **Original content, not copied.** Patterns and DBMS notes are written for UNBLUFF. Practice links are problem titles pointing at the public LeetCode pages, plus UNBLUFF's own judged exercises.
 - **Content is verified by tests.** Every pattern's Python template runs against its own asserts; every DBMS SQL example runs on SQLite and must return the rows shown.
 - **Quizzes are graded on the server**; answers are never sent with the questions. Pass mark 3 of 4. Pattern and problem marks are self-reported and labelled as such; they never count as verified practice.
+
+
+## SkillForge learning path (additive layer, Prompt Wars)
+
+- **Two skill levels.** A role has broad weighted skills (`web_frontend`); a learner knows finer **topics** (`javascript`, `react`, `html`). `backend/data/learning/graph.json` maps role skill -> topics with shares, and holds a topic prerequisite graph. A role skill with no entry is its own single topic. Learner state is keyed by topic, so what a learner knows survives a goal change. The problem-statement skills (JavaScript, React, Node.js) are topics under `web_frontend` and `rest_apis`; Python is a topic under the Data Analyst and ML roles only.
+- **Unverified claims never count above 0.4.** `effectiveMastery` = verified proficiency if present, else 0.4 if declared, else 0. A self-declared skill can therefore never look "ready", and the UI marks it unverified.
+- **Gap threshold uses `>=` 0.1.** Spec said `>`; a role skill of weight 0.1 with zero mastery has a gap of exactly 0.1 and would otherwise be dropped from every roadmap (Git, Testing, Deploy). A skill at the threshold is included.
+- **Steps are per missing topic, not per role skill.** A topic gets a step only when it has no evidence at all (mastery < 0.4) and its role skill's gap is at least the threshold. Declared-but-unverified topics get no step; they are shown as "unverified" with a Verify button.
+- **Ordering.** Topological sort over the prerequisite graph, ties by gap (weight x share x (1 - mastery)) descending then topic id. Prerequisites outside the path are ignored. The graph is validated acyclic at startup.
+- **Adaptation thresholds.** Score < 60: one remedial step on a prerequisite concept of the role skill (named by the learner's missed concept when it matches, else cycling through the skill's prerequisite list), the failed step and every step that transitively depends on it are blocked by it, pace set to slow. 60-84: done with a "review later" flag. >= 85: done. A pass also closes an open remedial for that topic. A second failure while a remedial is open does not add another.
+- **Goal change** rebuilds the path from the new role, keeps done steps for topics the new role also needs, and returns a diff of kept / added / removed / reordered with template reasons.
+- **Reasons are templates.** Every "why this changed" string is built in `core/adapt.ts` from numbers and names, never by a model.
+- **Resources are curated static data** (`resources.json`), real well-known free sites; every URL was fetched when written (all 200 except Linux Journey, which returns 403 to scripts and works in a browser). The LLM never picks or ranks resources.
