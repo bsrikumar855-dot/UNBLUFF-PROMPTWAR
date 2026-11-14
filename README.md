@@ -26,16 +26,16 @@ Students list skills they cannot defend, and generic course lists ignore what th
 
 | Requirement | What it does | Code | Test that proves it |
 |---|---|---|---|
-| User profile | Skills, projects and certifications are entered; all count as *declared* (max 40%) until verified | `backend/src/agents/profiler.ts`, `core/certs.ts` | `tests/unit/agents.test.ts` "ProfilerAgent" |
-| Skill analysis | `gap = weight × (1 − mastery)` per role skill, with missing topics named | `backend/src/core/path.ts` `computeGaps` | `tests/unit/path.test.ts` "computeGaps" |
-| Career matching | Match % for the target and the other 6 roles | `backend/src/agents/careerMatcher.ts` | `tests/unit/path.test.ts` "progressSummary and roleMatch" |
-| Learning recommendations | Roadmap in prerequisite order, ≤3 curated free resources per step (77 entries, 59 unique URLs) | `core/path.ts` `buildPath`, `backend/data/learning/` | `tests/unit/path.test.ts` "buildPath" |
-| Progress tracking | Roadmap % weighted by gap, mastery bars, next step | `core/path.ts` `progressSummary` | `tests/unit/path.test.ts` "progressSummary and roleMatch" |
-| AI mentor | Writes a coaching note from facts only; template fallback | `backend/src/agents/mentorAgent.ts` | `tests/integration/learningPath.test.ts` "the mentor message" |
-| Agentic AI | 6 agents, fixed routing table, visible log with handoffs | `backend/src/agents/orchestrator.ts` | `tests/unit/agents.test.ts` "routing table" |
-| Adapts on goal change | Rebuild; diff of kept / added / removed / reordered with reasons | `core/adapt.ts` `adaptOnGoalChange` | `tests/unit/adapt.test.ts` "adaptOnGoalChange" |
-| Adapts on poor assessment | <60: remedial step, dependents paused; 60–84 review; ≥85 done | `core/adapt.ts` `adaptOnAssessment` | `tests/unit/adapt.test.ts` "adaptOnAssessment: failing score" |
-| Sample scenario | Python/SQL/HTML → Full Stack, end to end over HTTP and in the UI | — | `tests/integration/learningPath.test.ts` "the problem-statement scenario end to end"; `frontend/scripts/learning-path-demo.mjs` |
+| User profile | Skills, projects and certifications are entered; all count as *declared* (max 40%) until verified | `backend/src/agents/profiler.ts`, `backend/src/core/certs.ts` | `backend/tests/unit/agents.test.ts` "ProfilerAgent" |
+| Skill analysis | `gap = weight × (1 − mastery)` per role skill, with missing topics named | `backend/src/core/path.ts` `computeGaps` | `backend/tests/unit/path.test.ts` "computeGaps" |
+| Career matching | Match % for the target and the other 6 roles | `backend/src/agents/careerMatcher.ts` | `backend/tests/unit/path.test.ts` "progressSummary and roleMatch" |
+| Learning recommendations | Roadmap in prerequisite order, ≤3 curated free resources per step (77 entries, 59 unique URLs) | `backend/src/core/path.ts` `buildPath`, `backend/data/learning/` | `backend/tests/unit/path.test.ts` "buildPath" |
+| Progress tracking | Roadmap % weighted by gap, mastery bars, next step | `backend/src/core/path.ts` `progressSummary` | `backend/tests/unit/path.test.ts` "progressSummary and roleMatch" |
+| AI mentor | Writes a coaching note from facts only; template fallback | `backend/src/agents/mentorAgent.ts` | `backend/tests/integration/learningPath.test.ts` "the mentor message" |
+| Agentic AI | 6 agents, fixed routing table, visible log with handoffs | `backend/src/agents/orchestrator.ts` | `backend/tests/unit/agents.test.ts` "routing table" |
+| Adapts on goal change | Rebuild; diff of kept / added / removed / reordered with reasons | `backend/src/core/adapt.ts` `adaptOnGoalChange` | `backend/tests/unit/adapt.test.ts` "adaptOnGoalChange" |
+| Adapts on poor assessment | <60: remedial step, dependents paused; 60–84 review; ≥85 done | `backend/src/core/adapt.ts` `adaptOnAssessment` | `backend/tests/unit/adapt.test.ts` "adaptOnAssessment: failing score" |
+| Sample scenario | Python/SQL/HTML → Full Stack, end to end over HTTP and in the UI | `frontend/src/pages/LearningPathPage.tsx` | `backend/tests/integration/learningPath.test.ts` "the problem-statement scenario end to end"; `frontend/scripts/learning-path-demo.mjs` |
 
 ## The sample scenario, step by step
 
@@ -90,10 +90,10 @@ All figures from commands run on 14 Nov 2026.
 
 | Criterion | Evidence |
 |---|---|
-| Code quality | `npm run verify` exits 0; ESLint `--max-warnings 0` passes in both packages; no TODO/FIXME/console.log in SkillForge files (`git grep`); thresholds documented in code and [DECISIONS.md](DECISIONS.md) |
+| Code quality | `npm run verify` exits 0; ESLint `--max-warnings 0` and `npm run format:check` (Prettier) pass in both packages; no TODO/FIXME/console.log in SkillForge files (`git grep`); thresholds documented in code and [DECISIONS.md](DECISIONS.md) |
 | Security | `npm audit --omit=dev`: 0 vulnerabilities in backend and frontend; 114 routes, private by default (17 public, audited by `tests/integration/routeAudit.test.ts`); log redaction tested; demo auth and the unlicensed dataset refused in production. See [SECURITY.md](SECURITY.md) |
 | Efficiency | 0 model calls for any SkillForge decision and ≤1 (mentor) per event, enforced by `tests/integration/learningPathBudget.test.ts`; `/learning-path` is a lazy chunk of 23.3 kB (6.9 kB gzip) |
-| Testing | Backend 1,309 tests (87 files), frontend 407 (31 files), Firestore emulator 58 (13 files); `src/core` and `src/agents` 100% line coverage |
+| Testing | Backend 1,309 tests (87 files), frontend 408 (32 files), Firestore emulator 58 (13 files); `src/core` and `src/agents` 100% line coverage |
 | Accessibility | axe-core (WCAG 2.0/2.1 A, AA): 0 serious/critical on landing, demo report, login and 3 Learning Path states; axe tests in `frontend/tests/learningPath.test.tsx`; the skip link is the first Tab stop (`frontend/tests/skipLink.test.tsx`); reduced motion skips the intro |
 | PS alignment | Table above; scenario test and UI script both pass |
 
@@ -106,6 +106,8 @@ backend/   src/{core,agents,learning,routes,...}  data/{roles,learning,dsa}  tes
 frontend/  src/{pages,components,api,...}  tests/  scripts/
 docs/      img/, security-and-launch.md, UNBLUFF-base.md
 ```
+
+Shared types: `backend/src/types.ts` and `frontend/src/types/contract.ts` are an **intentional mirror** of the CONTRACT.md §4 block (Vercel builds `frontend/` alone, so it cannot import from `backend/`). Edit CONTRACT.md first, copy to both; drift tests on each side (`backend/tests/unit/contract.test.ts`, `frontend/tests/contractDrift.test.ts`) fail if either copy differs.
 
 API: see [CONTRACT.md](CONTRACT.md) ("SkillForge learning path" section). Config: `LLM_MODE` (`mock`|`live` + `GEMINI_API_KEY`), `AUTH_MODE` (`firebase`|`mock`, mock refused in production), `STORE` (`memory`|`firestore`); full list in `backend/.env.example`. Tests: `npm run verify`; emulator suite: `npm run test:emulator` (needs Java).
 

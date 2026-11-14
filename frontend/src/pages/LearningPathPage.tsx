@@ -168,7 +168,7 @@ const LearningPathPage: React.FC = () => {
       <PageHeader
         eyebrow="SkillForge"
         title="Your learning path"
-        description="Tell us what you know and where you want to go. Specialised agents find your gaps, plan a roadmap with free resources, and re-plan when you change goal or struggle on an assessment. Every decision is a fixed rule; the AI only helps with wording."
+        description="Tell us what you know and where you want to go. Six collaborating agents hand your profile from one to the next to find your gaps and plan a roadmap with free resources. The plan adapts on its own: a poor assessment adds a remedial step and pauses what depends on it, and a goal change rebuilds the roadmap and shows what was kept, added and removed. Every decision is a fixed rule; the AI only helps with wording."
       />
 
       <p className="sr-only" role="status" aria-live="polite">
