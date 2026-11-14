@@ -65,7 +65,7 @@ export const TopBar: React.FC<{
       {/* PillNav sizes itself to its parent, so give it a cell of its own that stops where the actions begin. */}
       <div className="min-w-0">
         <PillNav
-          logo={<span className="font-mono text-sm font-bold text-ink-primary">U</span>}
+          logo={<img src="/brand/logo-mark.png" alt="" width={105} height={105} className="size-5 object-contain" />}
           logoAlt="UNBLUFF home"
           logoHref={routes.home}
           items={items}

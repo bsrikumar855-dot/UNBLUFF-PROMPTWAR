@@ -112,25 +112,15 @@ export const Sidebar: React.FC<{ onSearch: () => void }> = ({ onSearch }) => {
               }
               className="grid size-10 shrink-0 place-items-center rounded-full bg-white/75 font-mono text-sm font-bold text-ink-primary backdrop-blur-md shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8),inset_1px_1px_1px_rgba(255,255,255,1),0_4px_10px_-6px_rgba(24,24,27,0.3)] outline-none transition-transform duration-300 hover:scale-105 focus-visible:ring-2 focus-visible:ring-ink-primary"
             >
-              U
+              <img src="/brand/logo-mark.png" alt="" width={105} height={105} className="size-6 object-contain" />
             </button>
             <Link
               to={routes.home}
               aria-label="UNBLUFF home"
               tabIndex={-1}
-              className={cn(
-                LABEL,
-                "ml-2 flex-none text-lg font-semibold uppercase tracking-[-0.04em] text-[#3b0f0a]"
-              )}
+              className={cn(LABEL, "ml-2 flex-none")}
             >
-              Un
-              <span className="relative">
-                bluff
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-x-0 -bottom-0.5 h-[3px] bg-redline"
-                />
-              </span>
+              <img src="/brand/logo-wordmark.png" alt="" width={216} height={74} className="h-8 w-auto" />
             </Link>
           </div>
 
