@@ -2,6 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
+  /** "mock": demo sign-in with no Firebase (dev builds only; ignored in production). Pair with backend AUTH_MODE=mock. */
+  readonly VITE_AUTH_MODE?: string;
   readonly VITE_FIREBASE_API_KEY?: string;
   readonly VITE_FIREBASE_AUTH_DOMAIN?: string;
   readonly VITE_FIREBASE_PROJECT_ID?: string;

@@ -11,7 +11,7 @@ import { FirestoreUsageStore, MemoryUsageStore, type UsageStore } from "./securi
 import { sweepInactiveSessions } from "./services/retention.js";
 import { FirestoreAccountStore, MemoryAccountStore, type AccountStore } from "./account/store.js";
 import { createApp } from "./app.js";
-import { FirebaseTokenVerifier } from "./auth/verifier.js";
+import { FirebaseTokenVerifier, MockTokenVerifier } from "./auth/verifier.js";
 import { EvidenceService } from "./placement/evidence.js";
 import { PlacementService } from "./placement/service.js";
 import { FirestorePlacementStore, MemoryPlacementStore, type PlacementStore } from "./placement/store.js";
@@ -226,8 +226,10 @@ function main(): void {
   const career = new CareerService({ freehire: new FreehireClient(), store: stores.career, placement, logger });
   careerHolder.current = career;
   const serviceAccount = config.FIREBASE_SERVICE_ACCOUNT_JSON ? parseServiceAccount(config.FIREBASE_SERVICE_ACCOUNT_JSON) : null;
-  const verifier = new FirebaseTokenVerifier(config.FIREBASE_PROJECT_ID ?? serviceAccount?.project_id ?? "", undefined, serviceAccount);
-  const admin = verifier.admin();
+  const firebaseVerifier = config.AUTH_MODE === "mock" ? null : new FirebaseTokenVerifier(config.FIREBASE_PROJECT_ID ?? serviceAccount?.project_id ?? "", undefined, serviceAccount);
+  if (!firebaseVerifier) logger.warn("AUTH_MODE=mock: sign-in is NOT verified; anyone can act as any user. Demonstration only.");
+  const verifier = firebaseVerifier ?? new MockTokenVerifier();
+  const admin = firebaseVerifier?.admin() ?? null;
   const revocation = admin ? new RevocationGuard({ admin, logger }) : null;
   if (config.NODE_ENV === "production" && config.APP_CHECK === "off") logger.warn("APP_CHECK is off: any script can call the API with a valid sign-in (set APP_CHECK=monitor, then enforce, once the web app sends App Check tokens)");
   if (!config.REQUIRE_EMAIL_VERIFICATION) logger.warn("REQUIRE_EMAIL_VERIFICATION is off: unverified accounts can use every feature, including the language model");
@@ -279,7 +281,7 @@ function main(): void {
     budget,
     revocation,
     requireEmailVerification: config.REQUIRE_EMAIL_VERIFICATION,
-    appCheck: { mode: config.APP_CHECK, verifier: verifier.appCheck() },
+    appCheck: { mode: config.APP_CHECK, verifier: firebaseVerifier?.appCheck() ?? null },
     exposeModel: config.NODE_ENV !== "production",
     readyProbe: async () => void (await stores.sessions.get("readiness-probe")),
     llm, logger, demoReportJson, corsOrigin: config.CORS_ORIGIN, trustProxy: config.TRUST_PROXY });

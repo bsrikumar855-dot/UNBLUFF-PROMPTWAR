@@ -71,6 +71,8 @@ const EnvSchema = z
       .enum(["true", "false", "1", "0"])
       .default("false")
       .transform((v) => v === "true" || v === "1"),
+    /** firebase: verify real Firebase ID tokens. mock: accept "mock:<uid>" tokens with no verification (hackathon/demo only; refused in production). */
+    AUTH_MODE: z.enum(["firebase", "mock"]).default("firebase"),
     GEMINI_API_KEY: z.string().optional(),
     GEMINI_MODEL: z
       .string()
@@ -189,6 +191,9 @@ const EnvSchema = z
       });
     }
     if (env.NODE_ENV === "production") {
+      if (env.AUTH_MODE === "mock") {
+        ctx.addIssue({ code: "custom", path: ["AUTH_MODE"], message: "AUTH_MODE=mock must not be used when NODE_ENV=production (it lets anyone sign in as anyone)" });
+      }
       // With an Auth emulator address set, the Admin SDK accepts unsigned tokens: anyone could sign in as anyone.
       for (const name of ["FIREBASE_AUTH_EMULATOR_HOST", "FIRESTORE_EMULATOR_HOST"] as const) {
         if (env[name]?.trim()) ctx.addIssue({ code: "custom", path: [name], message: `${name} must not be set when NODE_ENV=production (it disables real sign-in checks)` });

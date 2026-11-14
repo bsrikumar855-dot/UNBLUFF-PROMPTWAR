@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { setAuthHooks } from "@/api/client";
 import { firebaseAuthClient } from "./firebaseClient";
+import { MOCK_AUTH_ENABLED, mockAuthClient } from "./mockClient";
 import { AuthContext, type AuthContextValue } from "./context";
 import { AuthError, type AuthClient, type AuthStatus, type AuthUser } from "./types";
 
@@ -9,7 +10,7 @@ const UNSUPPORTED = new AuthError("This isn't available for this sign-in method.
 export const AuthProvider: React.FC<{
   client?: AuthClient;
   children: React.ReactNode;
-}> = ({ client = firebaseAuthClient, children }) => {
+}> = ({ client = MOCK_AUTH_ENABLED ? mockAuthClient : firebaseAuthClient, children }) => {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);

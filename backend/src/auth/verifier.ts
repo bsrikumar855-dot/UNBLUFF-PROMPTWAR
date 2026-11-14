@@ -16,6 +16,18 @@ export interface TokenVerifier {
   verify(token: string): Promise<VerifiedToken>;
 }
 
+/**
+ * DEMO ONLY (AUTH_MODE=mock, refused when NODE_ENV=production). Accepts "mock:<uid>" with no verification, so the
+ * prototype works with no Firebase project. Anyone can claim any uid; never enable it on a real deployment.
+ */
+export class MockTokenVerifier implements TokenVerifier {
+  async verify(token: string): Promise<VerifiedToken> {
+    const m = /^mock:([A-Za-z0-9_-]{1,64})$/.exec(token);
+    if (!m) throw new Error("not a mock token");
+    return { uid: m[1]!, email_verified: true };
+  }
+}
+
 /** The Admin operations the revocation guard needs (a small seam so tests can fake them). */
 export interface AccountAdmin {
   /** Rejects with code "auth/user-not-found" for a deleted account. */
