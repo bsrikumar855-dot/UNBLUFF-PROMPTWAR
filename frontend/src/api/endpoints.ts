@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { AgentLogEntry, CreateLearningPathRequest, LearningAssessmentRequest, LearningPathSummary, LearningPathView } from "@/types/learningPath";
 import type {
   CareerFacetsResponse,
   CareerFeedResponse,
@@ -577,6 +578,26 @@ export const api = {
   },
   async submitDbmsQuiz(id: string, body: DbmsQuizRequest): Promise<DbmsQuizResult> {
     return apiClient<DbmsQuizResult>(`/learn/dbms/${encodeURIComponent(id)}/quiz`, { method: "POST", body: JSON.stringify(body) });
+  },
+
+  /** SkillForge learning path. Owner-scoped; the roadmap is planned by deterministic rules and re-planned on each assessment or goal change. */
+  async listLearningPaths(): Promise<{ paths: LearningPathSummary[] }> {
+    return apiClient<{ paths: LearningPathSummary[] }>("/learning-path", { method: "GET" });
+  },
+  async createLearningPath(body: CreateLearningPathRequest): Promise<LearningPathView> {
+    return apiClient<LearningPathView>("/learning-path", { method: "POST", body: JSON.stringify(body) });
+  },
+  async getLearningPath(id: string): Promise<LearningPathView> {
+    return apiClient<LearningPathView>(`/learning-path/${encodeURIComponent(id)}`, { method: "GET" });
+  },
+  async assessLearningPath(id: string, body: LearningAssessmentRequest): Promise<LearningPathView> {
+    return apiClient<LearningPathView>(`/learning-path/${encodeURIComponent(id)}/assessment`, { method: "POST", body: JSON.stringify(body) });
+  },
+  async changeLearningPathGoal(id: string, roleId: string): Promise<LearningPathView> {
+    return apiClient<LearningPathView>(`/learning-path/${encodeURIComponent(id)}/goal`, { method: "POST", body: JSON.stringify({ role_id: roleId }) });
+  },
+  async getLearningPathAgentLog(id: string): Promise<{ entries: AgentLogEntry[] }> {
+    return apiClient<{ entries: AgentLogEntry[] }>(`/learning-path/${encodeURIComponent(id)}/agent-log`, { method: "GET" });
   },
 
   /** GitHub (read-only, public data). The token never reaches the browser. */

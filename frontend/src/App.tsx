@@ -33,6 +33,7 @@ const DsaRevisionPage = lazy(() => import("@/pages/DsaRevisionPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const GithubInsightsPage = lazy(() => import("@/pages/GithubInsightsPage"));
 const PlacementPage = lazy(() => import("@/pages/PlacementPage"));
+const LearningPathPage = lazy(() => import("@/pages/LearningPathPage"));
 const CareerPage = lazy(() => import("@/pages/CareerPage"));
 const LeetCodeInsightsPage = lazy(() => import("@/pages/LeetCodeInsightsPage"));
 const ResumeBuilderPage = lazy(() => import("@/pages/ResumeBuilderPage"));
@@ -88,6 +89,7 @@ export const AppRoutes: React.FC = () => (
         <Route path="/leetcode" element={<LeetCodeInsightsPage />} />
         <Route path="/resume" element={<ResumeBuilderPage />} />
         <Route path="/placement" element={<PlacementPage />} />
+        <Route path="/learning-path" element={<LearningPathPage />} />
         <Route path="/career" element={<CareerPage />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />

@@ -81,14 +81,26 @@ export const HeroSection: React.FC = () => {
               UNBLUFF questions every claim on your resume, judges your code against
               hidden tests, and builds your study plan only from what those records show.
             </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Magnetic>
                 <Link
-                  to="/setup"
+                  to="/learning-path"
                   className={buttonClasses(
                     "primary",
                     "lg",
                     "rounded-full bg-[linear-gradient(135deg,#f0604e_0%,#c9362a_100%)] text-white shadow-[0_14px_28px_-12px_rgba(201,54,42,0.7),inset_0_1px_0_rgba(255,255,255,0.45)] hover:brightness-110"
+                  )}
+                >
+                  Build my learning path
+                </Link>
+              </Magnetic>
+              <Magnetic>
+                <Link
+                  to="/setup"
+                  className={buttonClasses(
+                    "secondary",
+                    "lg",
+                    "rounded-full bg-white/60 backdrop-blur-md shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]"
                   )}
                 >
                   Audit My Readiness

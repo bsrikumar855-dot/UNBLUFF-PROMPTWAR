@@ -20,6 +20,7 @@ export const routes = {
   mentorAsk: (prompt: string) => `/mentor?prompt=${encodeURIComponent(prompt.slice(0, 300))}`,
   mentorMemory: "/mentor/memory",
   settings: "/settings",
+  learningPath: "/learning-path",
   placement: "/placement",
   career: "/career",
   github: "/github",

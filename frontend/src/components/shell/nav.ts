@@ -15,6 +15,7 @@ import {
   Map,
   MessagesSquare,
   Repeat,
+  Route,
   Settings,
   Trophy,
   type LucideIcon,
@@ -54,6 +55,13 @@ export function navGroups(sessionId: string | null): NavGroup[] {
       id: "plan",
       label: "Plan",
       items: [
+        {
+          label: "Learning path",
+          to: routes.learningPath,
+          icon: Route,
+          hint: "Skills, gaps and a personalised roadmap to your target career, with agent activity",
+          match: is("/learning-path"),
+        },
         {
           label: "Placement plan",
           to: routes.placement,
