@@ -14,6 +14,10 @@ const GraphFile = z.object({
   aliases: z.record(z.string().min(1), Id).optional(),
 });
 
+const CertFile = z.object({
+  rules: z.array(z.object({ id: z.string().regex(/^[a-z0-9-]+$/), keywords: z.array(z.string().trim().min(1)).min(1), topics: z.array(Id).min(1) })),
+});
+
 const ResourceFile = z.object({
   resources: z.array(
     z.object({
@@ -46,9 +50,10 @@ function assertAcyclic(prerequisites: Record<string, string[]>): void {
 }
 
 /** Validates the curated learning data against the roles. Throws on any problem (fail fast at startup). */
-export function parseLearningData(rawGraph: unknown, rawResources: unknown, roles: readonly Role[]): LearningData {
+export function parseLearningData(rawGraph: unknown, rawResources: unknown, roles: readonly Role[], rawCerts: unknown = { rules: [] }): LearningData {
   const g = GraphFile.parse(rawGraph);
   const r = ResourceFile.parse(rawResources);
+  const c = CertFile.parse(rawCerts);
 
   const topicNames: Record<string, string> = { ...g.topic_names };
   const roleSkillIds = new Set<string>();
@@ -73,16 +78,23 @@ export function parseLearningData(rawGraph: unknown, rawResources: unknown, role
     if (alias !== alias.toLowerCase()) throw new Error(`alias "${alias}" must be lower case`);
   }
 
+  const certIds = new Set<string>();
+  for (const rule of c.rules) {
+    if (certIds.has(rule.id)) throw new Error(`duplicate certification rule id ${rule.id}`);
+    certIds.add(rule.id);
+    for (const t of rule.topics) if (!(t in topicNames)) throw new Error(`certification rule ${rule.id}: unknown topic ${t}`);
+  }
+
   const ids = new Set<string>();
   for (const res of r.resources) {
     if (ids.has(res.id)) throw new Error(`duplicate resource id ${res.id}`);
     ids.add(res.id);
     if (!(res.skill_id in topicNames)) throw new Error(`resource ${res.id}: unknown topic ${res.skill_id}`);
   }
-  return { graph: { topic_names: topicNames, skill_topics: g.skill_topics, prerequisites: g.prerequisites, aliases: g.aliases ?? {} }, resources: r.resources };
+  return { graph: { topic_names: topicNames, skill_topics: g.skill_topics, prerequisites: g.prerequisites, aliases: g.aliases ?? {}, certifications: c.rules }, resources: r.resources };
 }
 
 export function loadLearningData(dir: string, roles: RoleRegistry): LearningData {
   const list = roles.list().map((s) => roles.get(s.id)).filter((r): r is Role => r !== undefined);
-  return parseLearningData(JSON.parse(readFileSync(join(dir, "graph.json"), "utf8").replace(/^\uFEFF/, "")), JSON.parse(readFileSync(join(dir, "resources.json"), "utf8").replace(/^\uFEFF/, "")), list);
+  return parseLearningData(JSON.parse(readFileSync(join(dir, "graph.json"), "utf8").replace(/^\uFEFF/, "")), JSON.parse(readFileSync(join(dir, "resources.json"), "utf8").replace(/^\uFEFF/, "")), list, JSON.parse(readFileSync(join(dir, "certifications.json"), "utf8").replace(/^\uFEFF/, "")));
 }

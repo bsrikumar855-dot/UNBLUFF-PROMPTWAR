@@ -1,5 +1,5 @@
 import { ApiError } from "../errors.js";
-import { computeGaps, progressSummary, roleMatch, topicName, type AssessmentSource, type GapAnalysis, type LearnerSkillState, type LearningPath, type PathChange, type ProgressSummary } from "../core/path.js";
+import { computeGaps, progressSummary, roleMatch, topicName, type CertMapping, type AssessmentSource, type GapAnalysis, type LearnerSkillState, type LearningPath, type PathChange, type ProgressSummary } from "../core/path.js";
 import type { Role } from "../types.js";
 import { careerMatcherAgent, type RoleRank } from "./careerMatcher.js";
 import { curriculumPlannerAgent, type UpcomingStep } from "./curriculumPlanner.js";
@@ -62,6 +62,8 @@ export interface EventOutcome {
   progress: ProgressSummary;
   upcoming: UpcomingStep[];
   unrecognized: string[];
+  /** Only set by a new profile; a goal change or assessment keeps what was stored. */
+  certification_skills: CertMapping[];
   log: AgentLogEntry[];
 }
 
@@ -104,6 +106,7 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
   let path = prior.path;
   let change: PathChange | null = null;
   let unrecognized: string[] = [];
+  let certificationSkills: CertMapping[] = [];
   let ranking: RoleRank[] = [];
   let analysis: GapAnalysis | null = null;
   let upcoming: UpcomingStep[] = [];
@@ -127,6 +130,7 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
         if (event.type === "PROFILE_SUBMITTED") {
           states = r.output.states;
           unrecognized = r.output.unrecognized;
+          certificationSkills = r.output.certification_skills;
         }
         executed.push({ agent: "profiler", result: event.type === "GOAL_CHANGED" ? { ...r, log: [{ ...r.log[0]!, action: "reuse_profile", summary: `Reused the learner's ${states.length} known skill state(s) for the new goal; nothing was re-entered.` }], handoff: `${states.length} skill state(s) carried over` } : r });
         break;
@@ -224,6 +228,7 @@ export async function runEvent(event: LearningEvent, prior: LearnerState, ctx: A
     progress: progressSummary(finalPath, finalPath.states, role, ctx.graph),
     upcoming: upcoming.length > 0 ? upcoming : finalPath.steps.filter((s) => s.status !== "done").slice(0, 4).map((s) => ({ step_id: s.id, label: s.kind === "remedial" ? `Revisit: ${s.concept}` : topicName(s.skill_id, ctx.graph), status: s.status, resources: [] })),
     unrecognized,
+    certification_skills: certificationSkills,
     log,
   };
 }

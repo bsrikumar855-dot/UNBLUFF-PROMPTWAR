@@ -3616,6 +3616,8 @@ An owner-scoped learning path built from a learner profile and a target role, re
 | `POST /api/learning-path/:id/goal` | `{ role_id }` | `LearningPathView` |
 | `GET /api/learning-path/:id/agent-log` | | `{ entries: AgentLogEntry[] }` |
 
+Certifications entered are matched, by whole-word keywords in a curated list (`backend/data/learning/certifications.json`), to topics that exist in the graph. Matched topics count as **declared** skills (never verified, so the 40% cap applies); a certification no rule matches is kept and adds no skill (`certification_skills[].topics` is empty). `certification_skills` is added to `LearningPathView` (additive).
+
 Bodies are strict (unknown keys are `400 BAD_REQUEST`). Another student's path is `404 NOT_FOUND`. At most 20 paths per student.
 
 ```ts
@@ -3652,6 +3654,7 @@ interface LearningPathView {
   id: string; role: { id: string; name: string }; created_at: string; updated_at: string;
   profile: { skills: string[]; certifications: string[]; projects: { name: string; description: string; skills: string[] }[]; career_interests: string[] };
   unrecognized_skills: string[];
+  certification_skills: { cert: string; topics: string[] }[];   // per certification entered; empty topics = no skills mapped
   career_match: { role_id: string; percent: number; alternatives: { role_id: string; name: string; match_percent: number }[] };   // top 3 other roles
   analysis: { gaps: GapRow[]; strengths: GapRow[] };
   path: LearningPath;

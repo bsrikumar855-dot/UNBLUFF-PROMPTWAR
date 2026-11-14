@@ -13,6 +13,7 @@ import type {
 } from "./pathTypes.js";
 
 export type * from "./pathTypes.js";
+export { skillsFromCertifications } from "./certs.js";
 
 /** A role skill with at least this much gap (weight x unmastered share) gets steps. */
 export const GAP_THRESHOLD = 0.1;

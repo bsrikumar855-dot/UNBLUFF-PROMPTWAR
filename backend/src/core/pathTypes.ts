@@ -117,6 +117,22 @@ export interface LearningGraph {
   skill_topics: Record<string, TopicShare[]>;
   /** Lower-case alternative spellings of a topic ("js" -> "javascript"), for free-text skill entry. */
   aliases?: Record<string, string>;
+  /** Curated certification rules (see core/certs.ts). */
+  certifications?: CertRule[];
+}
+
+/** A certification (by name keywords) and the topics it genuinely covers. Curated; topics must exist in the graph. */
+export interface CertRule {
+  id: string;
+  /** Matched as whole words, case-insensitively, anywhere in the certification name. */
+  keywords: string[];
+  topics: string[];
+}
+
+/** What one certification entered by the learner maps to. `topics` is empty when no rule matches. */
+export interface CertMapping {
+  cert: string;
+  topics: string[];
 }
 
 export interface GapTopic {

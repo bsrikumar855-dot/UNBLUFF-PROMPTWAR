@@ -5,7 +5,7 @@ import { upcomingSteps, type UpcomingStep } from "../agents/curriculumPlanner.js
 import type { RoleRank } from "../agents/careerMatcher.js";
 import { verifiedFromInterviews } from "../agents/skillAnalyst.js";
 import type { AgentContext, AgentLogEntry, LearnerProfile, MentorFacts, MentorNote } from "../agents/types.js";
-import { computeGaps, progressSummary, resolveTopic, roleMatch, type GapAnalysis, type LearningPath, type PathChange, type ProgressSummary, type Resource } from "../core/path.js";
+import { computeGaps, progressSummary, resolveTopic, roleMatch, type CertMapping, type GapAnalysis, type LearningPath, type PathChange, type ProgressSummary, type Resource } from "../core/path.js";
 import { ApiError } from "../errors.js";
 import type { Logger } from "../logger.js";
 import { formatIssues } from "../middleware/validate.js";
@@ -44,6 +44,8 @@ export interface LearningPathView {
   updated_at: string;
   profile: LearnerProfile;
   unrecognized_skills: string[];
+  /** Per certification entered: the topics it counts for (as declared skills, never verified). Empty `topics` means no skills mapped. */
+  certification_skills: CertMapping[];
   career_match: { role_id: string; percent: number; alternatives: RoleRank[] };
   analysis: GapAnalysis;
   path: LearningPath;
@@ -145,6 +147,7 @@ export class LearningPathService {
       updated_at: rec.updated_at,
       profile: rec.profile,
       unrecognized_skills: rec.unrecognized_skills,
+      certification_skills: rec.certification_skills ?? rec.profile.certifications.map((cert) => ({ cert, topics: [] })),
       career_match: { role_id: role.id, percent: ranking.find((r) => r.role_id === role.id)!.match_percent, alternatives: ranking.filter((r) => r.role_id !== role.id).slice(0, 3) },
       analysis: computeGaps(role, rec.path.states, graph),
       path: rec.path,
@@ -167,7 +170,7 @@ export class LearningPathService {
     const profile: LearnerProfile = { skills: body.skills, certifications: body.certifications, projects: body.projects, career_interests: body.career_interests };
     const out = await runEvent({ type: "PROFILE_SUBMITTED", profile, role }, { profile, role, path: null, states: [] }, this.ctx(uid), 1);
     const now = this.now().toISOString();
-    const rec: LearningPathRecord = { id: `lp_${randomUUID()}`, owner_uid: uid, role_id: role.id, profile, path: out.path, agent_log: out.log, mentor: out.mentor, unrecognized_skills: out.unrecognized, created_at: now, updated_at: now };
+    const rec: LearningPathRecord = { id: `lp_${randomUUID()}`, owner_uid: uid, role_id: role.id, profile, path: out.path, agent_log: out.log, mentor: out.mentor, unrecognized_skills: out.unrecognized, certification_skills: out.certification_skills, created_at: now, updated_at: now };
     await this.deps.store.put(rec);
     this.deps.logger.info({ event: "learning_path.created" }, "learning path created");
     return this.view(rec);

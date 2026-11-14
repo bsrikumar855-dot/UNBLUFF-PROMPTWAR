@@ -259,12 +259,26 @@ const LearningPathPage: React.FC = () => {
                         <Pill tone="ink">Project: {p.name}</Pill>
                       </li>
                     ))}
-                    {view.profile.certifications.map((c) => (
-                      <li key={c}>
-                        <Pill tone="core">Cert: {c}</Pill>
-                      </li>
-                    ))}
                   </ul>
+                  {view.certification_skills.length > 0 && (
+                    <div>
+                      <h3 className="mb-1 text-sm font-semibold text-ink-primary">Certifications</h3>
+                      <ul className="space-y-1 text-sm text-ink-secondary" aria-label="Your certifications">
+                        {view.certification_skills.map((c) => (
+                          <li key={c.cert}>
+                            <Pill tone="core">Cert</Pill> <span className="text-ink-primary">{c.cert}</span>:{" "}
+                            {c.topics.length > 0 ? (
+                              <>
+                                from certifications: {c.topics.map((t) => view.topic_names[t] ?? t).join(", ")} <span className="text-ink-muted">(declared, not verified)</span>
+                              </>
+                            ) : (
+                              <span className="text-ink-muted">no skills mapped</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   {view.unrecognized_skills.length > 0 && (
                     <p role="note" className="text-sm text-redline">
                       We could not match these to a skill we can plan for yet: {view.unrecognized_skills.join(", ")}.

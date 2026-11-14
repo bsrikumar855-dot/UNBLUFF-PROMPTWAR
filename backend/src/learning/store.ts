@@ -1,6 +1,6 @@
 import { Firestore } from "@google-cloud/firestore";
 import type { AgentLogEntry, LearnerProfile, MentorNote } from "../agents/types.js";
-import type { LearningPath } from "../core/pathTypes.js";
+import type { CertMapping, LearningPath } from "../core/pathTypes.js";
 
 /** One learning path per document, owner-scoped. The owner is always the verified uid. */
 export interface LearningPathRecord {
@@ -13,6 +13,8 @@ export interface LearningPathRecord {
   mentor: MentorNote;
   /** Skill names the learner typed that matched no known topic. */
   unrecognized_skills: string[];
+  /** What each certification mapped to when the profile was submitted. Absent on records saved before this field existed. */
+  certification_skills?: CertMapping[];
   created_at: string;
   updated_at: string;
 }

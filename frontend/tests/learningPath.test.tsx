@@ -63,6 +63,7 @@ const view = (over: Partial<LearningPathView> = {}): LearningPathView => ({
   updated_at: "2026-11-14T08:00:00Z",
   profile: { skills: ["Python", "SQL", "HTML"], certifications: [], projects: [], career_interests: [] },
   unrecognized_skills: [],
+  certification_skills: [],
   career_match: { role_id: "fullstack_developer", percent: 9, alternatives: [{ role_id: "data_analyst", name: "Data Analyst", match_percent: 21 }, { role_id: "ml_engineer", name: "Machine Learning Engineer", match_percent: 8 }, { role_id: "backend_developer", name: "Backend Developer", match_percent: 6 }] },
   analysis: {
     gaps: [
@@ -259,6 +260,30 @@ describe("Learning Path page", () => {
     await waitFor(() => expect(mocked.assessLearningPath).toHaveBeenCalledWith(view().id, { source: "interrogation", skill: "javascript" }));
     expect((await screen.findAllByRole("alert"))[0]).toBeInTheDocument();
     expect(screen.getByRole("list", { name: "Roadmap steps in order" })).toBeInTheDocument(); // the path is still there
+  });
+
+  it("shows what each certification maps to, or that no skills were mapped", async () => {
+    mocked.listLearningPaths.mockResolvedValue({ paths: [{ id: view().id, role: view().role, updated_at: "x", percent_complete: 0 }] });
+    mocked.getLearningPath.mockResolvedValue(
+      view({
+        profile: { ...view().profile, certifications: ["Meta Front-End Developer Professional Certificate", "AWS Cloud Practitioner"] },
+        certification_skills: [{ cert: "Meta Front-End Developer Professional Certificate", topics: ["javascript", "react"] }, { cert: "AWS Cloud Practitioner", topics: [] }],
+      })
+    );
+    renderPage();
+    const list = within(await screen.findByRole("list", { name: "Your certifications" }));
+    const items = list.getAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Meta Front-End Developer Professional Certificate: from certifications: JavaScript, React (declared, not verified)");
+    expect(items[1]).toHaveTextContent("AWS Cloud Practitioner: no skills mapped");
+  });
+
+  it("shows no certification list when none were entered", async () => {
+    mocked.listLearningPaths.mockResolvedValue({ paths: [{ id: view().id, role: view().role, updated_at: "x", percent_complete: 0 }] });
+    mocked.getLearningPath.mockResolvedValue(view());
+    renderPage();
+    await screen.findByRole("list", { name: "Roadmap steps in order" });
+    expect(screen.queryByRole("list", { name: "Your certifications" })).not.toBeInTheDocument();
   });
 
   it("is reachable from the navigation and the landing page", async () => {

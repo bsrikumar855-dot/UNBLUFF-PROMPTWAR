@@ -166,6 +166,27 @@ describe("validation, ownership and errors", () => {
   });
 });
 
+describe("certifications", () => {
+  it("count as declared skills only (40% cap), are shown per certification, and unmapped ones add no skill", async () => {
+    const r = await request(setup()).post("/api/learning-path").set(as("a")).send({ role_id: "fullstack_developer", skills: ["SQL"], certifications: ["Meta Front-End Developer Professional Certificate", "AWS Cloud Practitioner"] }).expect(201);
+    const b = r.body as Body;
+    expect(b.certification_skills).toEqual([{ cert: "Meta Front-End Developer Professional Certificate", topics: ["css", "html", "javascript", "react"] }, { cert: "AWS Cloud Practitioner", topics: [] }]);
+    expect(b.path.states).toEqual(["css", "html", "javascript", "react", "sql"].map((skill_id) => ({ skill_id, declared: true, verified_proficiency: null })));
+    const fe = b.analysis.gaps.find((g: Body) => g.skill_id === "web_frontend");
+    expect(fe.mastery).toBeLessThanOrEqual(0.4); // never above the declared cap
+    expect(fe.unverified).toBe(true);
+    expect(b.path.steps.map((s: Body) => s.skill_id)).not.toContain("javascript"); // declared, so no learning step, but it still needs verifying
+    expect(b.agent_log[0].summary).toMatch(/1 of 2 certification\(s\) mapped to CSS, HTML, JavaScript, React/);
+  });
+  it("keeps them after later changes", async () => {
+    const app = setup();
+    const made = (await request(app).post("/api/learning-path").set(as("a")).send({ role_id: "fullstack_developer", certifications: ["PCEP"] })).body as Body;
+    const after = (await request(app).post(`/api/learning-path/${made.id}/goal`).set(as("a")).send({ role_id: "data_analyst" })).body as Body;
+    expect(after.certification_skills).toEqual([{ cert: "PCEP", topics: ["python"] }]);
+    expect(after.path.states.find((s: Body) => s.skill_id === "python")).toEqual({ skill_id: "python", declared: true, verified_proficiency: null });
+  });
+});
+
 describe("real (interrogation) results", () => {
   it("credits verified proficiency from the student's graded interrogations, and reads the score on the server", async () => {
     const app = setup({ interview: async () => interview() });

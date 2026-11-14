@@ -123,6 +123,8 @@ export interface LearningPathView {
   updated_at: string;
   profile: LearnerProfile;
   unrecognized_skills: string[];
+  /** Per certification entered: the topics it counts for (as declared skills, never verified). Empty `topics` means no skills mapped. */
+  certification_skills: { cert: string; topics: string[] }[];
   career_match: { role_id: string; percent: number; alternatives: { role_id: string; name: string; match_percent: number }[] };
   analysis: { gaps: GapRow[]; strengths: GapRow[] };
   path: LearningPath;

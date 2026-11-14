@@ -12,7 +12,7 @@ the same evidence engine, not the whole product.
 
 | What the problem statement asks | How SkillForge answers it | Where |
 |---|---|---|
-| User profile: skills, certifications, projects, career goals | A profile card. Skills and project skills count as **declared** (never above 40%) until verified; certifications and projects are kept on the path. Names it cannot match are listed back, not dropped. | `/learning-path`, `backend/src/agents/profiler.ts` |
+| User profile: skills, certifications, projects, career goals | A profile card. Skills, project skills and the topics a recognised certification covers (curated list, `data/learning/certifications.json`) count as **declared** (never above 40%) until verified; a certification with no rule is kept and shows "no skills mapped". Names it cannot match are listed back, not dropped. | `/learning-path`, `backend/src/agents/profiler.ts` |
 | Skill analysis, missing skills | Per role skill: `gap = weight × (1 − mastery)`, with the missing topics named (JavaScript, React, Node.js…). Unverified skills are marked, with a **Verify this skill** link into the existing interrogation flow. | `core/path.ts` `computeGaps` |
 | Career matching | Match % for the target role and the top 3 other roles, from weighted effective mastery. | `agents/careerMatcher.ts` |
 | Learning recommendations (courses, tutorials, practice) | Each roadmap step carries up to 3 curated free resources (one course or tutorial, one exercise), ordered by prerequisites. The list is hand-curated static data, never generated. | `data/learning/` |
@@ -90,8 +90,8 @@ Path page, and tests for all of it. The API additions are appended to [`CONTRACT
 choices are in [`DECISIONS.md`](DECISIONS.md) ("SkillForge learning path", "SkillForge agents").
 
 Limits, stated plainly: roles score broad skills, so JavaScript, React and Node.js are *topics* mapped under
-the Full Stack skills (`web_frontend`, `rest_apis`) rather than separate role skills. Certifications are
-stored but do not add skills. The resource list is curated by hand and its links were checked once when it
+the Full Stack skills (`web_frontend`, `rest_apis`) rather than separate role skills. A certification adds declared (never verified)
+skills only when it matches a curated rule; generic cloud certifications are deliberately unmapped. The resource list is curated by hand and its links were checked once when it
 was written, not continuously. There is no separate persistent learner-profile record yet: a profile lives
 with each learning path. Simulated scores exist only to show how the roadmap adapts.
 ## UNBLUFF: the evidence engine

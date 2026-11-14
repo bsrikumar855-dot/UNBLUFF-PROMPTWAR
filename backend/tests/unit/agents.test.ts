@@ -73,8 +73,21 @@ describe("ProfilerAgent", () => {
   });
   it("handles an empty profile", async () => {
     const r = await profilerAgent.run({ profile: profile([]) }, ctx());
-    expect(r.output).toEqual({ states: [], unrecognized: [] });
-    expect(r.log[0]!.summary).not.toMatch(/could not match/);
+    expect(r.output).toEqual({ states: [], unrecognized: [], certification_skills: [] });
+    expect(r.log[0]!.summary).not.toMatch(/could not match|certification/);
+  });
+  it("counts the topics a certification covers as declared skills only, merges them with typed skills, and keeps unmapped certifications with no skills", async () => {
+    const p = { ...profile(["Python"]), certifications: ["Meta Front-End Developer Professional Certificate", "AWS Cloud Practitioner"] };
+    const r = await profilerAgent.run({ profile: p }, ctx());
+    expect(r.output.states.map((s) => s.skill_id)).toEqual(["css", "html", "javascript", "python", "react"]);
+    expect(r.output.states.every((s) => s.declared && s.verified_proficiency === null)).toBe(true); // declared, never verified
+    expect(r.output.certification_skills).toEqual([{ cert: "Meta Front-End Developer Professional Certificate", topics: ["css", "html", "javascript", "react"] }, { cert: "AWS Cloud Practitioner", topics: [] }]);
+    expect(r.log[0]!.summary).toMatch(/1 of 2 certification\(s\) mapped to CSS, HTML, JavaScript, React \(1 mapped to no skill\)/);
+    const none = await profilerAgent.run({ profile: { ...profile([]), certifications: ["AWS Cloud Practitioner"] } }, ctx());
+    expect(none.output.states).toEqual([]);
+    expect(none.log[0]!.summary).toMatch(/none of 1 certification\(s\) mapped to a skill/);
+    const all = await profilerAgent.run({ profile: { ...profile([]), certifications: ["PCEP"] } }, ctx());
+    expect(all.log[0]!.summary).toMatch(/1 of 1 certification\(s\) mapped to Python\.$/);
   });
 });
 
