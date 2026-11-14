@@ -30,7 +30,23 @@ export const GAP_THRESHOLD = 0.1;
 export const DECLARED_MASTERY = 0.4;
 /** One course or tutorial plus one exercise, and at most one extra: enough to start, few enough to finish. */
 export const MAX_RESOURCES_PER_STEP = 3;
+/**
+ * Pass mark for a graded result (0..100). A topic graded below it is not covered and keeps a roadmap step, even when its
+ * proficiency is above the declared cap. The adaptation bands in core/adapt.ts use the same mark.
+ */
+export const PASS_SCORE = 60;
 const EPS = 1e-9;
+
+/**
+ * Whether a topic needs no roadmap step. A graded result covers it only at or above the pass mark (so a failed 50% is
+ * still a gap); a declared-only skill is covered at its capped level (it gets verified, not re-taught).
+ */
+export function topicCovered(state: LearnerSkillState | undefined): boolean {
+  if (!state) return false;
+  if (state.verified_proficiency !== null)
+    return state.verified_proficiency * 100 >= PASS_SCORE - EPS;
+  return state.declared;
+}
 
 const pct = (n: number): string => `${Math.round(n * 100)}%`;
 const round3 = (n: number): number => Math.round(n * 1000) / 1000;
@@ -127,7 +143,7 @@ export function computeGaps(
       mastery: round3(mastery),
       gap: round3(skill.weight * (1 - mastery)),
       missing_topics: topics
-        .filter((t) => (m.get(t.topic) ?? 0) < DECLARED_MASTERY - EPS)
+        .filter((t) => !topicCovered(byTopic.get(t.topic)))
         .sort((a, b) => b.share - a.share || a.topic.localeCompare(b.topic))
         .map((t) => ({
           topic: t.topic,
@@ -137,6 +153,7 @@ export function computeGaps(
       unverified:
         present.length > 0 &&
         present.every((t) => byTopic.get(t.topic)?.verified_proficiency === null),
+      simulated: present.some((t) => byTopic.get(t.topic)?.simulated === true),
     };
   });
   const gaps = rows
@@ -237,6 +254,7 @@ export function buildPath(
 ): LearningPath {
   const clean = normalizeStates(states, graph);
   const m = masteryMap(clean);
+  const byTopic = new Map(clean.map((s) => [s.skill_id, s]));
   const seen = new Set<string>();
   const raw: PathStep[] = [];
   for (const skill of role.skills) {
@@ -244,7 +262,7 @@ export function buildPath(
     if (skillGap < threshold - EPS) continue;
     for (const t of topicsOf(skill, graph)) {
       const mastery = m.get(t.topic) ?? 0;
-      if (mastery >= DECLARED_MASTERY - EPS || seen.has(t.topic)) continue;
+      if (topicCovered(byTopic.get(t.topic)) || seen.has(t.topic)) continue;
       seen.add(t.topic);
       raw.push({
         id: `step-${t.topic}`,
@@ -322,6 +340,7 @@ export function progressSummary(
         unverified:
           present.length > 0 &&
           present.every((t) => byTopic.get(t.topic)?.verified_proficiency === null),
+        simulated: present.some((t) => byTopic.get(t.topic)?.simulated === true),
       };
     }),
     next_step: next,

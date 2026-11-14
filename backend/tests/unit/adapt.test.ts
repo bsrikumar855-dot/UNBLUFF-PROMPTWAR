@@ -8,6 +8,8 @@ import {
 } from "../../src/core/adapt.js";
 import {
   buildPath,
+  computeGaps,
+  progressSummary,
   type AssessmentResult,
   type LearnerSkillState,
   type LearningGraph,
@@ -85,6 +87,7 @@ describe("adaptOnAssessment: failing score", () => {
       skill_id: "javascript",
       declared: false,
       verified_proficiency: 0.4,
+      simulated: true,
     });
     expect(path.history).toHaveLength(2);
     expect(path.history[1]).toBe(change);
@@ -286,6 +289,7 @@ describe("adaptOnAssessment: passing scores", () => {
       skill_id: "html",
       declared: true,
       verified_proficiency: 0.92,
+      simulated: true,
     });
     expect(change.status_changes).toEqual([]);
     expect(change.reason).not.toMatch(/Next up/);
@@ -362,7 +366,7 @@ describe("adaptOnGoalChange", () => {
   it("is deterministic", () => {
     expect(adaptOnGoalChange(base(), da, resources, graph, T1)).toEqual({ path, change });
   });
-  it("keeps done steps for topics the new role also needs and reports verified skills as kept", () => {
+  it("keeps done steps for topics the new role also needs and never calls a simulated score verified", () => {
     const afterJs = adaptOnAssessment(
       base(),
       result("javascript", 90),
@@ -377,7 +381,7 @@ describe("adaptOnGoalChange", () => {
     expect(jsStep.status).toBe("done");
     expect(out.path.steps.findIndex((s) => s.skill_id === "javascript")).toBe(0);
     expect(out.change.kept.find((k) => k.label === "JavaScript")!.reason).toBe(
-      "JavaScript already verified; it counts towards Frontend Developer",
+      "JavaScript already at a simulated 90% (Simulation, not verified); it counts towards Frontend Developer",
     );
     expect(
       out.change.kept.some((k) => k.reason.includes("is still required by Frontend Developer")),
@@ -405,5 +409,96 @@ describe("adaptOnGoalChange", () => {
     expect(() =>
       adaptOnGoalChange({ ...base(), states: [declared("cobol")] }, da, resources, graph, T1),
     ).toThrow(/Unknown skill id/);
+  });
+});
+
+describe("audit regressions: failed and simulated results survive a rebuild", () => {
+  const failed = (score: number) =>
+    adaptOnAssessment(base(), result("javascript", score), fullstack, resources, graph, T1).path;
+
+  it("a failed 50% keeps JavaScript as a gap, with its step, its open remedial step and its paused dependents", () => {
+    const after = failed(50);
+    const paused = after.steps.filter((s) => s.status === "blocked").length;
+    expect(remedial(after, "javascript")).toHaveLength(1);
+    expect(paused).toBeGreaterThan(0);
+    const rebuilt = adaptOnGoalChange(after, fullstack, resources, graph, T1);
+    expect(step(rebuilt.path, "javascript")).toBeDefined();
+    expect(step(rebuilt.path, "javascript").status).toBe("blocked");
+    expect(remedial(rebuilt.path, "javascript")).toHaveLength(1);
+    expect(remedial(rebuilt.path, "javascript")[0]!.status).toBe("remedial");
+    expect(rebuilt.path.steps.filter((s) => s.status === "blocked")).toHaveLength(paused);
+    expect(rebuilt.change.kept.some((k) => /JavaScript already/.test(k.reason))).toBe(false);
+    expect(rebuilt.change.kept.some((k) => k.label.startsWith("Revisit:"))).toBe(true);
+    const gaps = computeGaps(fullstack, rebuilt.path.states, graph).gaps;
+    expect(gaps.some((g) => g.missing_topics.some((t) => t.topic === "javascript"))).toBe(true);
+  });
+
+  it("the remedial step then closes on a pass after the rebuild", () => {
+    const rebuilt = adaptOnGoalChange(failed(40), fullstack, resources, graph, T1).path;
+    const passed = adaptOnAssessment(
+      rebuilt,
+      result("javascript", 90),
+      fullstack,
+      resources,
+      graph,
+      T1,
+    ).path;
+    expect(passed.steps.some((s) => s.status === "blocked" || s.status === "remedial")).toBe(false);
+  });
+
+  it(`a score at the pass mark (${PASS_SCORE}) covers the topic on a rebuild; one point below does not`, () => {
+    const at = adaptOnGoalChange(
+      adaptOnAssessment(base(), result("javascript", PASS_SCORE), fullstack, resources, graph, T1)
+        .path,
+      fullstack,
+      resources,
+      graph,
+      T1,
+    ).path;
+    expect(at.steps.find((s) => s.skill_id === "javascript")!.status).toBe("done");
+    const below = adaptOnGoalChange(failed(PASS_SCORE - 1), fullstack, resources, graph, T1).path;
+    expect(step(below, "javascript").status).not.toBe("done");
+  });
+
+  it("a goal without the failed topic closes its remedial step and says so", () => {
+    const da = roles.get("data_analyst")!;
+    const out = adaptOnGoalChange(failed(40), da, resources, graph, T1);
+    expect(out.path.steps.some((s) => s.kind === "remedial")).toBe(false);
+    expect(out.change.removed.some((r) => r.label.startsWith("Revisit:"))).toBe(true);
+  });
+
+  it("a simulated score is flagged as simulated in the gaps and skill bars, and an interrogation result is not", () => {
+    const sim = adaptOnAssessment(
+      base(),
+      result("javascript", 90),
+      fullstack,
+      resources,
+      graph,
+      T1,
+    ).path;
+    const row = computeGaps(fullstack, sim.states, graph)
+      .strengths.concat(computeGaps(fullstack, sim.states, graph).gaps)
+      .find((r) => r.skill_id === "web_frontend")!;
+    expect(row.simulated).toBe(true);
+    expect(
+      progressSummary(sim, sim.states, fullstack, graph).skill_bars.find(
+        (b) => b.skill_id === "web_frontend",
+      )!.simulated,
+    ).toBe(true);
+    const real = adaptOnAssessment(
+      base(),
+      result("javascript", 90, { source: "interrogation" }),
+      fullstack,
+      resources,
+      graph,
+      T1,
+    ).path;
+    expect(real.states.find((s) => s.skill_id === "javascript")!.simulated).toBeUndefined();
+    const fe = roles.get("frontend_developer")!;
+    expect(
+      adaptOnGoalChange(real, fe, resources, graph, T1).change.kept.find(
+        (k) => k.label === "JavaScript",
+      )!.reason,
+    ).toBe("JavaScript already verified; it counts towards Frontend Developer");
   });
 });

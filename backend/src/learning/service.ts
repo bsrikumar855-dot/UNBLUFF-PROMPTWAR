@@ -349,6 +349,8 @@ export class LearningPathService {
     const newRole = this.role(body.role_id);
     return this.serialize(id, async () => {
       const rec = await this.load(uid, id);
+      if (newRole.id === rec.role_id)
+        throw new ApiError("BAD_REQUEST", `${newRole.name} is already the goal of this path.`);
       const prior: LearnerState = {
         profile: rec.profile,
         role: this.role(rec.role_id),

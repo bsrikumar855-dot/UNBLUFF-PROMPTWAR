@@ -38,6 +38,8 @@ export interface LearnerSkillState {
   skill_id: string;
   declared: boolean;
   verified_proficiency: number | null;
+  /** The proficiency came from a simulated score. */
+  simulated?: boolean;
 }
 
 export interface PathStep {
@@ -107,6 +109,8 @@ export interface GapRow {
   gap: number;
   missing_topics: { topic: string; name: string; mastery: number }[];
   unverified: boolean;
+  /** Some of this mastery comes from a simulated score (not verified). */
+  simulated?: boolean;
 }
 
 export interface AgentLogEntry {
@@ -152,6 +156,8 @@ export interface LearningPathView {
       weight: number;
       mastery: number;
       unverified: boolean;
+      /** Some of this mastery comes from a simulated score (not verified). */
+      simulated?: boolean;
     }[];
     next_step: PathStep | null;
   };

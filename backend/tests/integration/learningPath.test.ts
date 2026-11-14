@@ -240,6 +240,15 @@ describe("validation, ownership and errors", () => {
     expect(
       (await request(app).post(`/api/learning-path/${id}/goal`).set(as("a")).send({})).status,
     ).toBe(400);
+    const current = (await request(app).get(`/api/learning-path/${id}`).set(as("a"))).body;
+    const same = await request(app)
+      .post(`/api/learning-path/${id}/goal`)
+      .set(as("a"))
+      .send({ role_id: current.role.id });
+    expect(same.status).toBe(400);
+    expect(same.body.error.message).toMatch(/already the goal of this path/);
+    const unchanged = (await request(app).get(`/api/learning-path/${id}`).set(as("a"))).body;
+    expect(unchanged.path.version).toBe(current.path.version);
   });
 
   it("reports skills it could not match instead of dropping them silently", async () => {

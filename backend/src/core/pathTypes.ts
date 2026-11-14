@@ -13,6 +13,8 @@ export interface LearnerSkillState {
   declared: boolean;
   /** 0..1 from a graded assessment, or null when only declared / unknown. */
   verified_proficiency: number | null;
+  /** True when `verified_proficiency` came from a simulated score: it drives the roadmap but is never shown as verified. */
+  simulated?: boolean;
 }
 
 export type StepStatus = "pending" | "active" | "done" | "blocked" | "remedial";
@@ -149,10 +151,12 @@ export interface GapRow {
   mastery: number;
   /** weight x (1 - mastery) */
   gap: number;
-  /** Topics below the declared bar (no evidence at all). */
+  /** Topics not yet covered: no evidence at all, or a graded result below the pass mark. */
   missing_topics: GapTopic[];
   /** Every topic with some mastery has only a self-declared level. */
   unverified: boolean;
+  /** Some of this skill's mastery comes from a simulated score, so it is not a verified level. */
+  simulated: boolean;
 }
 
 export interface GapAnalysis {
@@ -166,6 +170,8 @@ export interface SkillBar {
   weight: number;
   mastery: number;
   unverified: boolean;
+  /** Some of this skill's mastery comes from a simulated score. */
+  simulated: boolean;
 }
 
 export interface ProgressSummary {

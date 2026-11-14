@@ -4,6 +4,7 @@
 import type { Role } from "../types.js";
 import {
   DECLARED_MASTERY,
+  PASS_SCORE,
   assertKnownTopic,
   buildPath,
   normalizeSteps,
@@ -25,9 +26,9 @@ import {
 /**
  * Adaptation bands for a graded result (0..100). Below PASS_SCORE: a remedial step on a prerequisite is inserted and the
  * step and its dependents pause. PASS_SCORE..STRONG_SCORE-1: done but flagged to review. STRONG_SCORE and up: done.
- * See DECISIONS.md, "Adaptation thresholds".
+ * See DECISIONS.md, "Adaptation thresholds". PASS_SCORE is defined in core/path.ts (it also decides what counts as covered).
  */
-export const PASS_SCORE = 60;
+export { PASS_SCORE };
 export const STRONG_SCORE = 85;
 
 const FALLBACK_CONCEPT = "Revisit the fundamentals";
@@ -81,12 +82,15 @@ function upsertState(
   states: readonly LearnerSkillState[],
   topic: string,
   score: number,
+  simulated: boolean,
 ): LearnerSkillState[] {
   const next = states.filter((s) => s.skill_id !== topic).map((s) => ({ ...s }));
   next.push({
     skill_id: topic,
     declared: states.find((s) => s.skill_id === topic)?.declared ?? false,
     verified_proficiency: score / 100,
+    // Kept with the state so a simulated score is never later described as verified (e.g. after a goal change).
+    ...(simulated ? { simulated: true } : {}),
   });
   return next.sort((a, b) => a.skill_id.localeCompare(b.skill_id));
 }
@@ -111,7 +115,7 @@ export function adaptOnAssessment(
   const label = topicName(topic, graph);
   const before = path.steps.map((s) => ({ ...s, blocked_by: [...s.blocked_by] }));
   let steps = before.map((s) => ({ ...s, blocked_by: [...s.blocked_by] }));
-  const states = upsertState(path.states, topic, result.score);
+  const states = upsertState(path.states, topic, result.score, result.source === "simulation");
   const target = steps.find((s) => s.kind === "core" && s.skill_id === topic);
   const openRemedial = steps.find(
     (s) => s.kind === "remedial" && s.skill_id === topic && s.status !== "done",
@@ -228,8 +232,27 @@ export function adaptOnGoalChange(
 
   // Carry over done steps for topics the new role also needs.
   const carried = oldDone.filter((s) => roleTopics.has(s.skill_id) && !freshTopics.has(s.skill_id));
+  // An open remedial step stays open when the new role still needs its topic, and keeps pausing that topic's step and
+  // its dependents: changing goal (or re-choosing the same one) must not erase a failed assessment.
+  const openRemedial = path.steps.filter((s) => s.kind === "remedial" && s.status !== "done");
+  const keptRemedial = openRemedial.filter((s) => roleTopics.has(s.skill_id));
+  let freshSteps = fresh.steps.map((s) => ({ ...s, blocked_by: [...s.blocked_by] }));
+  const lastOrder = Math.max(0, ...freshSteps.map((s) => s.order));
+  const remedials = keptRemedial.map((r) => {
+    const dependents = dependentTopics(r.skill_id, graph);
+    freshSteps = freshSteps.map((s) =>
+      s.kind === "core" &&
+      s.status !== "done" &&
+      (s.skill_id === r.skill_id || dependents.has(s.skill_id))
+        ? { ...s, blocked_by: [...s.blocked_by, r.id] }
+        : s,
+    );
+    const core = freshSteps.find((s) => s.kind === "core" && s.skill_id === r.skill_id);
+    return { ...r, blocked_by: [], order: (core?.order ?? lastOrder + 1) - 0.5 };
+  });
   const merged = normalizeSteps([
-    ...fresh.steps.map((s) => ({ ...s })),
+    ...freshSteps,
+    ...remedials,
     ...carried.map((s, i) => ({ ...s, blocked_by: [], order: -carried.length + i })),
   ]);
 
@@ -241,14 +264,25 @@ export function adaptOnGoalChange(
       !freshTopics.has(s.skill_id) &&
       (s.verified_proficiency !== null || s.declared)
     ) {
-      const verified = s.verified_proficiency !== null;
+      const how =
+        s.verified_proficiency === null
+          ? `declared (counts as ${Math.round(DECLARED_MASTERY * 100)}% until verified)`
+          : s.simulated
+            ? `at a simulated ${Math.round(s.verified_proficiency * 100)}% (Simulation, not verified)`
+            : "verified";
       kept.push({
         skill_id: s.skill_id,
         label: label(s.skill_id),
-        reason: `${label(s.skill_id)} already ${verified ? "verified" : `declared (counts as ${Math.round(DECLARED_MASTERY * 100)}% until verified)`}; it counts towards ${newRole.name}`,
+        reason: `${label(s.skill_id)} already ${how}; it counts towards ${newRole.name}`,
       });
     }
   }
+  for (const r of keptRemedial)
+    kept.push({
+      skill_id: r.skill_id,
+      label: `Revisit: ${r.concept}`,
+      reason: `The remedial step on "${r.concept}" is still open, so ${label(r.skill_id)} and the steps that depend on it stay paused`,
+    });
   const oldTopics = new Set(oldOpen.map((s) => s.skill_id));
   for (const s of fresh.steps) {
     if (oldTopics.has(s.skill_id))
@@ -267,6 +301,13 @@ export function adaptOnGoalChange(
         ? `${label(s.skill_id)} no longer needs a step: it is already covered for ${newRole.name}`
         : `${label(s.skill_id)} is not required by ${newRole.name}`,
     }));
+  for (const r of openRemedial)
+    if (!roleTopics.has(r.skill_id))
+      removed.push({
+        skill_id: r.skill_id,
+        label: `Revisit: ${r.concept}`,
+        reason: `${label(r.skill_id)} is not required by ${newRole.name}, so its remedial step is closed`,
+      });
   const added: ChangeItem[] = fresh.steps
     .filter((s) => !oldTopics.has(s.skill_id))
     .map((s) => ({ skill_id: s.skill_id, label: label(s.skill_id), reason: s.reason }));

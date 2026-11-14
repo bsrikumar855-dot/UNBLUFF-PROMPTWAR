@@ -111,7 +111,8 @@ export const MasteryBar: React.FC<{
   label: string;
   mastery: number;
   unverified: boolean;
-}> = ({ label, mastery, unverified }) => {
+  simulated?: boolean;
+}> = ({ label, mastery, unverified, simulated = false }) => {
   const pct = Math.round(mastery * 100);
   return (
     <div>
@@ -130,13 +131,19 @@ export const MasteryBar: React.FC<{
         <div
           className={cn(
             "h-full rounded-full",
-            unverified ? "bg-redline/60" : "bg-verified"
+            unverified || simulated ? "bg-redline/60" : "bg-verified"
           )}
           style={{ width: `${pct}%` }}
         />
       </div>
-      {unverified && (
-        <p className="mt-1 text-xs text-ink-muted">Unverified, capped at 40%</p>
+      {simulated ? (
+        <p className="mt-1 text-xs text-ink-muted">
+          Includes a simulated score, not verified
+        </p>
+      ) : (
+        unverified && (
+          <p className="mt-1 text-xs text-ink-muted">Unverified, capped at 40%</p>
+        )
       )}
     </div>
   );

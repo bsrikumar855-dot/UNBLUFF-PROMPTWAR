@@ -484,6 +484,7 @@ const LearningPathPage: React.FC = () => {
                             label={g.name}
                             mastery={g.mastery}
                             unverified={g.unverified}
+                            simulated={g.simulated}
                           />
                           {g.missing_topics.length > 0 && (
                             <p className="mt-2 text-sm text-ink-secondary">
@@ -526,6 +527,7 @@ const LearningPathPage: React.FC = () => {
                             label={g.name}
                             mastery={g.mastery}
                             unverified={g.unverified}
+                            simulated={g.simulated}
                           />
                         </li>
                       ))}
@@ -655,6 +657,7 @@ const LearningPathPage: React.FC = () => {
                         label={b.name}
                         mastery={b.mastery}
                         unverified={b.unverified}
+                        simulated={b.simulated}
                       />
                     </li>
                   ))}
@@ -811,11 +814,16 @@ const LearningPathPage: React.FC = () => {
                 </div>
                 <Button
                   type="button"
-                  disabled={busy !== null || newGoal === ""}
+                  disabled={busy !== null || newGoal === "" || newGoal === view.role.id}
                   onClick={() =>
                     void run(
                       "goal",
-                      () => api.changeLearningPathGoal(view.id, newGoal),
+                      async () => {
+                        const next = await api.changeLearningPathGoal(view.id, newGoal);
+                        // The chosen role is now the current goal (and leaves the list), so clear the choice.
+                        setNewGoal("");
+                        return next;
+                      },
                       "Goal switched. See what changed."
                     )
                   }

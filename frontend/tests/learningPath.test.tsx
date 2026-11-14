@@ -631,6 +631,10 @@ describe("Learning Path page", () => {
     ).toBeInTheDocument();
     for (const h of ["Kept", "Added", "Removed", "Reordered"])
       expect(panel.getByRole("heading", { name: new RegExp(h) })).toBeInTheDocument();
+    // The role just chosen is now the goal: the choice is cleared, so it cannot be re-sent as a "change".
+    expect(screen.getByLabelText("New target career")).toHaveValue("");
+    expect(screen.getByRole("button", { name: "Switch goal" })).toBeDisabled();
+    expect(mocked.changeLearningPathGoal).toHaveBeenCalledTimes(1);
     expect(panel.getByText(/Python already declared/)).toBeInTheDocument();
     expect(panel.getByText(/React is not required by Data Analyst/)).toBeInTheDocument();
     expect(
