@@ -91,6 +91,8 @@ backend code decides pass/fail, verdicts, proficiency, readiness, coverage and p
 
 ```ts
 // ===== UNBLUFF shared types — copied EXACTLY from CONTRACT.md §4 =====
+// Intentional mirror: backend/src/types.ts and frontend/src/types/contract.ts must both equal this block.
+// Edit here first, then copy to both. Enforced by backend/tests/unit/contract.test.ts and frontend/tests/contractDrift.test.ts.
 
 // ---------- Enums ----------
 export type Level = 1 | 2 | 3;
