@@ -10,6 +10,7 @@ Rules:
 - Max 8 claims; prioritize projects and metrics.
 - "resume_line" must be copied verbatim from ONE line of the resume.
 - "text" restates the claim faithfully. Never upgrade a claim: "used React" must not become "expert in React performance".
+- Never extract a claim from a plain list of skills or technologies (e.g. "Skills: Node.js, PostgreSQL, Redis"); only from lines that say what the student did or achieved.
 - Do not invent claims. Skip contact details, headings and lines with nothing an interviewer could probe.
 
 ${studentBlock("student_resume", resumeText)}

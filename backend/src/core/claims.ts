@@ -28,6 +28,20 @@ export function normalizeResume(text: string): string {
     .join("\n");
 }
 
+const SKILLS_HEADING = /^(?:(?:technical|core|key|programming)\s+)?(?:skills?|technologies|tech(?:nical)? stack|tools|languages|frameworks|libraries)(?:\s*(?:&|and)\s*\w+)?\s*[:\-–—]\s*(.+)$/i;
+
+/**
+ * True for a bare keyword list such as "Skills: Node.js, PostgreSQL, Redis". It lists names, not something an
+ * interviewer can probe (declared skills have their own chips), so extraction must not turn it into claims.
+ * A sentence after the heading ("Skills: built a Redis cache that cut load by 60%") is not a keyword list.
+ */
+export function isSkillsListLine(line: string): boolean {
+  const m = SKILLS_HEADING.exec(line.trim());
+  if (!m) return false;
+  const items = m[1]!.split(/[,;|•·/]|\s{2,}/).map((s) => s.trim()).filter(Boolean);
+  return items.length >= 2 && items.every((i) => i.split(/\s+/).length <= 4 && !/\d+\s*(%|x|ms|k|m)\b/i.test(i));
+}
+
 export function claimId(seq: number): string {
   return `CL-${String(seq).padStart(3, "0")}`;
 }

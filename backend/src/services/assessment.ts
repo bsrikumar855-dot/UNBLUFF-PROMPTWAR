@@ -25,6 +25,7 @@ import {
   claimId,
   MAX_CLAIM_TEXT,
   MAX_CLAIMS,
+  isSkillsListLine,
   MAX_RESUME_LINE,
   matchSkillByKeywords,
   newClaim,
@@ -130,6 +131,7 @@ export class AssessmentService {
         dropped += line ? 0 : 1;
         continue;
       }
+      if (isSkillsListLine(line)) continue; // a keyword list is not probeable; declared skills have their own chips
       seen.add(key);
       claims.push(
         newClaim(claimId(seq++), {
