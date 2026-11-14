@@ -45,8 +45,9 @@ export const HeroSection: React.FC = () => {
         aria-hidden="true"
         className="pointer-events-none absolute left-1/3 top-0 -z-10 size-[26rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.9),rgba(255,255,255,0)_68%)] blur-2xl"
       />
-      <div className="mx-auto flex min-h-[calc(100svh-3.6rem)] max-w-384 flex-col justify-between px-6 pb-10 pt-12 sm:px-14 sm:pt-16">
-        <div className="flex flex-col gap-5">
+      <div className="mx-auto flex min-h-[calc(100svh-3.6rem)] max-w-384 flex-col px-6 pb-10 pt-16 sm:px-14 sm:pt-10">
+        {/* One header row on the same edges as everything below: logo left, the two labels right. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
           <img
             src="/brand/logo.png"
             alt="unbluff, Placement OS"
@@ -54,7 +55,7 @@ export const HeroSection: React.FC = () => {
             height={105}
             className="h-14 w-auto self-start sm:h-16"
           />
-          <div className="eyebrow flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-ink-secondary">
+          <div className="eyebrow flex flex-col gap-1 text-ink-secondary sm:items-end sm:text-right">
             <span>Audit № 001</span>
             <span className="text-redline">
               For students and universities · evidence only
@@ -62,93 +63,97 @@ export const HeroSection: React.FC = () => {
           </div>
         </div>
 
-        <m.div
-          style={animated ? { y, opacity: fade } : undefined}
-          className="py-10 sm:py-14"
-        >
-          <h1
-            id="hero-title"
-            className="serif text-[clamp(3.1rem,10.6vw,10.5rem)] font-medium leading-[0.92] tracking-[-0.045em] text-foreground"
-          >
-            <MaskedText text="Your resume says you're ready." delay={0.15} />
-            <br />
-            <span className="redline-late inline-block">
-              <MaskedText
-                text="Let's prove it."
-                delay={0.75}
-                className="italic font-normal"
-              />
-            </span>
-          </h1>
-        </m.div>
-
-        <div className="grid items-end gap-8 sm:grid-cols-[minmax(0,32rem)_1fr]">
-          <m.div
-            initial={animated ? { opacity: 0, y: 18 } : false}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: EASE, delay: 1.35 }}
-          >
-            <p className="text-lg leading-relaxed text-ink-secondary">
-              UNBLUFF questions every claim on your resume, judges your code against
-              hidden tests, and builds your learning path only from what those records
-              show. Use it to prepare for placements or to plan your way to any role.
-            </p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              <Magnetic>
-                <Link
-                  to="/learning-path"
-                  className={buttonClasses(
-                    "primary",
-                    "lg",
-                    "rounded-full bg-[linear-gradient(135deg,#f0604e_0%,#c9362a_100%)] text-white shadow-[0_14px_28px_-12px_rgba(201,54,42,0.7),inset_0_1px_0_rgba(255,255,255,0.45)] hover:brightness-110"
-                  )}
-                >
-                  Build my learning path
-                </Link>
-              </Magnetic>
-              <Magnetic>
-                <Link
-                  to="/setup"
-                  className={buttonClasses(
-                    "secondary",
-                    "lg",
-                    "rounded-full bg-white/60 backdrop-blur-md shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]"
-                  )}
-                >
-                  Audit My Readiness
-                </Link>
-              </Magnetic>
-              <DemoReportButton
-                variant="secondary"
-                size="lg"
-                className="[&_button]:rounded-full [&_button]:bg-white/60 [&_button]:backdrop-blur-md [&_button]:shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]"
-              />
-            </div>
-            <p className="mt-4 max-w-md text-sm text-ink-muted">
-              The demo report uses synthetic data and is labelled as such. Nothing is
-              saved until you sign in.
-            </p>
-          </m.div>
-          <div className="justify-self-end lg:w-[min(100%,26rem)]">
-            <m.div style={animated ? { y: keyY } : undefined} className="hidden lg:block">
-              <VerdictKey />
-            </m.div>
-            <m.a
-              href="#interrogation"
-              aria-label="Scroll to how a claim is tested"
-              initial={animated ? { opacity: 0 } : false}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 1.7 }}
-              className="eyebrow group mt-5 hidden items-center justify-end gap-3 text-ink-secondary sm:flex"
+        {/* Headline and the row under it stay together and are centred in what is left of the first screen,
+            instead of being pushed to the top and bottom edges with a gap between them. */}
+        <div className="flex flex-1 flex-col justify-center gap-8 py-6 sm:gap-10">
+          <m.div style={animated ? { y, opacity: fade } : undefined}>
+            <h1
+              id="hero-title"
+              className="serif text-[clamp(3.1rem,min(10.6vw,12vh),10.5rem)] font-medium leading-[0.92] tracking-[-0.045em] text-foreground"
             >
-              Scroll: the audit begins
-              <span
-                aria-hidden="true"
-                className="relative block h-10 w-px overflow-hidden bg-line-strong"
-              >
-                <span className="absolute inset-x-0 top-0 h-1/2 animate-scroll-cue bg-foreground" />
+              <MaskedText text="Your resume says you're ready." delay={0.15} />
+              <br />
+              <span className="redline-late inline-block">
+                <MaskedText
+                  text="Let's prove it."
+                  delay={0.75}
+                  className="italic font-normal"
+                />
               </span>
-            </m.a>
+            </h1>
+          </m.div>
+
+          <div className="grid items-start gap-8 sm:grid-cols-[minmax(0,34rem)_minmax(0,26rem)] sm:justify-between">
+            <m.div
+              initial={animated ? { opacity: 0, y: 18 } : false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: EASE, delay: 1.35 }}
+            >
+              <p className="text-lg leading-relaxed text-ink-secondary">
+                UNBLUFF questions every claim on your resume, judges your code against
+                hidden tests, and builds your learning path only from what those records
+                show. Use it to prepare for placements or to plan your way to any role.
+              </p>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <Magnetic>
+                  <Link
+                    to="/learning-path"
+                    className={buttonClasses(
+                      "primary",
+                      "lg",
+                      "rounded-full bg-[linear-gradient(135deg,#f0604e_0%,#c9362a_100%)] text-white shadow-[0_14px_28px_-12px_rgba(201,54,42,0.7),inset_0_1px_0_rgba(255,255,255,0.45)] hover:brightness-110"
+                    )}
+                  >
+                    Build my learning path
+                  </Link>
+                </Magnetic>
+                <Magnetic>
+                  <Link
+                    to="/setup"
+                    className={buttonClasses(
+                      "secondary",
+                      "lg",
+                      "rounded-full bg-white/60 backdrop-blur-md shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]"
+                    )}
+                  >
+                    Audit My Readiness
+                  </Link>
+                </Magnetic>
+                <DemoReportButton
+                  variant="secondary"
+                  size="lg"
+                  className="[&_button]:rounded-full [&_button]:bg-white/60 [&_button]:backdrop-blur-md [&_button]:shadow-[inset_0_0_0_1px_rgba(24,24,27,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]"
+                />
+              </div>
+              <p className="mt-4 max-w-md text-sm text-ink-muted">
+                The demo report uses synthetic data and is labelled as such. Nothing is
+                saved until you sign in.
+              </p>
+            </m.div>
+            <div className="sm:self-end sm:justify-self-end lg:w-full lg:self-start">
+              <m.div
+                style={animated ? { y: keyY } : undefined}
+                className="hidden lg:block"
+              >
+                <VerdictKey />
+              </m.div>
+              <m.a
+                href="#interrogation"
+                aria-label="Scroll to how a claim is tested"
+                initial={animated ? { opacity: 0 } : false}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 1.7 }}
+                className="eyebrow group mt-4 hidden items-center justify-end gap-3 text-ink-secondary sm:flex"
+              >
+                Scroll: the audit begins
+                <span
+                  aria-hidden="true"
+                  className="relative block h-10 w-px overflow-hidden bg-line-strong"
+                >
+                  <span className="absolute inset-x-0 top-0 h-1/2 animate-scroll-cue bg-foreground" />
+                </span>
+              </m.a>
+            </div>
           </div>
         </div>
       </div>
