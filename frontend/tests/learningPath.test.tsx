@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import axe from "axe-core";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { AppRoutes } from "@/App";
@@ -297,5 +298,52 @@ describe("Learning Path page", () => {
     const links = await screen.findAllByRole("link", { name: "Build my learning path" });
     expect(links[0]).toHaveAttribute("href", "/learning-path");
     expect(screen.getAllByRole("link", { name: "Audit My Readiness" }).length).toBeGreaterThan(0);
+  });
+});
+
+/** Runs axe on the rendered page. Colour contrast needs real layout, so it is checked in a real browser (see README), not in jsdom. */
+async function axeViolations(): Promise<string[]> {
+  const res = await axe.run(document.body, { rules: { "color-contrast": { enabled: false } } });
+  return res.violations.map((v) => `${v.impact}: ${v.id} (${v.nodes.length})`);
+}
+
+describe("Learning Path page accessibility (axe)", () => {
+  const withPath = (v: LearningPathView) => {
+    mocked.listLearningPaths.mockResolvedValue({ paths: [{ id: v.id, role: v.role, updated_at: "x", percent_complete: 0 }] });
+    mocked.getLearningPath.mockResolvedValue(v);
+  };
+
+  it("has no axe violations on the empty profile form", async () => {
+    renderPage();
+    await screen.findByLabelText("Skills you have");
+    expect(await axeViolations()).toEqual([]);
+  });
+
+  it("has no axe violations with a roadmap, a remedial step, the change panel and the agent timeline", async () => {
+    withPath(failedView());
+    renderPage();
+    await screen.findByRole("heading", { name: "What changed" });
+    expect(await axeViolations()).toEqual([]);
+  });
+
+  it("has no axe violations on the goal-change diff panel, and its headings follow the section heading", async () => {
+    const c = change({ kind: "goal_change", reason: "Switched goal to Data Analyst: kept 1, added 1, removed 1, reordered 0.", kept: [{ skill_id: "python", label: "Python", reason: "kept" }], added: [{ skill_id: "stats_prob", label: "Statistics & Probability", reason: "added" }], removed: [{ skill_id: "react", label: "React", reason: "removed" }] });
+    withPath(view({ last_change: c, path: { ...view().path, history: [change(), c] } }));
+    renderPage();
+    const section = (await screen.findByRole("heading", { name: "What changed", level: 2 })).closest("section")!;
+    expect(within(section).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(expect.arrayContaining([expect.stringMatching(/Kept/), expect.stringMatching(/Removed/)]));
+    expect(await axeViolations()).toEqual([]);
+  });
+
+  it("announces updates politely, keeps one h1, and never shows status by colour alone", async () => {
+    withPath(failedView());
+    renderPage();
+    await screen.findByRole("heading", { name: "What changed" });
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
+    // every status badge carries words, not just a colour
+    for (const label of ["Review first", "Paused until review is done"]) expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    // every image has alt text (decorative ones are empty on purpose)
+    for (const img of Array.from(document.querySelectorAll("img"))) expect(img.hasAttribute("alt")).toBe(true);
   });
 });

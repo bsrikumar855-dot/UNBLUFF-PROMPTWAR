@@ -78,10 +78,10 @@ export const MasteryBar: React.FC<{ label: string; mastery: number; unverified: 
 
 const List: React.FC<{ title: string; tone: "verified" | "alert" | "plain" | "core"; items: ChangeItem[] }> = ({ title, tone, items }) => (
   <div>
-    <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink-primary">
+    <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink-primary">
       <Pill tone={tone}>{items.length}</Pill>
       {title}
-    </h4>
+    </h3>
     {items.length === 0 ? (
       <p className="text-sm text-ink-muted">None</p>
     ) : (
@@ -117,7 +117,7 @@ export const ChangePanel: React.FC<{ change: PathChange; simulated: boolean }> =
           {change.added.length > 0 && <List title="Added" tone="core" items={change.added} />}
           {change.status_changes.length > 0 && (
             <div>
-              <h4 className="mb-2 text-sm font-semibold text-ink-primary">Steps that changed status</h4>
+              <h3 className="mb-2 text-sm font-semibold text-ink-primary">Steps that changed status</h3>
               <ul className="space-y-1 text-sm text-ink-secondary">
                 {change.status_changes.map((c) => (
                   <li key={`${c.step_id}-${c.to}`}>

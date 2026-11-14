@@ -115,7 +115,7 @@ try {
   await page.getByRole("button", { name: "Switch goal" }).click();
   await page.waitForFunction(() => /Switched goal to Data Analyst/.test(document.querySelector("#changed")?.innerText ?? ""), { timeout: 60000 });
   const diff = flat(await page.innerText("#changed"));
-  const heads = await page.$$eval("#changed h4", (h) => h.map((x) => x.innerText));
+  const heads = await page.$$eval("#changed h3", (h) => h.map((x) => x.innerText));
   check("d. goal -> Data Analyst", ["Kept", "Added", "Removed", "Reordered"].every((h) => heads.some((x) => x.includes(h))) && /Python already declared/.test(diff) && /React is not required/.test(diff), diff.match(/Switched goal[^.]*\./)?.[0] ?? "no summary");
   await shot("3-goal-change-diff", "#changed");
   const roadmapD = (await roadmap()).map((s) => s.title);
