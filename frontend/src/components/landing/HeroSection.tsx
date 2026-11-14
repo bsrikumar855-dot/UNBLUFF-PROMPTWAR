@@ -46,9 +46,18 @@ export const HeroSection: React.FC = () => {
         className="pointer-events-none absolute left-1/3 top-0 -z-10 size-[26rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.9),rgba(255,255,255,0)_68%)] blur-2xl"
       />
       <div className="mx-auto flex min-h-[calc(100svh-3.6rem)] max-w-384 flex-col justify-between px-6 pb-10 pt-12 sm:px-14 sm:pt-16">
-        <div className="eyebrow flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-ink-secondary">
-          <span>Audit № 001</span>
-          <span className="text-redline">For students and universities · evidence only</span>
+        <div className="flex flex-col gap-5">
+          <img
+            src="/brand/logo.png"
+            alt="unbluff, Placement OS"
+            width={321}
+            height={105}
+            className="h-14 w-auto self-start sm:h-16"
+          />
+          <div className="eyebrow flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-ink-secondary">
+            <span>Audit № 001</span>
+            <span className="text-redline">For students and universities · evidence only</span>
+          </div>
         </div>
 
         <m.div

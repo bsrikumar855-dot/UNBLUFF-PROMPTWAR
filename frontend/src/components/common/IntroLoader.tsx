@@ -36,8 +36,8 @@ function pageReady(): Promise<void> {
 }
 
 /**
- * The opening screen, shown once per browser tab session: a red liquid-glass field, the UNBLUFF wordmark rising letter by
- * letter, and the red pen drawing under "BLUFF". It stays at least long enough to be seen, and leaves only when the page
+ * The opening screen, shown once per browser tab session: a red liquid-glass field, the unbluff logo rising onto a frosted
+ * card, and a line drawing beneath it. It stays at least long enough to be seen, and leaves only when the page
  * (fonts included) is ready, sliding up on a curved edge to reveal the site. Anyone can skip it with a click, a key press
  * or Escape, and it is not shown at all to people who ask for reduced motion. It never claims progress it cannot measure.
  */
@@ -74,7 +74,6 @@ export const IntroLoader: React.FC = () => {
     };
   }, [show, close]);
 
-  const letters = "UNBLUFF".split("");
   return (
     <AnimatePresence>
       {show && (
@@ -98,31 +97,24 @@ export const IntroLoader: React.FC = () => {
               className="pointer-events-none absolute -bottom-48 -right-32 size-[52rem] rounded-full bg-[radial-gradient(circle,rgba(110,14,8,0.7),rgba(110,14,8,0)_66%)] blur-2xl motion-safe:animate-[liquid-drift-b_11s_ease-in-out_infinite]"
             />
             <div className="relative flex h-full items-center justify-center px-6">
-              <div className="relative text-[clamp(3rem,14vw,10rem)]" aria-hidden="true">
-                <div className="flex font-semibold uppercase leading-[0.9] tracking-[-0.05em] text-white">
-                  {letters.map((l, i) => (
-                    <span
-                      key={`${l}-${i}`}
-                      className="inline-block overflow-hidden pb-[0.08em]"
-                    >
-                      <m.span
-                        className="serif inline-block"
-                        initial={{ y: "110%" }}
-                        animate={{ y: "0%" }}
-                        transition={{
-                          duration: 0.85,
-                          ease: RISE,
-                          delay: 0.15 + i * 0.07,
-                        }}
-                      >
-                        {l}
-                      </m.span>
-                    </span>
-                  ))}
-                </div>
+              <div className="relative" aria-hidden="true">
+                {/* Navy artwork needs a light ground, so the logo sits on a frosted card over the red field. */}
+                <m.div
+                  className="rounded-[2rem] bg-white/90 px-8 py-6 shadow-[0_30px_60px_-30px_rgba(60,8,4,0.7),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-md sm:px-10 sm:py-8"
+                  initial={{ opacity: 0, y: 28, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.85, ease: RISE, delay: 0.15 }}
+                >
+                  <img
+                    src="/brand/logo.png"
+                    alt=""
+                    width={321}
+                    height={105}
+                    className="h-auto w-[min(70vw,21rem)]"
+                  />
+                </m.div>
                 <m.span
-                  className="absolute -bottom-[0.02em] right-0 block h-[0.06em] origin-left rounded-full bg-white"
-                  style={{ width: "71.4%" }}
+                  className="absolute -bottom-5 left-4 right-4 block h-1 origin-left rounded-full bg-white"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ duration: 0.7, ease: RISE, delay: 1 }}
