@@ -12,3 +12,6 @@ coverage/
 # Locally imported catalogues whose source declares no licence: never commit or redistribute
 backend/data/dsa/local/
 backend/data/dsa/catalogue.local.json
+
+# Local demo screenshots (docs/img holds the curated ones)
+demo-shots*/

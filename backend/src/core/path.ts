@@ -15,10 +15,17 @@ import type {
 export type * from "./pathTypes.js";
 export { skillsFromCertifications } from "./certs.js";
 
-/** A role skill with at least this much gap (weight x unmastered share) gets steps. */
+/**
+ * A role skill gets steps when weight x (1 - mastery) is at least this. Inclusive (>=) so a weight-0.1 skill at zero
+ * mastery (Git, Testing, Deploy) is never dropped from a roadmap. See DECISIONS.md, "SkillForge learning path".
+ */
 export const GAP_THRESHOLD = 0.1;
-/** A declared-but-unverified topic never counts for more than this. */
+/**
+ * A self-declared (unverified) skill never counts for more than this, so declaring a skill can never make a learner look
+ * ready; only a graded result can. See DECISIONS.md, "Unverified claims never count above 0.4".
+ */
 export const DECLARED_MASTERY = 0.4;
+/** One course or tutorial plus one exercise, and at most one extra: enough to start, few enough to finish. */
 export const MAX_RESOURCES_PER_STEP = 3;
 const EPS = 1e-9;
 

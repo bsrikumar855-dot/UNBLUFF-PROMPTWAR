@@ -15,21 +15,22 @@ import type { Role } from "../types.js";
 import type { LearningData } from "./data.js";
 import type { LearningPathRecord, LearningPathStore } from "./store.js";
 
+/** Bounds storage and per-student work; a learner restarts from an existing path instead. See DECISIONS.md, "SkillForge agents". */
 export const MAX_PATHS_PER_STUDENT = 20;
 
 const text = (max: number) => z.string().trim().min(1).max(max);
-export const CreateBody = z.strictObject({
+const CreateBody = z.strictObject({
   role_id: z.string().regex(/^[a-z0-9_]+$/).max(60),
   skills: z.array(text(60)).max(30).default([]),
   certifications: z.array(text(100)).max(20).default([]),
   projects: z.array(z.strictObject({ name: text(80), description: z.string().trim().max(300).default(""), skills: z.array(text(60)).max(20).default([]) })).max(10).default([]),
   career_interests: z.array(text(60)).max(10).default([]),
 });
-export const AssessmentBody = z.discriminatedUnion("source", [
+const AssessmentBody = z.discriminatedUnion("source", [
   z.strictObject({ source: z.literal("simulation"), skill: text(60), score: z.number().int().min(0).max(100), missing_concepts: z.array(text(80)).max(5).optional() }),
   z.strictObject({ source: z.literal("interrogation"), skill: text(60) }),
 ]);
-export const GoalBody = z.strictObject({ role_id: z.string().regex(/^[a-z0-9_]+$/).max(60) });
+const GoalBody = z.strictObject({ role_id: z.string().regex(/^[a-z0-9_]+$/).max(60) });
 
 function parse<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
   const r = schema.safeParse(value);

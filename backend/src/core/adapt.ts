@@ -19,7 +19,11 @@ import {
   type StatusChange,
 } from "./path.js";
 
-/** Below this score the learner gets a remedial step; from STRONG_SCORE a step is cleanly done; in between it is done with a review flag. */
+/**
+ * Adaptation bands for a graded result (0..100). Below PASS_SCORE: a remedial step on a prerequisite is inserted and the
+ * step and its dependents pause. PASS_SCORE..STRONG_SCORE-1: done but flagged to review. STRONG_SCORE and up: done.
+ * See DECISIONS.md, "Adaptation thresholds".
+ */
 export const PASS_SCORE = 60;
 export const STRONG_SCORE = 85;
 
