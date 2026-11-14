@@ -1,4 +1,4 @@
-import { pino, type Logger } from "pino";
+import { pino, type DestinationStream, type Logger } from "pino";
 
 /** Maps pino levels to Cloud Logging `severity` so Cloud Run shows the right level. */
 const SEVERITY: Record<string, string> = {
@@ -10,8 +10,9 @@ const SEVERITY: Record<string, string> = {
   fatal: "CRITICAL",
 };
 
-export function createLogger(level = process.env.LOG_LEVEL ?? "info"): Logger {
-  return pino({
+/** `destination` defaults to stdout; tests pass a stream to inspect what would be written. */
+export function createLogger(level = process.env.LOG_LEVEL ?? "info", destination?: DestinationStream): Logger {
+  const options: pino.LoggerOptions = {
     level,
     messageKey: "message",
     base: undefined,
@@ -27,7 +28,8 @@ export function createLogger(level = process.env.LOG_LEVEL ?? "info"): Logger {
       ],
       censor: "[redacted]",
     },
-  });
+  };
+  return destination ? pino(options, destination) : pino(options);
 }
 
 export type { Logger };
