@@ -24,7 +24,12 @@ import { FirestoreCareerStore, MemoryCareerStore, type CareerStore } from "./car
 import { FreehireClient } from "./careers/freehire.js";
 import { HttpLeetCodeLookup } from "./leetcode/lookup.js";
 import { LeetCodeService } from "./leetcode/service.js";
-import { DockerLatexCompiler, UnavailableLatex } from "./resume/latex.js";
+import {
+  DockerLatexCompiler,
+  LocalLatexCompiler,
+  UnavailableLatex,
+  findLocalEngine,
+} from "./resume/latex.js";
 import { LearnService } from "./learn/service.js";
 import { FirestoreLearnStore, MemoryLearnStore, type LearnStore } from "./learn/store.js";
 import {
@@ -326,13 +331,22 @@ function main(): void {
   const resume = new ResumeService({
     store: stores.resume,
     compiler:
-      config.LATEX_COMPILER === "docker" ? new DockerLatexCompiler() : new UnavailableLatex(),
+      config.LATEX_COMPILER === "docker"
+        ? new DockerLatexCompiler()
+        : config.LATEX_COMPILER === "local"
+          ? new LocalLatexCompiler({ engine: findLocalEngine(process.env) ?? undefined })
+          : new UnavailableLatex(),
     role: (id) => roles.get(id) ?? null,
     logger,
   });
   if (config.LATEX_COMPILER === "docker")
     logger.warn(
       "LATEX_COMPILER=docker: building PDFs in local Docker containers (development only)",
+    );
+  if (config.LATEX_COMPILER === "local")
+    logger.warn(
+      { engine: findLocalEngine(process.env) ?? "not found" },
+      "LATEX_COMPILER=local: building PDFs with TeX on this machine, less isolated than Docker (development only)",
     );
   const learn = new LearnService({ store: stores.learn }); // DSA patterns and DBMS topics
   const careerHolder: { current?: CareerService } = {}; // the Career service is built after the placement service, which needs the mentor

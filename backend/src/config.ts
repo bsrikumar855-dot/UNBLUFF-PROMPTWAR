@@ -169,7 +169,10 @@ const EnvSchema = z
       .default("false")
       .transform((v) => v === "true" || v === "1"),
     /** none: the résumé builder cannot build PDFs (editing and the ATS score still work). docker: local TeX Live container, development only. */
-    LATEX_COMPILER: z.enum(["none", "docker"]).default("none"),
+    /** none | docker (throwaway container) | local (TeX installed on this machine; development only). */
+    LATEX_COMPILER: z.enum(["none", "docker", "local"]).default("none"),
+    /** Path to pdflatex (or MiKTeX's miktex-pdftex) for LATEX_COMPILER=local. Unset: found on PATH or in a per-user MiKTeX install. */
+    LATEX_ENGINE: z.string().trim().optional(),
     /** Secret. Sent only from the server, in a header. */
     JUDGE0_AUTH_TOKEN: z.string().optional(),
     JUDGE0_AUTH_HEADER: z
@@ -321,12 +324,11 @@ const EnvSchema = z
           });
       }
     }
-    if (env.LATEX_COMPILER === "docker" && env.NODE_ENV === "production") {
+    if (env.LATEX_COMPILER !== "none" && env.NODE_ENV === "production") {
       ctx.addIssue({
         code: "custom",
         path: ["LATEX_COMPILER"],
-        message:
-          "LATEX_COMPILER=docker is for local development only; a production compiler needs its own sandbox",
+        message: `LATEX_COMPILER=${env.LATEX_COMPILER} is for local development only; a production compiler needs its own sandbox`,
       });
     }
     if (env.EXECUTION_PROVIDER === "docker" && env.NODE_ENV === "production") {

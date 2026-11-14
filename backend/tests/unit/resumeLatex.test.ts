@@ -1,9 +1,13 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { DockerRunner, RunResult } from "../../src/code/docker.js";
 import {
   DockerLatexCompiler,
+  LocalLatexCompiler,
+  type LocalRunner,
+  findLocalEngine,
   MAX_LATEX_BYTES,
   summariseLog,
   UnavailableLatex,
@@ -109,5 +113,112 @@ describe("summariseLog and the unavailable compiler", () => {
     const u = new UnavailableLatex();
     expect(u.configured).toBe(false);
     await expect(u.compile()).rejects.toBeInstanceOf(LatexUnavailableError);
+  });
+});
+
+/** A fake local engine: writes what TeX would have produced into its working folder and records how it was started. */
+function fakeLocal(opts: {
+  pdf?: string;
+  log?: string;
+  result?: Partial<RunResult>;
+  engine?: string;
+}) {
+  const seen: { command: string; args: string[]; env: NodeJS.ProcessEnv; cwd: string }[] = [];
+  const runner: LocalRunner = async (command, args, { cwd, env }) => {
+    seen.push({ command, args, env, cwd });
+    if (opts.pdf !== undefined) await writeFile(join(cwd, "main.pdf"), opts.pdf);
+    if (opts.log !== undefined) await writeFile(join(cwd, "main.log"), opts.log);
+    return ran(opts.result);
+  };
+  return {
+    seen,
+    compiler: new LocalLatexCompiler({
+      runner,
+      engine: opts.engine ?? "C:/tex/pdflatex.exe",
+      workDir: base,
+    }),
+  };
+}
+
+describe("LocalLatexCompiler", () => {
+  it("returns the PDF and page count with shell escape off, and passes no secrets to TeX", async () => {
+    const saved = process.env.GEMINI_API_KEY;
+    process.env.GEMINI_API_KEY = "not-a-real-key-for-test";
+    try {
+      const f = fakeLocal({
+        pdf: "%PDF-1.5 fake",
+        log: "Output written on main.pdf (1 page, 99 bytes).",
+      });
+      const r = await f.compiler.compile(
+        "\\documentclass{article}\\begin{document}x\\end{document}",
+      );
+      expect(r).toMatchObject({ ok: true, pages: 1, log: "" });
+      expect(r.pdf!.toString()).toBe("%PDF-1.5 fake");
+      const call = f.seen[0]!;
+      for (const flag of ["-no-shell-escape", "-halt-on-error", "-interaction=nonstopmode"])
+        expect(call.args).toContain(flag);
+      expect(call.args).not.toContain("-undump=pdflatex"); // a real pdflatex needs no format flag
+      expect(call.env).not.toHaveProperty("GEMINI_API_KEY");
+      expect(call.env.openout_any).toBe("p");
+    } finally {
+      if (saved === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = saved;
+    }
+  });
+
+  it("starts MiKTeX's engine with the pdflatex format and the package installer disabled", async () => {
+    const f = fakeLocal({ engine: "C:/MiKTeX/bin/x64/miktex-pdftex.exe", pdf: "x", log: "" });
+    await f.compiler.compile("x");
+    expect(f.seen[0]!.args).toEqual(
+      expect.arrayContaining(["-undump=pdflatex", "-disable-installer", "-no-shell-escape"]),
+    );
+  });
+
+  it("reports TeX errors, a timeout, a missing engine and an oversized source without throwing", async () => {
+    const bad = await fakeLocal({
+      log: "./main.tex:3: Undefined control sequence.\nl.3 \\bad\n\nnext",
+      result: { code: 1 },
+    }).compiler.compile("\\bad");
+    expect(bad).toMatchObject({ ok: false, pdf: null });
+    expect(bad.log).toContain("main.tex:3: Undefined control sequence.");
+    expect(
+      (await fakeLocal({ result: { timedOut: true, code: null } }).compiler.compile("x")).log,
+    ).toMatch(/longer than 25 seconds/);
+    expect((await fakeLocal({ result: { code: 127 } }).compiler.compile("x")).log).toMatch(
+      /could not be started/,
+    );
+    const big = await fakeLocal({ pdf: "x" }).compiler.compile("a".repeat(MAX_LATEX_BYTES + 1));
+    expect(big.log).toMatch(/larger than/);
+  });
+
+  it("says so when no engine can be found", async () => {
+    const saved = { p: process.env.PATH, e: process.env.LATEX_ENGINE, l: process.env.LOCALAPPDATA };
+    process.env.PATH = "";
+    process.env.LATEX_ENGINE = join(tmpdir(), "definitely-not-a-tex-engine.exe");
+    delete process.env.LOCALAPPDATA;
+    try {
+      const r = await new LocalLatexCompiler({ workDir: base }).compile("x");
+      expect(r).toMatchObject({ ok: false, pdf: null });
+      expect(r.log).toMatch(/No local LaTeX engine was found/);
+    } finally {
+      process.env.PATH = saved.p;
+      if (saved.e === undefined) delete process.env.LATEX_ENGINE;
+      else process.env.LATEX_ENGINE = saved.e;
+      if (saved.l !== undefined) process.env.LOCALAPPDATA = saved.l;
+    }
+  });
+});
+
+describe("findLocalEngine", () => {
+  it("uses LATEX_ENGINE when it exists, and null when it points nowhere", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "unbluff-eng-"));
+    try {
+      const exe = join(dir, "pdflatex");
+      await writeFile(exe, "");
+      expect(findLocalEngine({ LATEX_ENGINE: exe, PATH: "" })).toBe(exe);
+      expect(findLocalEngine({ LATEX_ENGINE: join(dir, "nope"), PATH: dir })).toBeNull();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });

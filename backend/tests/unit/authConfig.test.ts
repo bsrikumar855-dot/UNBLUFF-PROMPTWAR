@@ -35,6 +35,14 @@ describe("production storage and auth configuration", () => {
     );
   });
 
+  it("refuses the development-only LaTeX compilers in production", () => {
+    for (const mode of ["docker", "local"])
+      expect(() => loadConfig({ ...prod, LATEX_COMPILER: mode })).toThrow(
+        /LATEX_COMPILER=.* is for local development only/,
+      );
+    expect(loadConfig({ ...prod, LATEX_COMPILER: "none" }).LATEX_COMPILER).toBe("none");
+    expect(loadConfig({ LLM_MODE: "mock", LATEX_COMPILER: "local" }).LATEX_COMPILER).toBe("local");
+  });
   it("requires a Gemini key for the live mentor in production", () => {
     const { GEMINI_API_KEY: _k, ...noKey } = prod;
     expect(() => loadConfig(noKey)).toThrow(/GEMINI_API_KEY is required/);
