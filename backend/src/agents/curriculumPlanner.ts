@@ -32,6 +32,12 @@ export function upcomingSteps(path: LearningPath, graph: LearningGraph, resource
     }));
 }
 
+/** The learner's next best step: an open remedial step first, then the active one. Same rule as the progress summary. */
+function nextBest(path: LearningPath, graph: LearningGraph): string {
+  const s = path.steps.find((x) => x.status === "remedial") ?? path.steps.find((x) => x.status === "active");
+  return s ? (s.kind === "remedial" ? `Revisit: ${s.concept}` : topicName(s.skill_id, graph)) : "none";
+}
+
 /** Builds and re-plans the roadmap with the core functions, and attaches curated resources. Never picks anything by model. */
 export const curriculumPlannerAgent: Agent<PlannerInput, PlannerOutput> = {
   name: "curriculum_planner",
@@ -56,7 +62,7 @@ export const curriculumPlannerAgent: Agent<PlannerInput, PlannerOutput> = {
     const upcoming = upcomingSteps(path, ctx.graph, ctx.resources);
     return {
       output: { path, change, upcoming },
-      handoff: `${path.steps.filter((s) => s.status !== "done").length} open step(s), next: ${upcoming[0]?.label ?? "none"}`,
+      handoff: `${path.steps.filter((s) => s.status !== "done").length} open step(s), next: ${nextBest(path, ctx.graph)}`,
       log: [{ agent: "curriculum_planner", action: input.kind === "build" ? "build_roadmap" : input.kind === "goal_change" ? "rebuild_roadmap" : "review_replan", summary, decided_by: "deterministic", inputs_ref: input.kind === "build" ? "skill states and role" : "current roadmap", outputs_ref: "roadmap" }],
     };
   },

@@ -48,7 +48,7 @@ export const HeroSection: React.FC = () => {
       <div className="mx-auto flex min-h-[calc(100svh-3.6rem)] max-w-384 flex-col justify-between px-6 pb-10 pt-12 sm:px-14 sm:pt-16">
         <div className="eyebrow flex flex-wrap items-center justify-between gap-x-6 gap-y-1 text-ink-secondary">
           <span>Audit № 001</span>
-          <span className="text-redline">Placement preparation · evidence only</span>
+          <span className="text-redline">For students and universities · evidence only</span>
         </div>
 
         <m.div
@@ -79,7 +79,7 @@ export const HeroSection: React.FC = () => {
           >
             <p className="text-lg leading-relaxed text-ink-secondary">
               UNBLUFF questions every claim on your resume, judges your code against
-              hidden tests, and builds your study plan only from what those records show.
+              hidden tests, and builds your learning path only from what those records show. Use it to prepare for placements or to plan your way to any role.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <Magnetic>

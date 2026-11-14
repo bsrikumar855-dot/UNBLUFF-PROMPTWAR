@@ -58,6 +58,8 @@ describe("the problem-statement scenario end to end (LLM_MODE=mock)", () => {
     expect(fresh.map((e: Body) => e.agent).filter((x: string, i: number, all: string[]) => all.indexOf(x) === i)).toEqual(["skill_analyst", "progress_evaluator", "curriculum_planner", "mentor"]);
     expect(handoffs({ agent_log: fresh })).toEqual(["skill_analyst>progress_evaluator", "progress_evaluator>curriculum_planner", "curriculum_planner>mentor"]);
     expect(fresh.find((e: Body) => e.kind === "handoff" && e.agent === "progress_evaluator").summary).toMatch(/Progress Evaluator → Curriculum Planner: 1 remedial step added/);
+    // the planner hands the mentor the learner's real next step: the open remedial step, not just the first open one
+    expect(fresh.find((e: Body) => e.kind === "handoff" && e.agent === "curriculum_planner").summary).toMatch(/next: Revisit: Closures & event loop/);
     expect(failed.agent_log.map((e: Body) => e.id)).toEqual(failed.agent_log.map((_: unknown, i: number) => `log-${i + 1}`));
 
     // 3. Pass the remedial (simulate 90)
