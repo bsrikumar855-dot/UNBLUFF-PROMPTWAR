@@ -332,5 +332,6 @@ describe("browser bundle", () => {
       const text = readFileSync(f, "utf8");
       for (const secret of secrets) expect(text.includes(JSON.stringify(secret).slice(1, -1)), `${f} contains a hidden test input`).toBe(false);
     }
-  });
+    // Scans the whole built bundle (about 24 MB including source maps); under a busy machine it exceeded the 5 s default.
+  }, 30_000);
 });
