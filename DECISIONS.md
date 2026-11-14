@@ -405,3 +405,13 @@ everything once gcloud is available.
 - **Goal change** rebuilds the path from the new role, keeps done steps for topics the new role also needs, and returns a diff of kept / added / removed / reordered with template reasons.
 - **Reasons are templates.** Every "why this changed" string is built in `core/adapt.ts` from numbers and names, never by a model.
 - **Resources are curated static data** (`resources.json`), real well-known free sites; every URL was fetched when written (all 200 except Linux Journey, which returns 403 to scripts and works in a browser). The LLM never picks or ranks resources.
+
+
+## SkillForge agents (orchestration, Prompt Wars)
+
+- **Six agents, fixed routing.** Profiler, Skill Analyst, Career Matcher, Curriculum Planner, Progress Evaluator and Mentor are small modules in `backend/src/agents`. `ROUTES` in `orchestrator.ts` is a constant table (event type -> agent list); the only conditional is that the Curriculum Planner re-checks the plan after an assessment only when a remedial step was added. No model chooses an agent, a step, a resource or a score.
+- **The Mentor is the only place a model may run, and only for wording.** It receives a small facts object (`MentorFacts`: role, match %, progress %, top gaps, the change reason, the next step and its resource titles) and the instruction in `COACH_INSTRUCTION`. It uses the existing `MentorService.tutorHelp` (same model, memory and safeguards). In mock mode, on any error, or when the reply is empty, a template built from the same facts is used. The UI labels which one it was.
+- **Every agent call is logged** (`AgentLogEntry`: agent, action, summary, deterministic vs llm, input/output refs) and each pair of agents that ran gets a handoff line ("Progress Evaluator -> Curriculum Planner: 1 remedial step added..."). The log is stored with the path.
+- **Real results cannot be forged by the client.** `source: "interrogation"` takes no score: the server reads the student's own graded interrogation results. Results graded by the built-in demo model are never counted as verified. `source: "simulation"` is accepted from the client and is always labelled Simulation.
+- **Skill Analyst is read-only over grading.** It does not re-grade anything; it credits an interrogated role skill's proficiency to that skill's topics.
+- **Separate store.** Learning paths live in their own store (`unbluff_learning_paths`, owner-scoped, memory or Firestore). Firestore rules already deny all client access, so no rules change. One write at a time per path (in-process lock), a cap of 20 paths per student, and export and delete include them.

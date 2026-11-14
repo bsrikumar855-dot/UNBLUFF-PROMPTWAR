@@ -23,6 +23,10 @@ import { LeetCodeService } from "./leetcode/service.js";
 import { DockerLatexCompiler, UnavailableLatex } from "./resume/latex.js";
 import { LearnService } from "./learn/service.js";
 import { FirestoreLearnStore, MemoryLearnStore, type LearnStore } from "./learn/store.js";
+import { FirestoreLearningPathStore, MemoryLearningPathStore, type LearningPathStore } from "./learning/store.js";
+import { LearningPathService } from "./learning/service.js";
+import { loadLearningData } from "./learning/data.js";
+import { COACH_INSTRUCTION } from "./agents/mentorAgent.js";
 import { ResumeService } from "./resume/service.js";
 import { FirestoreResumeStore, MemoryResumeStore, type ResumeStore } from "./resume/store.js";
 import { FirestoreLeetCodeStore, MemoryLeetCodeStore, type LeetCodeStore } from "./leetcode/store.js";
@@ -60,8 +64,8 @@ function backendRoot(): string {
   return here.includes(`${join("dist", "src")}`) ? join(here, "..", "..") : join(here, "..");
 }
 
-function createStores(config: Config): { sessions: SessionStore; progress: ProgressStore; submissions: SubmissionStore; stats: StatsStore; revisions: RevisionStore; mentor: MentorStore; github: GithubStore; placement: PlacementStore; career: CareerStore; leetcode: LeetCodeStore; resume: ResumeStore; learn: LearnStore; account: AccountStore; usage: UsageStore } {
-  if (config.STORE !== "firestore") return { sessions: new MemoryStore(), progress: new MemoryProgressStore(), submissions: new MemorySubmissionStore(), stats: new MemoryStatsStore(), revisions: new MemoryRevisionStore(), mentor: new MemoryMentorStore(), github: new MemoryGithubStore(), placement: new MemoryPlacementStore(), career: new MemoryCareerStore(), leetcode: new MemoryLeetCodeStore(), resume: new MemoryResumeStore(), learn: new MemoryLearnStore(), account: new MemoryAccountStore(), usage: new MemoryUsageStore() };
+function createStores(config: Config): { sessions: SessionStore; progress: ProgressStore; submissions: SubmissionStore; stats: StatsStore; revisions: RevisionStore; mentor: MentorStore; github: GithubStore; placement: PlacementStore; career: CareerStore; leetcode: LeetCodeStore; resume: ResumeStore; learn: LearnStore; account: AccountStore; usage: UsageStore; learningPath: LearningPathStore } {
+  if (config.STORE !== "firestore") return { sessions: new MemoryStore(), progress: new MemoryProgressStore(), submissions: new MemorySubmissionStore(), stats: new MemoryStatsStore(), revisions: new MemoryRevisionStore(), mentor: new MemoryMentorStore(), github: new MemoryGithubStore(), placement: new MemoryPlacementStore(), career: new MemoryCareerStore(), leetcode: new MemoryLeetCodeStore(), resume: new MemoryResumeStore(), learn: new MemoryLearnStore(), account: new MemoryAccountStore(), usage: new MemoryUsageStore(), learningPath: new MemoryLearningPathStore() };
   const account = config.FIREBASE_SERVICE_ACCOUNT_JSON ? parseServiceAccount(config.FIREBASE_SERVICE_ACCOUNT_JSON) : null;
   const projectId = config.GOOGLE_CLOUD_PROJECT ?? account?.project_id ?? config.FIREBASE_PROJECT_ID;
   // Without a service-account secret, Application Default Credentials apply (Cloud Run identity, gcloud login, emulator).
@@ -70,7 +74,7 @@ function createStores(config: Config): { sessions: SessionStore; progress: Progr
     ignoreUndefinedProperties: true,
     ...(account ? { credentials: { client_email: account.client_email, private_key: account.private_key } } : {}),
   });
-  return { sessions: new FirestoreStore(undefined, db), progress: new FirestoreProgressStore(undefined, db), submissions: new FirestoreSubmissionStore(undefined, db), stats: new FirestoreStatsStore(undefined, db), revisions: new FirestoreRevisionStore(undefined, db), mentor: new FirestoreMentorStore(undefined, db), github: new FirestoreGithubStore(db), placement: new FirestorePlacementStore(db), career: new FirestoreCareerStore(db), leetcode: new FirestoreLeetCodeStore(db), resume: new FirestoreResumeStore(db), learn: new FirestoreLearnStore(db), account: new FirestoreAccountStore(db), usage: new FirestoreUsageStore(db) };
+  return { sessions: new FirestoreStore(undefined, db), progress: new FirestoreProgressStore(undefined, db), submissions: new FirestoreSubmissionStore(undefined, db), stats: new FirestoreStatsStore(undefined, db), revisions: new FirestoreRevisionStore(undefined, db), mentor: new FirestoreMentorStore(undefined, db), github: new FirestoreGithubStore(db), placement: new FirestorePlacementStore(db), career: new FirestoreCareerStore(db), leetcode: new FirestoreLeetCodeStore(db), resume: new FirestoreResumeStore(db), learn: new FirestoreLearnStore(db), account: new FirestoreAccountStore(db), usage: new FirestoreUsageStore(db), learningPath: new FirestoreLearningPathStore(db) };
 }
 
 /**
@@ -170,7 +174,7 @@ function main(): void {
       return { solved_unique: o.totals.solved_unique, available: o.has_eligible_activity };
     },
   });
-  // The résumé builder: the ATS score is deterministic and computed on demand; PDFs come from a sandboxed TeX container.
+  // The rÃ©sumÃ© builder: the ATS score is deterministic and computed on demand; PDFs come from a sandboxed TeX container.
   const resume = new ResumeService({
     store: stores.resume,
     compiler: config.LATEX_COMPILER === "docker" ? new DockerLatexCompiler() : new UnavailableLatex(),
@@ -211,9 +215,10 @@ function main(): void {
     onJudged: (record) => analytics.recordSubmission(record),
   });
   const executionStatus = { configured: config.EXECUTION_PROVIDER !== "none", verified: config.EXECUTION_PROVIDER === "judge0" && config.EXECUTION_PROVIDER_VERIFIED };
+  const evidence = new EvidenceService({ analytics, sessions: stores.sessions, roles, learn, github, leetcode, mentor, catalogue: () => catalogue, suites, execution: executionStatus, llmMode: llm.mode, logger });
   const placement = new PlacementService({
     store: stores.placement,
-    evidence: new EvidenceService({ analytics, sessions: stores.sessions, roles, learn, github, leetcode, mentor, catalogue: () => catalogue, suites, execution: executionStatus, llmMode: llm.mode, logger }),
+    evidence,
     roles,
     topics: () => catalogue.allTopics(),
     mentor,
@@ -237,8 +242,20 @@ function main(): void {
     logger.warn("ALLOW_EPHEMERAL_STORE is set: sessions are lost on restart/redeploy and are not shared between instances");
   }
   const service = new AssessmentService({ store: stores.sessions, llm, roles, logger, maxSessionsPerStudent: config.MAX_SESSIONS_PER_STUDENT });
-  const account = new AccountService({
-    profiles: stores.account,
+  const learningData = loadLearningData(join(root, "data", "learning"), roles); // validates the curated topics, prerequisites and resources (fail fast)
+  const learningPath = new LearningPathService({
+    store: stores.learningPath,
+    roles,
+    data: learningData,
+    logger,
+    interview: async (uid) => (await evidence.collect(uid)).interview,
+    // The model only phrases the mentor message from the facts; in mock mode no model is used at all (a template is).
+    coach:
+      llm.mode === "live"
+        ? async (uid, facts) => (await mentor.tutorHelp(uid, { context: JSON.stringify(facts), message: COACH_INSTRUCTION, topics: facts.top_gaps })).reply
+        : undefined,
+  });
+  const account = new AccountService({    profiles: stores.account,
     roles,
     sessions: stores.sessions,
     progress: stores.progress,
@@ -258,6 +275,7 @@ function main(): void {
     resumeStore: stores.resume,
     learnStore: stores.learn,
     learn,
+    learningPath,
     revokeSessions: revocation ? (uid) => revocation.revokeAll(uid) : undefined,
     logger,
   });
@@ -278,6 +296,7 @@ function main(): void {
     resume,
     learn,
     account,
+    learningPath,
     budget,
     revocation,
     requireEmailVerification: config.REQUIRE_EMAIL_VERIFICATION,

@@ -1,4 +1,4 @@
-﻿import type { Role, RoleSkill } from "../types.js";
+import type { Role, RoleSkill } from "../types.js";
 import type {
   GapAnalysis,
   GapRow,
@@ -54,6 +54,19 @@ export function topicsOf(skill: RoleSkill, graph: LearningGraph): TopicShare[] {
 
 export function topicName(topic: string, graph: LearningGraph): string {
   return graph.topic_names[topic] ?? topic;
+}
+
+const normalizeName = (s: string): string => s.toLowerCase().replace(/[^a-z0-9.+#\s]/g, " ").replace(/\s+/g, " ").trim();
+
+/** Maps a free-text skill ("JS", "Node.js", "PostgreSQL") to a known topic id, or null. Exact id, alias or display-name match only. */
+export function resolveTopic(text: string, graph: LearningGraph): string | null {
+  const key = normalizeName(text);
+  if (key === "") return null;
+  const alias = graph.aliases && Object.prototype.hasOwnProperty.call(graph.aliases, key) ? graph.aliases[key] : undefined;
+  if (alias !== undefined) return alias;
+  const id = key.replace(/ /g, "_");
+  if (Object.prototype.hasOwnProperty.call(graph.topic_names, id)) return id;
+  return Object.entries(graph.topic_names).find(([, name]) => normalizeName(name) === key)?.[0] ?? null;
 }
 
 function masteryMap(states: readonly LearnerSkillState[]): Map<string, number> {

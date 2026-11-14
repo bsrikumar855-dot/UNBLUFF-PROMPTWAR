@@ -39,6 +39,8 @@ import { leetcodeRouter } from "./routes/leetcode.js";
 import { resumeRouter } from "./routes/resume.js";
 import { learnPrivateRouter, learnPublicRouter } from "./routes/learn.js";
 import type { LearnService } from "./learn/service.js";
+import { learningPathRouter } from "./routes/learningPath.js";
+import type { LearningPathService } from "./learning/service.js";
 import type { ResumeService } from "./resume/service.js";
 import type { LeetCodeService } from "./leetcode/service.js";
 import type { AccountService } from "./account/service.js";
@@ -72,6 +74,8 @@ export interface AppDeps {
   learn: LearnService;
   /** The student's profile, full data export and delete-everything. */
   account: AccountService;
+  /** SkillForge learning paths (agent orchestration over the deterministic core). Optional: the routes are mounted when present. */
+  learningPath?: LearningPathService;
   /** Daily per-student language-model budget. The provider handed to the services must already be wrapped with it. */
   budget: LlmBudget;
   /** Refuses revoked tokens (deleted/disabled account, signed out everywhere, password changed). Null in tests. */
@@ -140,7 +144,7 @@ export function createApp(deps: AppDeps): Express {
   // (The budget itself is enforced per model call by the provider wrapper; interview turns and the report rely on that
   // alone, so resuming an open question or reading a report still works when the allowance is used up.)
   const llmGuards = [limiters.llmUser, requireLlmBudget(deps.budget)];
-  api.post(["/claims/extract", "/fix-task", "/mentor/chat", "/mentor/conversations/:conversationId/summary", "/placement/assistant"], llmGuards);
+  api.post(["/claims/extract", "/fix-task", "/mentor/chat", "/mentor/conversations/:conversationId/summary", "/placement/assistant", "/learning-path", "/learning-path/:id/assessment", "/learning-path/:id/goal"], llmGuards);
   api.post("/interrogate", limiters.llmUser);
   api.use(sessionsRouter(deps.service));
   api.use(dsaProgressRouter(deps.dsaProgress));
@@ -150,6 +154,7 @@ export function createApp(deps: AppDeps): Express {
   api.use(careerRouter(deps.career, createCareerLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
   api.use(leetcodeRouter(deps.leetcode, createLeetcodeLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
   api.use(learnPrivateRouter(deps.learn, createLearnLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
+  if (deps.learningPath) api.use(learningPathRouter(deps.learningPath, createLearnLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
   api.use(resumeRouter(deps.resume, createResumeLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
   api.use(mentorRouter(deps.mentor, createMentorLimiter(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));
   api.use(codePrivateRouter(deps.code, createCodeLimiters(deps.rateLimits ?? DEFAULT_RATE_LIMITS)));

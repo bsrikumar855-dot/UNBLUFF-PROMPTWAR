@@ -115,6 +115,8 @@ export interface LearningGraph {
   prerequisites: Record<string, string[]>;
   /** role skill id -> its topics (shares sum to 1). */
   skill_topics: Record<string, TopicShare[]>;
+  /** Lower-case alternative spellings of a topic ("js" -> "javascript"), for free-text skill entry. */
+  aliases?: Record<string, string>;
 }
 
 export interface GapTopic {

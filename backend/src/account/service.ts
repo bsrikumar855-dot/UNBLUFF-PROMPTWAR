@@ -11,6 +11,7 @@ import type { GithubService } from "../github/service.js";
 import type { GithubStore } from "../github/store.js";
 import type { LearnService } from "../learn/service.js";
 import type { LearnStore } from "../learn/store.js";
+import type { LearningPathService } from "../learning/service.js";
 import type { LeetCodeService } from "../leetcode/service.js";
 import type { LeetCodeStore } from "../leetcode/store.js";
 import type { MentorService } from "../mentor/service.js";
@@ -65,6 +66,8 @@ export interface AccountDeps {
   resumeStore: ResumeStore;
   learnStore: LearnStore;
   learn: LearnService;
+  /** SkillForge learning paths: exported and deleted with the rest of the student's data. Optional so existing setups keep working. */
+  learningPath?: LearningPathService;
   /** Revokes every Firebase session of the student. Absent where there is no Admin access (tests, misconfiguration). */
   revokeSessions?: (uid: string) => Promise<void>;
   logger: Logger;
@@ -137,6 +140,7 @@ export class AccountService {
       d.resumeStore.get(uid),
       d.learnStore.get(uid),
     ]);
+    const learningPaths = d.learningPath ? await d.learningPath.exportAll(uid) : [];
     audit(d.logger, "account.exported", uid);
     return {
       format: "unbluff-export/1",
@@ -157,6 +161,7 @@ export class AccountService {
         leetcode: { connection: leetcodeConnection, snapshots: leetcodeSnapshots },
         resume,
         learn_progress: learn,
+        ...(d.learningPath ? { learning_paths: learningPaths } : {}),
       },
     };
   }
@@ -230,6 +235,7 @@ export class AccountService {
       await d.learn.deleteAll(uid);
       return had ? 1 : 0;
     });
+    if (d.learningPath) await step("learning_paths", () => d.learningPath!.deleteAll(uid));
     await step("profile", async () => {
       const had = (await d.profiles.get(uid)) !== null;
       await d.profiles.delete(uid);

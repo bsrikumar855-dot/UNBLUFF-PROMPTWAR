@@ -11,6 +11,7 @@ const GraphFile = z.object({
   topic_names: z.record(Id, z.string().min(1)),
   skill_topics: z.record(Id, z.array(z.object({ topic: Id, share: z.number().positive().max(1) })).min(1)),
   prerequisites: z.record(Id, z.array(Id)),
+  aliases: z.record(z.string().min(1), Id).optional(),
 });
 
 const ResourceFile = z.object({
@@ -67,6 +68,10 @@ export function parseLearningData(rawGraph: unknown, rawResources: unknown, role
     for (const t of [topic, ...pre]) if (!(t in topicNames)) throw new Error(`prerequisites: unknown topic ${t}`);
   }
   assertAcyclic(g.prerequisites);
+  for (const [alias, topic] of Object.entries(g.aliases ?? {})) {
+    if (!(topic in topicNames)) throw new Error(`alias "${alias}" points to unknown topic ${topic}`);
+    if (alias !== alias.toLowerCase()) throw new Error(`alias "${alias}" must be lower case`);
+  }
 
   const ids = new Set<string>();
   for (const res of r.resources) {
@@ -74,10 +79,10 @@ export function parseLearningData(rawGraph: unknown, rawResources: unknown, role
     ids.add(res.id);
     if (!(res.skill_id in topicNames)) throw new Error(`resource ${res.id}: unknown topic ${res.skill_id}`);
   }
-  return { graph: { topic_names: topicNames, skill_topics: g.skill_topics, prerequisites: g.prerequisites }, resources: r.resources };
+  return { graph: { topic_names: topicNames, skill_topics: g.skill_topics, prerequisites: g.prerequisites, aliases: g.aliases ?? {} }, resources: r.resources };
 }
 
 export function loadLearningData(dir: string, roles: RoleRegistry): LearningData {
   const list = roles.list().map((s) => roles.get(s.id)).filter((r): r is Role => r !== undefined);
-  return parseLearningData(JSON.parse(readFileSync(join(dir, "graph.json"), "utf8")), JSON.parse(readFileSync(join(dir, "resources.json"), "utf8")), list);
+  return parseLearningData(JSON.parse(readFileSync(join(dir, "graph.json"), "utf8").replace(/^\uFEFF/, "")), JSON.parse(readFileSync(join(dir, "resources.json"), "utf8").replace(/^\uFEFF/, "")), list);
 }

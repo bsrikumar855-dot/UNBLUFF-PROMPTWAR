@@ -1,4 +1,4 @@
-﻿{
+{
   "_note": "Curated, hand-written list of well-known free resources. Where a deep link was not certain the site's root documentation URL is used. skill_id is a learner topic id (see graph.json).",
   "resources": [
     { "id": "html-mdn", "skill_id": "html", "title": "MDN: Learn web development", "url": "https://developer.mozilla.org/en-US/docs/Learn_web_development", "type": "tutorial", "est_minutes": 240, "level": "beginner" },

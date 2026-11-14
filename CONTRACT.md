@@ -3599,3 +3599,72 @@ Resume heatmap line with `verdict: null` → no highlight, label "No claim".
 }
 ```
 <!-- MOCK_REPORT_END -->
+
+
+---
+
+## SkillForge learning path *(added; additive only)*
+
+An owner-scoped learning path built from a learner profile and a target role, re-planned by a fixed-route agent orchestrator. All decisions are deterministic; the model only phrases the mentor message (and only when `LLM_MODE=live`; otherwise a template is used). Existing endpoints and types are unchanged. No new error codes: `BAD_REQUEST`, `ROLE_NOT_FOUND`, `NOT_FOUND` and the common ones are reused. All routes need a verified student; the owner is always the token's uid.
+
+| Method and path | Body | Result |
+|---|---|---|
+| `POST /api/learning-path` | `CreateLearningPath` | 201 `LearningPathView` |
+| `GET /api/learning-path` | | `{ paths: LearningPathSummary[] }` newest first |
+| `GET /api/learning-path/:id` | | `LearningPathView` |
+| `POST /api/learning-path/:id/assessment` | `LearningAssessment` | `LearningPathView` |
+| `POST /api/learning-path/:id/goal` | `{ role_id }` | `LearningPathView` |
+| `GET /api/learning-path/:id/agent-log` | | `{ entries: AgentLogEntry[] }` |
+
+Bodies are strict (unknown keys are `400 BAD_REQUEST`). Another student's path is `404 NOT_FOUND`. At most 20 paths per student.
+
+```ts
+interface CreateLearningPath {
+  role_id: string;                       // a role from GET /api/roles
+  skills?: string[];                     // free text, max 30 x 60 chars; matched to topics, unmatched names are returned
+  certifications?: string[];             // max 20 x 100 chars; kept on the profile, they add no skills
+  projects?: { name: string; description?: string; skills?: string[] }[];   // max 10; project skills count as DECLARED
+  career_interests?: string[];           // max 10 x 60 chars
+}
+
+type LearningAssessment =
+  | { source: "simulation"; skill: string; score: number /* int 0..100 */; missing_concepts?: string[] }   // labelled Simulation in the UI
+  | { source: "interrogation"; skill: string };   // score is read on the server from the student's own graded interrogations;
+                                                  // 400 if none exists or they were graded by the built-in demo model
+
+interface LearnerSkillState { skill_id: string /* topic id */; declared: boolean; verified_proficiency: number | null }
+type StepStatus = "pending" | "active" | "done" | "blocked" | "remedial";
+interface PathStep { id: string; skill_id: string; role_skill_id: string | null; kind: "core" | "remedial"; resource_ids: string[];
+  status: StepStatus; order: number; reason: string; gap: number; blocked_by: string[]; review_later: boolean; concept: string | null }
+interface PathChange { at: string; kind: "initial" | "assessment" | "goal_change"; reason: string;
+  added: ChangeItem[]; removed: ChangeItem[]; reordered: ChangeItem[]; kept: ChangeItem[]; status_changes: StatusChange[] }
+interface ChangeItem { skill_id: string; label: string; reason: string }
+interface StatusChange { step_id: string; label: string; from: StepStatus | null; to: StepStatus }
+interface LearningPath { role_id: string; steps: PathStep[]; version: number; created_from: "initial" | "assessment" | "goal_change";
+  history: PathChange[]; states: LearnerSkillState[]; pace: "normal" | "slow" }
+interface Resource { id: string; skill_id: string; title: string; url: string; type: "course" | "tutorial" | "exercise"; est_minutes: number; level: "beginner" | "intermediate" | "advanced" }
+interface GapRow { skill_id: string; name: string; weight: number; mastery: number; gap: number; missing_topics: { topic: string; name: string; mastery: number }[]; unverified: boolean }
+interface AgentLogEntry { id: string; at: string; kind: "action" | "handoff"; agent: AgentName; to: AgentName | null; action: string;
+  summary: string; decided_by: "deterministic" | "llm"; inputs_ref: string; outputs_ref: string }
+type AgentName = "profiler" | "skill_analyst" | "career_matcher" | "curriculum_planner" | "progress_evaluator" | "mentor";
+
+interface LearningPathView {
+  id: string; role: { id: string; name: string }; created_at: string; updated_at: string;
+  profile: { skills: string[]; certifications: string[]; projects: { name: string; description: string; skills: string[] }[]; career_interests: string[] };
+  unrecognized_skills: string[];
+  career_match: { role_id: string; percent: number; alternatives: { role_id: string; name: string; match_percent: number }[] };   // top 3 other roles
+  analysis: { gaps: GapRow[]; strengths: GapRow[] };
+  path: LearningPath;
+  upcoming: { step_id: string; label: string; status: string; resources: { title: string; url: string; type: string; est_minutes: number }[] }[];
+  progress: { percent_complete: number; skill_bars: { skill_id: string; name: string; weight: number; mastery: number; unverified: boolean }[]; next_step: PathStep | null };
+  mentor: { message: string; source: "ai" | "template"; at: string };
+  last_change: PathChange;                 // the initial build, or the latest assessment / goal change, with template reasons
+  resources: Record<string, Resource>;     // only those the roadmap references
+  topic_names: Record<string, string>;
+  agent_log: AgentLogEntry[];
+  has_simulation: boolean;
+}
+interface LearningPathSummary { id: string; role: { id: string; name: string }; updated_at: string; percent_complete: number }
+```
+
+Rules (see DECISIONS.md, "SkillForge learning path"): an unverified (declared) skill never counts above 0.4; a score under 60 inserts a remedial step and blocks the failed step and its dependents; 60-84 is done with `review_later`; 85+ is done. `AgentLogEntry.kind = "handoff"` lines have `to` set. `account` export and delete include learning paths (`data.learning_paths`, `removed.learning_paths`).
