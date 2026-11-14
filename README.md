@@ -109,9 +109,27 @@ docs/      img/, security-and-launch.md, UNBLUFF-base.md
 
 API: see [CONTRACT.md](CONTRACT.md) ("SkillForge learning path" section). Config: `LLM_MODE` (`mock`|`live` + `GEMINI_API_KEY`), `AUTH_MODE` (`firebase`|`mock`, mock refused in production), `STORE` (`memory`|`firestore`); full list in `backend/.env.example`. Tests: `npm run verify`; emulator suite: `npm run test:emulator` (needs Java).
 
+## Deployment
+
+**Architecture:** a static frontend on **Vercel** (`frontend/vercel.json`: SPA rewrite so every app route serves `index.html`, long-cache headers for `/assets/*`), a Node API on **Render** (`render.yaml`, free web service, `rootDir: backend`), and **Firebase Auth** for sign-in (ID tokens verified server-side; Firestore is optional durable storage). The frontend talks to the API over HTTPS only; CORS on the API is locked to the exact deployed frontend origin.
+
+**Required environment variables** (names only — values are entered in each platform's dashboard, never committed):
+
+| Where | Variable |
+|---|---|
+| Vercel (build-time) | `VITE_API_URL`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`, `VITE_CONTACT_EMAIL` |
+| Render (runtime) | `GEMINI_API_KEY`, `FIREBASE_PROJECT_ID`, `CORS_ORIGIN`, `STORE` (`firestore` for durable sessions), `FIREBASE_SERVICE_ACCOUNT_JSON` (if using `STORE=firestore` off Google Cloud), `GITHUB_CLIENT_ID`/`GITHUB_CLIENT_SECRET`/`GITHUB_REDIRECT_URI`/`GITHUB_TOKEN_ENCRYPTION_KEY` (optional, GitHub insights) |
+
+Full list with descriptions: `backend/.env.example` and `render.yaml`.
+
+**Caveats, stated plainly:**
+- `STORE=memory` (the default outside Firestore) resets every student session on restart or redeploy, and is refused in production unless `ALLOW_EPHEMERAL_STORE=true` is also set — use `STORE=firestore` for anything real.
+- Render's free plan spins the service down after inactivity; the first request after idle can take 30–60+ seconds (cold start) before `/api/health` answers.
+- `LLM_MODE=mock` is refused in production unless `ALLOW_MOCK_LLM=true` is explicitly set (a deployment must not present canned answers as a real AI mentor).
+
 ## Provenance and credits
 
-UNBLUFF (claim interrogation, evidence-guarded grading, placement planner, mentor, careers, DSA, résumé builder) was built earlier with teammates **Tharun B L** and **Santheesh S** (Prompt Wars, September 2026); its full README is in [docs/UNBLUFF-base.md](docs/UNBLUFF-base.md). The SkillForge layer (agents, adaptive engine, learning-path API and page, certification mapping, 77-resource catalogue, branding) was added on 14 Nov 2026. Deployment work is handled separately and is not verified here. Built with AI assistance (Claude Code).
+UNBLUFF (claim interrogation, evidence-guarded grading, placement planner, mentor, careers, DSA, résumé builder) was built earlier with teammates **Tharun B L** and **Santheesh S** (Prompt Wars, September 2026); its full README is in [docs/UNBLUFF-base.md](docs/UNBLUFF-base.md). The SkillForge layer (agents, adaptive engine, learning-path API and page, certification mapping, 77-resource catalogue, branding) was added on 14 Nov 2026. Deployment configuration (Vercel + Render) was added and verified on 14 Nov 2026; actual production deployment and its live URLs are not part of this repository state. Built with AI assistance (Claude Code).
 
 ## Known limits
 
