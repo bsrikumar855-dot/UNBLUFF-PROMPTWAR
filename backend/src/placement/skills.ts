@@ -59,12 +59,37 @@ export function leetcodeTopicNote(lc: LeetCodeEvidence | undefined, topic: strin
   return hit ? `You reported ${hit.solved} "${hit.topic}" problems on LeetCode (imported, captured ${lc.captured_at.slice(0, 10)}${lc.stale ? ", out of date" : ""}); not verified and not counted here` : null;
 }
 
-export function assessSkills(ev: EvidenceBundle, profile: PlacementProfile | null, roles: RoleRegistry, now: Date): PlacementSkillsResponse {
-  const skills: SkillAssessment[] = [];
-  const mentorLevels = ev.memory.profile?.skill_self_assessment as Record<string, string> | undefined;
-  const limitations: EvidenceLimitation[] = [];
+/** What one assessment run reads, and the two lists every section appends to. */
+interface AssessmentRun {
+  ev: EvidenceBundle;
+  profile: PlacementProfile | null;
+  roles: RoleRegistry;
+  now: Date;
+  mentorLevels: Record<string, string> | undefined;
+  skills: SkillAssessment[];
+  limitations: EvidenceLimitation[];
+}
 
-  // ---------------- DSA ----------------
+export function assessSkills(ev: EvidenceBundle, profile: PlacementProfile | null, roles: RoleRegistry, now: Date): PlacementSkillsResponse {
+  const run: AssessmentRun = {
+    ev,
+    profile,
+    roles,
+    now,
+    mentorLevels: ev.memory.profile?.skill_self_assessment as Record<string, string> | undefined,
+    skills: [],
+    limitations: [],
+  };
+  assessDsa(run);
+  assessInterview(run);
+  assessDbms(run);
+  noteProjectContext(run);
+  noteSourceLimits(run);
+  return summarise(run);
+}
+
+/** DSA: one area per topic in scope, measured only from counted judged submissions (the analytics engine's rules). */
+function assessDsa({ ev, profile, now, mentorLevels, skills, limitations }: AssessmentRun): void {
   const dsa = ev.dsa;
   if (dsa.readFailed) limitations.push({ source: "dsa", severity: "limits_accuracy", message: "DSA results could not be read right now, so DSA areas show no evidence." });
   if (!dsa.execution.configured) limitations.push({ source: "dsa", severity: "limits_accuracy", message: "Code execution is not configured on this server, so DSA solutions cannot be judged and no DSA result is counted." });
@@ -120,8 +145,10 @@ export function assessSkills(ev: EvidenceBundle, profile: PlacementProfile | nul
       note,
     });
   }
+}
 
-  // ---------------- interview ----------------
+/** Interview: one area per skill of each target role; results graded by the mock model are demonstrations, never estimates. */
+function assessInterview({ ev, profile, roles, now, mentorLevels, skills, limitations }: AssessmentRun): void {
   const iv = ev.interview;
   if (iv.readFailed) limitations.push({ source: "interview", severity: "limits_accuracy", message: "Interview results could not be read right now." });
   if (iv.demonstration) limitations.push({ source: "interview", severity: "limits_accuracy", message: "Interview answers are graded by the built-in mock model on this server, so interview results are demonstrations, not assessments." });
@@ -152,8 +179,10 @@ export function assessSkills(ev: EvidenceBundle, profile: PlacementProfile | nul
     }
   }
   if ((profile?.role_ids.length ?? 0) === 0) limitations.push({ source: "interview", severity: "info", message: "Choose a target role in your goals to include interview skills." });
+}
 
-  // ---------------- DBMS ----------------
+/** DBMS: one area, the share of topics whose server-graded quiz is passed; reading the notes alone counts for nothing. */
+function assessDbms({ ev, profile, now, mentorLevels, skills, limitations }: AssessmentRun): void {
   const dbms = ev.dbms;
   if (dbms.readFailed) limitations.push({ source: "dbms", severity: "info", message: "DBMS quiz progress could not be read right now." });
   const wantsDbms = (profile?.priorities.includes("dbms") ?? false) || dbms.topics.some((t) => t.attempts > 0);
@@ -187,8 +216,10 @@ export function assessSkills(ev: EvidenceBundle, profile: PlacementProfile | nul
   } else {
     limitations.push({ source: "dbms", severity: "info", message: "DBMS is not in your priorities, so it is left out. You can still study it any time." });
   }
+}
 
-  // ---------------- projects (context only) ----------------
+/** Projects: GitHub activity is context only. It never gives an estimate and never counts towards coverage. */
+function noteProjectContext({ ev, now, skills, limitations }: AssessmentRun): void {
   const gh = ev.github;
   if (gh.status === "not_configured") limitations.push({ source: "github", severity: "info", message: "GitHub connection is not set up on this server. It is optional and does not affect your plan." });
   else if (gh.status === "not_connected") limitations.push({ source: "github", severity: "info", message: "GitHub is not connected. It is optional: connecting adds project context, and not connecting costs you nothing." });
@@ -211,14 +242,20 @@ export function assessSkills(ev: EvidenceBundle, profile: PlacementProfile | nul
       note: "Project activity is context, not a measure of algorithmic or interview ability, and it does not count towards coverage.",
     });
   }
+}
 
+/** Limits that come from where the evidence was read, not from any one skill area. */
+function noteSourceLimits({ ev, limitations }: AssessmentRun): void {
   const lc = ev.leetcode;
   if (lc?.status === "available") {
     limitations.push({ source: "leetcode", severity: "info", message: `LeetCode numbers you imported (captured ${lc.captured_at?.slice(0, 10)}${lc.stale ? ", now out of date" : ""}) appear beside matching DSA topics as your own reported context. They are not verified, never counted as judged results and never change an estimate.` });
   }
 
   if (ev.memory.readFailed) limitations.push({ source: "memory", severity: "info", message: "Saved mentor memory could not be read right now." });
+}
 
+/** Coverage counts only measured areas (never projects) and says how much is measured, not how well the student is doing. */
+function summarise({ now, skills, limitations }: AssessmentRun): PlacementSkillsResponse {
   const counted = skills.filter((s) => s.category !== "project");
   const sufficient = counted.filter((s) => s.confidence === "medium" || s.confidence === "high").length;
   const provisional = counted.filter((s) => s.confidence === "low").length;
