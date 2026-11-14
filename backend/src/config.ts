@@ -92,6 +92,8 @@ const EnvSchema = z
     /** firebase: verify real Firebase ID tokens. mock: accept "mock:<uid>" tokens with no verification (hackathon/demo only; refused in production). */
     AUTH_MODE: z.enum(["firebase", "mock"]).default("firebase"),
     GEMINI_API_KEY: z.string().optional(),
+    /** Secret. A second Gemini key used for the retry when the primary key's call fails with 429/5xx (quota or outage). Optional. */
+    GEMINI_FALLBACK_API_KEY: z.string().trim().optional(),
     GEMINI_MODEL: z
       .string()
       .optional()

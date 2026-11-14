@@ -56,6 +56,12 @@ const OVERLOAD_COOLDOWN_MS = 45_000;
 
 export interface GeminiOptions {
   apiKey?: string;
+  /**
+   * A second API key for the retry when the primary key's call fails with 429/5xx (a quota or outage on that key's
+   * project). Ignored with Vertex AI. Behaves like the fallback model: after such a failure the primary key is skipped
+   * for the cooldown period.
+   */
+  fallbackApiKey?: string;
   model: string;
   /** Used for the retry when the primary model returns 429/5xx (optional). */
   fallbackModel?: string;
@@ -72,6 +78,8 @@ export interface GeminiOptions {
   mentorTimeoutMs?: number;
   /** Injected client (tests). Defaults to a real GoogleGenAI. */
   client?: Pick<GoogleGenAI, "models">;
+  /** Injected client for the fallback key (tests). */
+  fallbackClient?: Pick<GoogleGenAI, "models">;
 }
 
 /** zod → JSON Schema for Gemini structured output (strip keywords the API doesn't accept). */
@@ -88,9 +96,11 @@ export class GeminiProvider implements LLMProvider {
   readonly mode = "live" as const;
   readonly model: string;
   private readonly fallbackModel: string | undefined;
-  /** After a quota 429 the primary is skipped until this time (only when a fallback exists). */
+  /** After a quota 429 the primary is skipped until this time (only when a fallback model or key exists). */
   private primaryCooldownUntil = 0;
   private readonly ai: Pick<GoogleGenAI, "models">;
+  /** Client for the fallback API key, if one is configured. */
+  private readonly fallbackAi: Pick<GoogleGenAI, "models"> | undefined;
   private readonly logger: Logger;
   private readonly timeoutMs: number;
   private readonly mentor: { model: string; temperature: number; timeoutMs: number };
@@ -115,6 +125,11 @@ export class GeminiProvider implements LLMProvider {
             location: opts.location,
           })
         : new GoogleGenAI({ apiKey: opts.apiKey }));
+    this.fallbackAi =
+      opts.fallbackClient ??
+      (opts.fallbackApiKey && !opts.vertexai
+        ? new GoogleGenAI({ apiKey: opts.fallbackApiKey })
+        : undefined);
     this.precise = {
       temperature: TEMPERATURE.precise,
       thinking: opts.gradeThinking ?? ThinkingLevel.LOW,
@@ -208,9 +223,12 @@ export class GeminiProvider implements LLMProvider {
     const responseJsonSchema = jsonSchema(schema);
     let invalidBefore = false;
     const primary = extra.model ?? this.model;
-    let model =
-      this.fallbackModel && Date.now() < this.primaryCooldownUntil ? this.fallbackModel : primary;
+    // The fallback is a different model, a different API key (own quota), or both.
+    const hasFallback = this.fallbackModel !== undefined || this.fallbackAi !== undefined;
+    let onFallback = hasFallback && Date.now() < this.primaryCooldownUntil;
     for (let attempt = 1; attempt <= 2; attempt++) {
+      const model = onFallback && this.fallbackModel ? this.fallbackModel : primary;
+      const client = onFallback && this.fallbackAi ? this.fallbackAi : this.ai;
       const started = performance.now();
       let text: string;
       try {
@@ -222,16 +240,17 @@ export class GeminiProvider implements LLMProvider {
           opts,
           started,
           extra,
+          client,
         );
       } catch (err) {
         if (err instanceof TransientError && attempt === 1) {
-          if (model === primary && this.fallbackModel) {
+          if (!onFallback && hasFallback) {
             // A quota 429 says how long to wait; an overloaded or timed-out primary (503/504) gets a short default, so the next
             // calls go straight to the fallback instead of each waiting out the slow primary first.
             this.primaryCooldownUntil =
               Date.now() + Math.min(err.retryAfterMs ?? OVERLOAD_COOLDOWN_MS, MAX_COOLDOWN_MS);
+            onFallback = true;
           }
-          model = this.fallbackModel ?? primary;
           await new Promise((r) => setTimeout(r, TRANSIENT_BACKOFF_MS));
           continue;
         }
@@ -263,12 +282,13 @@ export class GeminiProvider implements LLMProvider {
     opts: CallOptions,
     started: number,
     extra: CallExtra = {},
+    client: Pick<GoogleGenAI, "models"> = this.ai,
   ): Promise<string> {
     const timeoutMs = extra.timeoutMs ?? this.timeoutMs;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const res = await this.ai.models.generateContent({
+      const res = await client.models.generateContent({
         model,
         contents: prompt,
         config: {

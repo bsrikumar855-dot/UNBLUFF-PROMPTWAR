@@ -127,6 +127,56 @@ describe("GeminiProvider", () => {
     expect(calls[1]?.contents).not.toContain("invalid JSON"); // transient retry has no JSON note
   });
 
+  it("on 429 retries with the fallback API key, keeps the primary key out during the cooldown, and returns to it afterwards", async () => {
+    const quota = new GenAiApiError({
+      message: "Quota exceeded. Please retry in 30.5s.",
+      status: 429,
+    });
+    const primary = fakeClient([quota]);
+    const spare = fakeClient(['{"question":"From spare key"}', '{"question":"Spare again"}']);
+    const p = new GeminiProvider({
+      model: "primary",
+      logger: silentLogger,
+      client: primary.client,
+      fallbackClient: spare.client,
+    });
+    expect(await p.question(ctx)).toBe("From spare key");
+    expect(await p.question(ctx)).toBe("Spare again");
+    expect(primary.calls).toHaveLength(1); // the primary key was not tried again while cooling down
+    expect(spare.calls.map((c) => c.model)).toEqual(["primary", "primary"]); // same model, other key
+    expect(spare.calls[0]?.contents).not.toContain("invalid JSON");
+  });
+
+  it("uses the fallback key together with the fallback model when both are set, and gives up if the spare also fails", async () => {
+    const down = new GenAiApiError({ message: "overloaded", status: 503 });
+    const primary = fakeClient([down]);
+    const spare = fakeClient([down]);
+    const p = new GeminiProvider({
+      model: "primary",
+      fallbackModel: "fallback",
+      logger: silentLogger,
+      client: primary.client,
+      fallbackClient: spare.client,
+    });
+    await expect(p.question(ctx)).rejects.toBeInstanceOf(LlmError);
+    expect(primary.calls.map((c) => c.model)).toEqual(["primary"]);
+    expect(spare.calls.map((c) => c.model)).toEqual(["fallback"]);
+  });
+
+  it("a non-transient error (bad key, 400) does not fall back to the spare key", async () => {
+    const bad = new GenAiApiError({ message: "API key not valid", status: 400 });
+    const primary = fakeClient([bad]);
+    const spare = fakeClient(['{"question":"never"}']);
+    const p = new GeminiProvider({
+      model: "primary",
+      logger: silentLogger,
+      client: primary.client,
+      fallbackClient: spare.client,
+    });
+    await expect(p.question(ctx)).rejects.toMatchObject({ code: "LLM_INVALID_OUTPUT" });
+    expect(spare.calls).toHaveLength(0);
+  });
+
   it("gives up after two transient failures", async () => {
     const down = new GenAiApiError({ message: "overloaded", status: 503 });
     const { p } = provider([down, down]);

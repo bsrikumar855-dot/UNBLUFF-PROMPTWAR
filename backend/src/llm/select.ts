@@ -14,6 +14,7 @@ export function createProvider(config: Config, logger: Logger): LLMProvider {
   if (config.LLM_MODE === "mock") return new MockProvider();
   return new GeminiProvider({
     apiKey: config.GEMINI_API_KEY,
+    fallbackApiKey: config.GEMINI_FALLBACK_API_KEY || undefined,
     model: config.GEMINI_MODEL as string, // required by loadConfig in live mode
     fallbackModel: config.GEMINI_FALLBACK_MODEL,
     gradeThinking: config.GRADE_THINKING as ThinkingLevel,
