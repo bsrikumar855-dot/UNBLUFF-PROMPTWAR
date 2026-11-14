@@ -127,10 +127,6 @@ Full list with descriptions: `backend/.env.example` and `render.yaml`.
 - Render's free plan spins the service down after inactivity; the first request after idle can take 30–60+ seconds (cold start) before `/api/health` answers.
 - `LLM_MODE=mock` is refused in production unless `ALLOW_MOCK_LLM=true` is explicitly set (a deployment must not present canned answers as a real AI mentor).
 
-## Provenance and credits
-
-UNBLUFF (claim interrogation, evidence-guarded grading, placement planner, mentor, careers, DSA, résumé builder) was built earlier with teammates **Tharun B L** and **Santheesh S** (Prompt Wars, September 2026); its full README is in [docs/UNBLUFF-base.md](docs/UNBLUFF-base.md). The SkillForge layer (agents, adaptive engine, learning-path API and page, certification mapping, 77-resource catalogue, branding) was added on 14 Nov 2026. Deployment configuration (Vercel + Render) was added and verified on 14 Nov 2026; actual production deployment and its live URLs are not part of this repository state. Built with AI assistance (Claude Code).
-
 ## Known limits
 
 - Simulated scores are labelled *Simulation*; unverified skills are capped at 40%.
