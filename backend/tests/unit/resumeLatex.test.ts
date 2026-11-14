@@ -12,7 +12,7 @@ function fake(opts: { pdf?: string; log?: string; result?: Partial<RunResult> })
   const seen: string[][] = [];
   const runner: DockerRunner = async (args) => {
     seen.push(args);
-    const dir = args[args.indexOf("-v") + 1]!.split(":")[0]!;
+    const dir = args[args.indexOf("-v") + 1]!.replace(/:\/work:rw$/, ""); // not split(":"): a Windows path contains a drive-letter colon
     await mkdir(dir, { recursive: true });
     if (opts.pdf !== undefined) await writeFile(join(dir, "main.pdf"), opts.pdf);
     if (opts.log !== undefined) await writeFile(join(dir, "main.log"), opts.log);
